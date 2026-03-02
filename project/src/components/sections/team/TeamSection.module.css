@@ -1,0 +1,26 @@
+.root {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.grid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+
+.variant_withLead .card:first-child {
+  grid-column: span 2;
+}
+
+.card {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+}
+
+@media (max-width: 960px) {
+  .variant_withLead .card:first-child {
+    grid-column: span 1;
+  }
+}

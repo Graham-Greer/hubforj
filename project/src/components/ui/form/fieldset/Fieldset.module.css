@@ -1,0 +1,18 @@
+.root {
+  margin: 0;
+  padding: var(--space-3);
+  border: var(--border-width-1) solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.hint {
+  margin: var(--space-1) 0 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.content {
+  margin-top: var(--space-2);
+  display: grid;
+  gap: var(--space-3);
+}

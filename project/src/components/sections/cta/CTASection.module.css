@@ -1,0 +1,24 @@
+.root {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-4);
+  border: var(--border-width-1) solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+}
+
+.variant_split {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+}
+
+.content {
+  display: grid;
+  gap: var(--space-3);
+}
+
+@media (max-width: 960px) {
+  .variant_split {
+    grid-template-columns: 1fr;
+  }
+}

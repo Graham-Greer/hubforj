@@ -1,0 +1,15 @@
+.root {
+  color: var(--link);
+}
+
+.root:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.tone_default { color: var(--link); }
+.tone_muted { color: var(--text-secondary); }
+.tone_danger { color: var(--color-danger-500); }
+
+.underline { text-decoration: underline; }
+.noUnderline { text-decoration: none; }

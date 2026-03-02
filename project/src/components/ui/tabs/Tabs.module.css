@@ -1,0 +1,38 @@
+.root {
+  display: grid;
+  border-bottom: var(--border-width-1) solid var(--border-subtle);
+  gap: var(--space-1);
+}
+
+.orientation_vertical {
+  grid-auto-flow: row;
+  border-bottom: 0;
+  border-right: var(--border-width-1) solid var(--border-subtle);
+}
+
+.item {
+  display: contents;
+}
+
+.tab {
+  border: 0;
+  background: transparent;
+  padding: var(--space-2) var(--space-3);
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.active {
+  color: var(--text-primary);
+  border-bottom: var(--border-width-2) solid var(--link);
+}
+
+.tab:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.panel {
+  margin-top: var(--space-2);
+}

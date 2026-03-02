@@ -1,0 +1,14 @@
+.root {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.titleCell {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.titleCell span {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}

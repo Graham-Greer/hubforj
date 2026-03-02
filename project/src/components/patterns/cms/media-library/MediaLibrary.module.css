@@ -1,0 +1,185 @@
+.root {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.message {
+  margin: 0;
+  color: var(--danger-700);
+}
+
+.toolbar {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: 1fr minmax(10rem, 16rem);
+}
+
+.layout {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: minmax(12rem, 16rem) 1fr minmax(14rem, 20rem);
+}
+
+.folders,
+.details,
+.gridWrap {
+  border: var(--border-width-1) solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  padding: var(--space-3);
+}
+
+.folders,
+.details {
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+}
+
+.folders h4,
+.details h4,
+.uploadSection h4 {
+  margin: 0;
+}
+
+.folderCreate {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: 1fr auto;
+}
+
+.folderList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.folderRow {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.folderButton {
+  border: var(--border-width-1) solid var(--border-subtle);
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+}
+
+.folderActions {
+  display: inline-flex;
+  gap: var(--space-1);
+}
+
+.folderRename {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.gridWrap {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.grid {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+}
+
+.card {
+  border: var(--border-width-1) solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+  background: var(--surface-2);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.cardSelect {
+  border: 0;
+  background: transparent;
+  text-align: left;
+  display: grid;
+  gap: var(--space-1);
+  padding: 0;
+  cursor: pointer;
+}
+
+.cardActions {
+  display: inline-flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.uploadSection {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.queueList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.queueItem {
+  border: var(--border-width-1) solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  display: grid;
+  gap: var(--space-1);
+}
+
+.queueItem strong {
+  display: block;
+}
+
+.queueMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.detailsBody {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.detailsBody p {
+  margin: 0;
+}
+
+.usageList ul,
+.usageError ul {
+  margin: 0;
+  padding-left: var(--space-3);
+}
+
+.usageError {
+  color: var(--danger-700);
+}
+
+.empty {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+@media (max-width: 72rem) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar {
+    grid-template-columns: 1fr;
+  }
+}

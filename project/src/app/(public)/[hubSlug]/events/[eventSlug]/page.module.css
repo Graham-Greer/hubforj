@@ -1,0 +1,17 @@
+.root {
+  max-width: var(--layout-max-width);
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-4);
+  display: grid;
+  gap: var(--space-4);
+}
+
+.header {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.body {
+  display: grid;
+  gap: var(--space-2);
+}

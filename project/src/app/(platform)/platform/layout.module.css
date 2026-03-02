@@ -1,0 +1,32 @@
+.root {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text-primary);
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-1);
+  border-bottom: var(--border-width-1) solid var(--border-subtle);
+}
+
+.brand {
+  font-weight: var(--font-weight-bold);
+}
+
+.nav {
+  display: inline-flex;
+  gap: var(--space-3);
+}
+
+.main {
+  max-width: var(--layout-max-width);
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-4) var(--space-8);
+}

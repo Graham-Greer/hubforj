@@ -1,0 +1,10 @@
+.root {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+}
+
+.required {
+  color: var(--color-danger-500);
+  margin-left: var(--space-1);
+}

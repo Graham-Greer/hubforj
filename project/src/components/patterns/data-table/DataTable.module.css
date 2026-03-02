@@ -1,0 +1,32 @@
+.root {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  border: var(--border-width-1) solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface-1);
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: var(--space-3);
+  border-bottom: var(--border-width-1) solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.loadingWrap {
+  padding: var(--space-3);
+  border: var(--border-width-1) solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+
+.variant_dense .table th,
+.variant_dense .table td {
+  padding: var(--space-2);
+}

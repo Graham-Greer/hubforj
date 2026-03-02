@@ -1,0 +1,42 @@
+.wrap {
+  position: relative;
+  width: 100%;
+}
+
+.root {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 100%;
+  min-height: var(--field-height-md);
+  border: var(--border-width-1) solid var(--field-border);
+  border-radius: var(--field-radius);
+  padding: 0 var(--space-3_5);
+  padding-right: calc(var(--space-8) + var(--space-1));
+  background: var(--field-bg);
+  color: var(--field-fg);
+  font: inherit;
+}
+
+.root:hover {
+  border-color: var(--field-border-hover);
+}
+
+.root:disabled {
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+}
+
+.root:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.chevron {
+  position: absolute;
+  right: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}

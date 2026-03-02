@@ -1,0 +1,16 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.size_sm { width: 2rem; height: 2rem; font-size: var(--font-size-xs); }
+.size_md { width: 2.5rem; height: 2.5rem; font-size: var(--font-size-sm); }
+.size_lg { width: 3rem; height: 3rem; font-size: var(--font-size-base); }
+
+.circle { border-radius: var(--radius-full); }
+.rounded { border-radius: var(--radius-md); }

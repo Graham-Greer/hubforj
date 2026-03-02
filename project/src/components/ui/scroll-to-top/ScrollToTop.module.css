@@ -1,0 +1,6 @@
+.root {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: var(--z-fixed);
+}

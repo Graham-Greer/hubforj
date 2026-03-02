@@ -1,0 +1,13 @@
+.root {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-2);
+}
+
+.image {
+  object-fit: cover;
+}
+
+.variant_rounded { border-radius: var(--radius-lg); }
+.variant_square { border-radius: var(--radius-0); }
+.variant_circle { border-radius: var(--radius-full); }

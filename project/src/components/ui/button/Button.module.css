@@ -1,0 +1,80 @@
+.root {
+  border-radius: var(--btn-radius);
+  border: var(--border-width-1) solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--btn-gap);
+  min-height: var(--btn-height-md);
+  padding: 0 var(--btn-pad-x-md);
+  font-size: var(--btn-font-size);
+  font-weight: var(--btn-font-weight);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--motion-fast) var(--ease-standard);
+}
+
+.root:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.root:disabled {
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+}
+
+.size_sm { min-height: 2.25rem; }
+.size_md { min-height: var(--btn-height-md); }
+.size_lg { min-height: 3rem; }
+
+.fullWidth {
+  width: 100%;
+}
+
+.iconOnly {
+  width: var(--btn-height-md);
+  padding: 0;
+}
+
+.intent_neutral.variant_primary {
+  background: var(--btn-neutral-primary-bg);
+  color: var(--btn-neutral-primary-fg);
+  border-color: var(--btn-neutral-primary-border);
+}
+.intent_neutral.variant_secondary {
+  background: var(--btn-neutral-secondary-bg);
+  color: var(--btn-neutral-secondary-fg);
+  border-color: var(--btn-neutral-secondary-border);
+}
+.intent_neutral.variant_tertiary {
+  background: var(--btn-neutral-tertiary-bg);
+  color: var(--btn-neutral-tertiary-fg);
+}
+
+.intent_brand.variant_primary {
+  background: var(--btn-brand-primary-bg);
+  color: var(--btn-brand-primary-fg);
+  border-color: var(--btn-brand-primary-border);
+}
+.intent_brand.variant_secondary {
+  background: var(--btn-brand-secondary-bg);
+  color: var(--btn-brand-secondary-fg);
+  border-color: var(--btn-brand-secondary-border);
+}
+.intent_brand.variant_tertiary {
+  background: var(--btn-brand-tertiary-bg);
+  color: var(--btn-brand-tertiary-fg);
+}
+
+.intent_danger.variant_primary {
+  background: var(--btn-danger-primary-bg);
+  color: var(--btn-danger-primary-fg);
+  border-color: var(--btn-danger-primary-border);
+}
+.intent_danger.variant_secondary,
+.intent_danger.variant_tertiary {
+  background: var(--surface-1);
+  color: var(--color-danger-500);
+  border-color: var(--color-danger-500);
+}
