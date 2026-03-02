@@ -1,15 +1,81 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import HeroSection from "@/components/sections/hero/HeroSection";
+import RichTextSection from "@/components/sections/rich-text/RichTextSection";
+import CTASection from "@/components/sections/cta/CTASection";
+import FeatureGridSection from "@/components/sections/feature-grid/FeatureGridSection";
+import FAQSection from "@/components/sections/faq/FAQSection";
+import EventListSection from "@/components/sections/event-list/EventListSection";
+import ContactSection from "@/components/sections/contact/ContactSection";
+import LogoMarqueeSection from "@/components/sections/logo-marquee/LogoMarqueeSection";
+import PricingSection from "@/components/sections/pricing/PricingSection";
+import StatsSection from "@/components/sections/stats/StatsSection";
+import TeamSection from "@/components/sections/team/TeamSection";
+import TestimonialsSection from "@/components/sections/testimonials/TestimonialsSection";
+import LegalDocumentSection from "@/components/sections/legal/LegalDocumentSection";
 import PageSettingsForm from "@/components/patterns/cms/page-settings/PageSettingsForm";
 import BlockPicker from "@/components/patterns/cms/block-picker/BlockPicker";
 import BlockList from "@/components/patterns/cms/block-list/BlockList";
 import BlockEditor from "@/components/patterns/cms/block-editor/BlockEditor";
-import PublishBar from "@/components/patterns/cms/publish-bar/PublishBar";
 import MediaLibrary from "@/components/patterns/cms/media-library/MediaLibrary";
 import Button from "@/components/ui/button/Button";
-import { buildDefaultBlock, getBlockEditorSchema } from "@/lib/data/pages/block-registry";
+import Tabs from "@/components/ui/tabs/Tabs";
+import {
+  buildBlockForVariant,
+  buildPreviewBlockForVariant,
+  getBlockEditorSchema,
+} from "@/lib/data/pages/block-registry";
 import styles from "./CmsPageEditorClient.module.css";
+
+const SECTION_COMPONENTS = {
+  HeroSection,
+  RichTextSection,
+  CTASection,
+  FeatureGridSection,
+  FAQSection,
+  EventListSection,
+  ContactSection,
+  LogoMarqueeSection,
+  PricingSection,
+  StatsSection,
+  TeamSection,
+  TestimonialsSection,
+  LegalDocumentSection,
+};
+
+const PREVIEW_MEDIA = [
+  { id: "media_preview_hero", publicUrl: "/globe.svg", alt: "Hero preview" },
+  { id: "media_preview_feature", publicUrl: "/next.svg", alt: "Feature preview" },
+  { id: "media_preview_cta", publicUrl: "/window.svg", alt: "CTA preview" },
+  { id: "media_preview_logo_a", publicUrl: "/next.svg", alt: "Partner logo A" },
+  { id: "media_preview_logo_b", publicUrl: "/vercel.svg", alt: "Partner logo B" },
+  { id: "media_preview_logo_c", publicUrl: "/globe.svg", alt: "Partner logo C" },
+  { id: "media_preview_logo_d", publicUrl: "/file.svg", alt: "Partner logo D" },
+];
+
+const PREVIEW_EVENTS = [
+  {
+    id: "evt_preview_1",
+    title: "Spring Leadership Workshop",
+    category: "Workshop",
+    startAt: "2026-04-09T18:00:00.000Z",
+  },
+  {
+    id: "evt_preview_2",
+    title: "Member Meetup",
+    category: "Meetup",
+    startAt: "2026-04-14T00:00:00.000Z",
+  },
+  {
+    id: "evt_preview_3",
+    title: "Volunteer Training Course",
+    category: "Course",
+    startAt: "2026-04-22T16:00:00.000Z",
+  },
+];
+
+const PREVIEW_MEDIA_BY_ID = new Map(PREVIEW_MEDIA.map((item) => [item.id, item]));
 
 function nextBlockId() {
   return `blk_${Math.random().toString(36).slice(2, 8)}`;
@@ -39,6 +105,9 @@ export default function CmsPageEditorClient({
   });
   const [blocks, setBlocks] = useState(initialPage.draftComposition || []);
   const [selectedBlockId, setSelectedBlockId] = useState(initialPage.draftComposition?.[0]?.id || "");
+  const [builderTab, setBuilderTab] = useState("page-sections");
+  const [selectedSectionType, setSelectedSectionType] = useState("");
+  const [selectedSectionVariant, setSelectedSectionVariant] = useState("");
   const [mediaTarget, setMediaTarget] = useState(null);
   const [mediaItems, setMediaItems] = useState(media || []);
   const [folders, setFolders] = useState(mediaFolders || []);
@@ -53,8 +122,30 @@ export default function CmsPageEditorClient({
     [selectedBlock]
   );
 
-  function handlePickBlock(type) {
-    const template = buildDefaultBlock(type);
+  const selectedSectionDefinition = useMemo(
+    () => availableBlocks.find((block) => block.type === selectedSectionType) || null,
+    [availableBlocks, selectedSectionType]
+  );
+
+  const previewBlock = useMemo(() => {
+    if (!selectedSectionType) return null;
+    return buildPreviewBlockForVariant(selectedSectionType, selectedSectionVariant);
+  }, [selectedSectionType, selectedSectionVariant]);
+
+  const PreviewSectionComponent = previewBlock ? SECTION_COMPONENTS[previewBlock.type] : null;
+
+  function handleSelectSectionType(type) {
+    const next = availableBlocks.find((block) => block.type === type);
+    if (!next) return;
+
+    setSelectedSectionType(next.type);
+    setSelectedSectionVariant(next.defaultVariant || next.variants?.[0] || "default");
+  }
+
+  function handleAddSectionToPage() {
+    if (!selectedSectionType) return;
+
+    const template = buildBlockForVariant(selectedSectionType, selectedSectionVariant);
     if (!template) return;
 
     const next = {
@@ -64,6 +155,9 @@ export default function CmsPageEditorClient({
 
     setBlocks((prev) => [...prev, next]);
     setSelectedBlockId(next.id);
+    setBuilderTab("page-sections");
+    setSelectedSectionType("");
+    setSelectedSectionVariant("");
   }
 
   function handleBlockChange(updatedBlock) {
@@ -221,6 +315,88 @@ export default function CmsPageEditorClient({
     return { ok: true };
   }
 
+  const tabs = [
+    {
+      value: "page-sections",
+      label: "Page Sections",
+      content: (
+        <div className={styles.tabContent}>
+          <div className={styles.column}>
+            <h3>Page Sections</h3>
+            <BlockList blocks={blocks} onMove={setBlocks} onRemove={handleBlockRemove} onSelect={setSelectedBlockId} />
+          </div>
+        </div>
+      ),
+    },
+    {
+      value: "section-library",
+      label: "Section Library",
+      content: (
+        <div className={styles.tabContent}>
+          {!selectedSectionDefinition ? (
+            <div className={styles.column}>
+              <h3>Section Library</h3>
+              <BlockPicker availableBlocks={availableBlocks} onPick={handleSelectSectionType} />
+            </div>
+          ) : (
+            <div className={styles.column}>
+              <div className={styles.libraryHeader}>
+                <h3>Section variants - {selectedSectionDefinition.label}</h3>
+                <Button
+                  type="button"
+                  variant="tertiary"
+                  onClick={() => {
+                    setSelectedSectionType("");
+                    setSelectedSectionVariant("");
+                  }}
+                >
+                  Choose another section
+                </Button>
+              </div>
+
+              <div className={styles.variantCards}>
+                {selectedSectionDefinition.variants.map((variant) => (
+                  <button
+                    key={variant}
+                    type="button"
+                    className={[
+                      styles.variantCard,
+                      selectedSectionVariant === variant ? styles.variantCardActive : "",
+                    ].join(" ")}
+                    onClick={() => setSelectedSectionVariant(variant)}
+                  >
+                    <strong>{variant}</strong>
+                    <span>{selectedSectionDefinition.variantDescriptions?.[variant] || "Variant preview"}</span>
+                  </button>
+                ))}
+              </div>
+
+              <section className={styles.previewWrap}>
+                <h4>Preview</h4>
+                {PreviewSectionComponent && previewBlock ? (
+                  <div className={styles.previewCanvas}>
+                    <PreviewSectionComponent
+                      variant={previewBlock.variant}
+                      mediaById={PREVIEW_MEDIA_BY_ID}
+                      events={PREVIEW_EVENTS}
+                      {...(previewBlock.props || {})}
+                    />
+                  </div>
+                ) : (
+                  <p className={styles.previewEmpty}>Choose a section variant to preview it.</p>
+                )}
+              </section>
+
+              <div className={styles.libraryActions}>
+                <Button type="button" onClick={handleAddSectionToPage}>Add section to page</Button>
+              </div>
+            </div>
+          )}
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className={styles.root}>
       <form action={saveDraftAction} className={styles.form}>
@@ -229,41 +405,43 @@ export default function CmsPageEditorClient({
         <input type="hidden" name="settings" value={JSON.stringify(settings)} />
         <input type="hidden" name="draftComposition" value={JSON.stringify(blocks)} />
 
-        <PageSettingsForm value={settings} onChange={setSettings} onOpenMediaLibrary={setMediaTarget} />
+        <aside className={styles.leftColumn}>
+          <h3>Page settings</h3>
+          <PageSettingsForm value={settings} onChange={setSettings} onOpenMediaLibrary={setMediaTarget} columns={1} />
+          <div className={styles.actions}>
+            <Button type="submit">Save draft</Button>
+            <Button
+              type="button"
+              intent="brand"
+              onClick={() => {
+                const form = document.getElementById("publish-page-form");
+                form?.requestSubmit();
+              }}
+            >
+              Publish
+            </Button>
+          </div>
+        </aside>
 
-        <section className={styles.builder}>
-          <div className={styles.column}>
-            <h3>Blocks</h3>
-            <BlockPicker availableBlocks={availableBlocks} onPick={handlePickBlock} />
-            <BlockList blocks={blocks} onMove={setBlocks} onRemove={handleBlockRemove} onSelect={setSelectedBlockId} />
-          </div>
-          <div className={styles.column}>
-            <h3>Block settings</h3>
-            <BlockEditor
-              block={selectedBlock}
-              schema={blockSchema}
-              onChange={handleBlockChange}
-              onOpenMediaLibrary={setMediaTarget}
-            />
-          </div>
+        <section className={styles.mainColumn}>
+          <Tabs tabs={tabs} value={builderTab} onChange={setBuilderTab} />
+          {builderTab === "page-sections" && selectedBlock ? (
+            <section className={styles.column}>
+              <h3>Section settings</h3>
+              <BlockEditor
+                block={selectedBlock}
+                schema={blockSchema}
+                onChange={handleBlockChange}
+                onOpenMediaLibrary={setMediaTarget}
+              />
+            </section>
+          ) : null}
         </section>
-
-        <Button type="submit">Save draft</Button>
       </form>
-
-      <section className={styles.publishWrap}>
-        <PublishBar
-          status={initialPage.status}
-          onPublish={() => {
-            const form = document.getElementById("publish-page-form");
-            form?.requestSubmit();
-          }}
-        />
-        <form id="publish-page-form" action={publishAction}>
-          <input type="hidden" name="hubId" value={hub.id} />
-          <input type="hidden" name="pageId" value={initialPage.id} />
-        </form>
-      </section>
+      <form id="publish-page-form" action={publishAction}>
+        <input type="hidden" name="hubId" value={hub.id} />
+        <input type="hidden" name="pageId" value={initialPage.id} />
+      </form>
 
       <div className={styles.links}>
         <Button href={`/platform/hubs/${hub.id}/cms/${initialPage.id}/preview`} variant="secondary">Preview draft</Button>

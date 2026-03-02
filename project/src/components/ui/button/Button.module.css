@@ -5,8 +5,6 @@
   align-items: center;
   justify-content: center;
   gap: var(--btn-gap);
-  min-height: var(--btn-height-md);
-  padding: 0 var(--btn-pad-x-md);
   font-size: var(--btn-font-size);
   font-weight: var(--btn-font-weight);
   text-decoration: none;
@@ -24,17 +22,16 @@
   cursor: not-allowed;
 }
 
-.size_sm { min-height: 2.25rem; }
-.size_md { min-height: var(--btn-height-md); }
-.size_lg { min-height: 3rem; }
+.size_sm { padding: var(--btn-pad-x-sm) var(--btn-pad-y-sm); }
+.size_md { padding: var(--btn-pad-x-md) var(--btn-pad-y-md); }
+.size_lg { padding: var(--btn-pad-x-lg) var(--btn-pad-y-lg); }
 
 .fullWidth {
   width: 100%;
 }
 
 .iconOnly {
-  width: var(--btn-height-md);
-  padding: 0;
+  padding: var(--btn-pad-x-sm) var(--btn-pad-y-sm);
 }
 
 .intent_neutral.variant_primary {

@@ -14,6 +14,12 @@ A page composition is an ordered list of blocks:
 - `props` (object) — typed fields, edited via structured forms
 - `id` (string) — stable per-block identifier for editing/reordering
 
+### Library selection behavior (M3)
+- Block `variant` is selected during Section Library add flow.
+- Editor displays variant cards with descriptions and a live preview.
+- Section is appended to page composition only after explicit `Add section to page`.
+- Block settings editor updates `props`; variant changes are done through library flow in MVP.
+
 Example:
 ```json
 {
@@ -53,6 +59,10 @@ All sections listed under “Sections (CMS Registry Blocks)” in `docs/componen
 - TestimonialsSection (grid|spotlight)
 - LegalDocumentSection
 - SectionRenderFallback
+
+Variant metadata contract:
+- Registry definitions SHOULD include `variantDescriptions` for library cards.
+- Registry definitions SHOULD include per-variant preview mock props for live preview.
 
 ## WYSIWYG fields (locked)
 WYSIWYG is allowed only for approved fields (no HTML/source mode):

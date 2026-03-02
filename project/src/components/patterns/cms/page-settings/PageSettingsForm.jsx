@@ -9,13 +9,13 @@ import {
   listHeaderSectionOptions,
 } from "@/lib/data/pages/layout-config";
 
-export default function PageSettingsForm({ value = {}, onChange, onOpenMediaLibrary }) {
+export default function PageSettingsForm({ value = {}, onChange, onOpenMediaLibrary, columns = 2 }) {
   const seo = value.seo || {};
   const headerOptions = listHeaderSectionOptions();
   const footerOptions = listFooterSectionOptions();
 
   return (
-    <FormGrid columns={2}>
+    <FormGrid columns={columns}>
       <Field id="title" label="Title" required>
         <Input id="title" value={value.title || ""} onChange={(event) => onChange?.({ ...value, title: event.target.value })} />
       </Field>

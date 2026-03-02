@@ -5,7 +5,8 @@ import { getHubBySlug } from "@/lib/data/hubs/hub-repository";
 export const revalidate = 120;
 
 export default async function PublicHubLayout({ children, params }) {
-  const hub = await getHubBySlug(params.hubSlug);
+  const resolvedParams = await params;
+  const hub = await getHubBySlug(resolvedParams?.hubSlug);
   if (!hub) {
     notFound();
   }

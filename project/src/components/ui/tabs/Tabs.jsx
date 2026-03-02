@@ -40,28 +40,37 @@ export default function Tabs({ tabs = [], value, onChange, orientation = "horizo
   };
 
   return (
-    <div
-      className={[styles.root, styles[`orientation_${orientation}`]].join(" ")}
-      role="tablist"
-      aria-orientation={orientation === "vertical" ? "vertical" : "horizontal"}
-    >
-      {tabs.map((tab, index) => (
-        // Render tab + panel pairing so aria-controls/labelledby are deterministic.
-        <div key={tab.value} className={styles.item}>
+    <div className={[styles.root, styles[`orientation_${orientation}`]].join(" ")}>
+      <div
+        className={styles.tabList}
+        role="tablist"
+        aria-orientation={orientation === "vertical" ? "vertical" : "horizontal"}
+      >
+        {tabs.map((tab, index) => (
           <button
+            key={tab.value}
             id={`${baseId}-tab-${tab.value}`}
             type="button"
             role="tab"
             aria-selected={active === tab.value}
             aria-controls={`${baseId}-panel-${tab.value}`}
             tabIndex={active === tab.value || (activeIndex === -1 && index === 0) ? 0 : -1}
-            className={[styles.tab, active === tab.value ? styles.active : ""].join(" ")}
+            className={[
+              styles.tab,
+              active === tab.value ? styles.active : "",
+              orientation === "vertical" && active === tab.value ? styles.activeVertical : "",
+            ].join(" ")}
             onClick={() => activateAt(index)}
             onKeyDown={(event) => onTabKeyDown(event, index)}
           >
             {tab.label}
           </button>
+        ))}
+      </div>
+      <div className={styles.panels}>
+        {tabs.map((tab) => (
           <div
+            key={tab.value}
             id={`${baseId}-panel-${tab.value}`}
             role="tabpanel"
             aria-labelledby={`${baseId}-tab-${tab.value}`}
@@ -70,8 +79,8 @@ export default function Tabs({ tabs = [], value, onChange, orientation = "horizo
           >
             {tab.content}
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }

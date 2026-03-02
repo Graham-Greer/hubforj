@@ -16,14 +16,27 @@
   border-radius: var(--radius-md);
   background: var(--surface-1);
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2);
+  transition:
+    box-shadow 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease,
+    transform 180ms ease;
 }
 
 .dragging {
+  z-index: var(--z-floating);
   box-shadow: var(--shadow-lg);
+  border-color: var(--interactive-primary-bg);
+  background: var(--surface-2);
+}
+
+.over {
+  border-color: var(--interactive-primary-bg);
+  box-shadow: var(--shadow-sm);
 }
 
 .selectButton {
@@ -38,8 +51,23 @@
   border: var(--border-width-1) solid var(--border-subtle);
   background: var(--surface-2);
   border-radius: var(--radius-sm);
-  padding: var(--space-1) var(--space-2);
+  inline-size: 2rem;
+  block-size: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: grab;
+  color: var(--text-secondary);
+  touch-action: none;
+}
+
+.handle:active {
+  cursor: grabbing;
+}
+
+.handle:hover {
+  border-color: var(--interactive-primary-bg);
+  background: var(--interactive-secondary-hover-bg);
 }
 
 .handle:focus-visible {

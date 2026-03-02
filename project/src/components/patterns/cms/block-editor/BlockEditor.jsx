@@ -4,7 +4,6 @@ import Textarea from "../../../ui/form/textarea/Textarea";
 import Select from "../../../ui/form/select/Select";
 import Button from "../../../ui/button/Button";
 import WysiwygEditor from "../../../ui/form/wysiwyg/WysiwygEditor";
-import { getCmsBlockDefinition, normalizeVariant } from "@/lib/data/pages/block-registry";
 import styles from "./BlockEditor.module.css";
 
 export default function BlockEditor({ block, schema = [], onChange, onOpenMediaLibrary }) {
@@ -15,25 +14,9 @@ export default function BlockEditor({ block, schema = [], onChange, onOpenMediaL
   const updateProp = (key, nextValue) => {
     onChange?.({ ...block, props: { ...block.props, [key]: nextValue } });
   };
-  const definition = getCmsBlockDefinition(block.type);
-  const variantOptions = (definition?.variants || []).map((variant) => ({
-    value: variant,
-    label: variant,
-  }));
 
   return (
     <div className={styles.root}>
-      {variantOptions.length ? (
-        <Field id={`${block.id}-variant`} label="Variant">
-          <Select
-            id={`${block.id}-variant`}
-            value={block.variant || definition.defaultVariant}
-            options={variantOptions}
-            onChange={(value) => onChange?.({ ...block, variant: normalizeVariant(block.type, value) })}
-          />
-        </Field>
-      ) : null}
-
       {schema.map((field) => (
         <Field key={field.key} id={`${block.id}-${field.key}`} label={field.label} hint={field.hint}>
           {field.type === "textarea" ? (
@@ -62,7 +45,7 @@ export default function BlockEditor({ block, schema = [], onChange, onOpenMediaL
               <Button
                 type="button"
                 variant="secondary"
-                size="sm"
+                size="md"
                 onClick={() => onOpenMediaLibrary?.({ blockId: block.id, fieldKey: field.key, multiple: false })}
               >
                 Select media

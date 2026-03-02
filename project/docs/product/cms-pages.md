@@ -38,6 +38,16 @@ Each page has:
   - `props` (typed; structured editor form)
 - No template branching inside components; styling via tokens/recipe vars.
 
+### Section Library flow (M3 UX)
+- Page editor uses tabs:
+  - `Page Sections` (existing section list + structured settings editor)
+  - `Section Library` (add flow)
+- In `Section Library`, selecting a section type MUST NOT add it immediately.
+- After selecting a type, editor shows `Section variants - [Section Type]`:
+  - clickable variant cards with variant name + description
+  - live preview of selected variant rendered with mock data
+- Section is added only when user clicks `Add section to page`.
+
 ## Headers/Footers as CMS-selectable sections (locked)
 Hub config stores:
 - `globalHeaderId`

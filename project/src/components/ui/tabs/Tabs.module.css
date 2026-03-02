@@ -1,17 +1,29 @@
 .root {
   display: grid;
-  border-bottom: var(--border-width-1) solid var(--border-subtle);
+  gap: var(--space-2);
+}
+
+.tabList {
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-1);
+  border-bottom: var(--border-width-1) solid var(--border-subtle);
+}
+
+.panels {
+  display: grid;
 }
 
 .orientation_vertical {
-  grid-auto-flow: row;
-  border-bottom: 0;
-  border-right: var(--border-width-1) solid var(--border-subtle);
+  grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr);
+  align-items: start;
 }
 
-.item {
-  display: contents;
+.orientation_vertical .tabList {
+  display: grid;
+  border-bottom: 0;
+  border-right: var(--border-width-1) solid var(--border-subtle);
+  padding-right: var(--space-2);
 }
 
 .tab {
@@ -28,11 +40,16 @@
   border-bottom: var(--border-width-2) solid var(--link);
 }
 
+.activeVertical {
+  border-bottom: 0;
+  border-right: var(--border-width-2) solid var(--link);
+}
+
 .tab:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
 }
 
 .panel {
-  margin-top: var(--space-2);
+  margin: 0;
 }

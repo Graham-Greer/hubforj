@@ -103,16 +103,19 @@ export async function getHubById(hubId) {
 }
 
 export async function getHubBySlug(slug) {
+  const normalizedSlug = String(slug || "").trim();
+  if (!normalizedSlug) return null;
+
   const provider = getDataProvider();
 
   if (provider.type === "firestore") {
-    const snapshot = await provider.db.collection("hubs").where("slug", "==", slug).limit(1).get();
+    const snapshot = await provider.db.collection("hubs").where("slug", "==", normalizedSlug).limit(1).get();
     if (snapshot.empty) return null;
     const doc = snapshot.docs[0];
     return hubToViewModel({ id: doc.id, ...doc.data() });
   }
 
-  const hub = Array.from(provider.db.hubs.values()).find((item) => item.slug === slug);
+  const hub = Array.from(provider.db.hubs.values()).find((item) => item.slug === normalizedSlug);
   return hub ? hubToViewModel(hub) : null;
 }
 

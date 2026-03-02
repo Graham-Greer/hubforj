@@ -193,8 +193,12 @@
   --btn-radius: var(--radius-lg);
   --btn-font-size: var(--font-size-sm);
   --btn-font-weight: var(--font-weight-semibold);
-  --btn-height-md: 2.75rem;
-  --btn-pad-x-md: var(--space-4);
+  --btn-pad-y-sm: var(--space-2);
+  --btn-pad-y-md: var(--space-3);
+  --btn-pad-y-lg: var(--space-4);
+  --btn-pad-x-sm: var(--space-2);
+  --btn-pad-x-md: var(--space-3);
+  --btn-pad-x-lg: var(--space-4);
   --btn-gap: var(--space-2);
 
   /* neutral */
