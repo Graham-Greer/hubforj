@@ -2,7 +2,7 @@ import HeroSection from "@/components/sections/hero/HeroSection";
 import RichTextSection from "@/components/sections/rich-text/RichTextSection";
 import CTASection from "@/components/sections/cta/CTASection";
 import FeatureGridSection from "@/components/sections/feature-grid/FeatureGridSection";
-import FAQSection from "@/components/sections/faq/FAQSection";
+import AccordionSection from "@/components/sections/accordion/AccordionSection";
 import EventListSection from "@/components/sections/event-list/EventListSection";
 import ContactSection from "@/components/sections/contact/ContactSection";
 import LogoMarqueeSection from "@/components/sections/logo-marquee/LogoMarqueeSection";
@@ -18,7 +18,7 @@ const SECTION_MAP = {
   RichTextSection,
   CTASection,
   FeatureGridSection,
-  FAQSection,
+  AccordionSection,
   EventListSection,
   ContactSection,
   LogoMarqueeSection,

@@ -1,3 +1,79 @@
+import {
+  ACCORDION_SECTION_DEFAULT_PROPS,
+  ACCORDION_SECTION_PREVIEW_PROPS,
+  ACCORDION_SECTION_SCHEMA,
+  evaluateAccordionReadiness,
+  normalizeAccordionSectionProps,
+} from "./accordion-section.js";
+
+function normalizeText(value) {
+  return String(value || "").trim();
+}
+
+function isValidCtaHref(href) {
+  if (!href) return false;
+  if (href.startsWith("/")) return true;
+  if (/^https?:\/\//i.test(href)) return true;
+  return false;
+}
+
+function normalizeCtas(input, fallback = null) {
+  const source = Array.isArray(input) ? input : [];
+  const normalized = source
+    .map((cta) => (cta && typeof cta === "object" ? cta : {}))
+    .map((cta) => ({
+      label: normalizeText(cta.label),
+      href: normalizeText(cta.href),
+    }));
+
+  if (normalized.length) return normalized;
+  if (!fallback || typeof fallback !== "object") return [];
+
+  const label = normalizeText(fallback.label);
+  const href = normalizeText(fallback.href);
+  return label || href ? [{ label, href }] : [];
+}
+
+function evaluateCtaReadiness(ctas = []) {
+  const missing = [];
+  const normalized = normalizeCtas(ctas);
+  normalized.forEach((cta, index) => {
+    if (!cta.label) missing.push(`CTA ${index + 1}: label is required.`);
+    if (!cta.href) missing.push(`CTA ${index + 1}: link is required.`);
+    if (cta.href && !isValidCtaHref(cta.href)) {
+      missing.push(`CTA ${index + 1}: link must be internal (/path) or external (http/https).`);
+    }
+  });
+  return missing;
+}
+
+function assertValidCtaContract(ctas = [], fieldPrefix = "ctas") {
+  if (!Array.isArray(ctas)) {
+    throw new Error(`${fieldPrefix} must be an array.`);
+  }
+  if (ctas.length > 2) {
+    throw new Error(`${fieldPrefix} supports up to two items.`);
+  }
+
+  ctas.forEach((cta, index) => {
+    if (!cta || typeof cta !== "object" || Array.isArray(cta)) {
+      throw new Error(`${fieldPrefix}[${index}] must be an object.`);
+    }
+
+    const label = normalizeText(cta.label);
+    const href = normalizeText(cta.href);
+    if (!label) {
+      throw new Error(`${fieldPrefix}[${index}].label is required when CTA is added.`);
+    }
+    if (!href) {
+      throw new Error(`${fieldPrefix}[${index}].href is required when CTA is added.`);
+    }
+    if (!isValidCtaHref(href)) {
+      throw new Error(`${fieldPrefix}[${index}].href must be internal (/path) or external (http/https).`);
+    }
+  });
+}
+
 const BLOCK_DEFINITIONS = [
   {
     type: "HeroSection",
@@ -11,33 +87,73 @@ const BLOCK_DEFINITIONS = [
     defaultProps: {
       heading: "New hero heading",
       subheading: "Add supporting copy for this section.",
-      ctaText: "Learn more",
-      ctaHref: "/join",
+      ctas: [{ label: "Learn more", href: "/join" }],
       imageMediaId: "",
     },
     previewPropsByVariant: {
       centered: {
         heading: "Build your strongest season",
         subheading: "Weekly events, coaching, and resources tailored for your community.",
-        ctaText: "Explore programs",
-        ctaHref: "/programs",
+        ctas: [{ label: "Explore programs", href: "/programs" }],
         imageMediaId: "media_preview_hero",
       },
       split: {
         heading: "Grow together with your hub",
         subheading: "Pair storytelling with a visual to highlight your next campaign.",
-        ctaText: "Join now",
-        ctaHref: "/join",
+        ctas: [{ label: "Join now", href: "/join" }],
         imageMediaId: "media_preview_feature",
       },
     },
     schema: [
-      { key: "heading", label: "Heading", type: "text" },
-      { key: "subheading", label: "Subheading", type: "textarea" },
-      { key: "ctaText", label: "CTA text", type: "text" },
-      { key: "ctaHref", label: "CTA link", type: "text" },
-      { key: "imageMediaId", label: "Image media ID", type: "media" },
+      {
+        key: "core",
+        type: "group",
+        label: "Core",
+        defaultOpen: true,
+        fields: [
+          { key: "heading", label: "Heading", type: "text" },
+          { key: "subheading", label: "Subheading", type: "textarea" },
+        ],
+      },
+      {
+        key: "actions",
+        type: "group",
+        label: "Actions",
+        defaultOpen: false,
+        fields: [
+          { key: "ctas", label: "Calls to action", type: "ctas" },
+        ],
+      },
+      {
+        key: "media",
+        type: "group",
+        label: "Media",
+        defaultOpen: false,
+        fields: [
+          { key: "imageMediaId", label: "Image media ID", type: "media" },
+        ],
+      },
     ],
+    normalizeProps: (props) => {
+      const value = props && typeof props === "object" && !Array.isArray(props) ? props : {};
+      const normalizedCtaList = normalizeCtas(value.ctas, { label: value.ctaText, href: value.ctaHref });
+      assertValidCtaContract(normalizedCtaList, "HeroSection.ctas");
+      return {
+        heading: normalizeText(value.heading),
+        subheading: normalizeText(value.subheading),
+        ctas: normalizedCtaList,
+        imageMediaId: normalizeText(value.imageMediaId),
+      };
+    },
+    evaluateReadiness: (props) => {
+      const missing = evaluateCtaReadiness(props?.ctas);
+      return {
+        readyForDraft: missing.length === 0,
+        readyForPublish: missing.length === 0,
+        missingRequiredFields: missing,
+        missingCount: missing.length,
+      };
+    },
   },
   {
     type: "RichTextSection",
@@ -70,33 +186,76 @@ const BLOCK_DEFINITIONS = [
     defaultProps: {
       title: "Ready to join?",
       body: "Add supporting text for the CTA.",
-      ctaText: "Get started",
-      ctaHref: "/join",
+      ctas: [{ label: "Get started", href: "/join" }],
       imageMediaId: "",
     },
     previewPropsByVariant: {
       centered: {
         title: "Ready to take the next step?",
         body: "Invite visitors to become members, register, or contact your team.",
-        ctaText: "Become a member",
-        ctaHref: "/join",
+        ctas: [{ label: "Become a member", href: "/join" }],
         imageMediaId: "media_preview_feature",
       },
       split: {
         title: "Partner with our programs",
         body: "Highlight your value proposition with a visual and concise copy.",
-        ctaText: "Contact us",
-        ctaHref: "/contact",
+        ctas: [
+          { label: "Contact us", href: "/contact" },
+          { label: "View programs", href: "/programs" },
+        ],
         imageMediaId: "media_preview_cta",
       },
     },
     schema: [
-      { key: "title", label: "Title", type: "text" },
-      { key: "body", label: "Body", type: "textarea" },
-      { key: "ctaText", label: "CTA text", type: "text" },
-      { key: "ctaHref", label: "CTA link", type: "text" },
-      { key: "imageMediaId", label: "Image media ID", type: "media" },
+      {
+        key: "core",
+        type: "group",
+        label: "Core",
+        defaultOpen: true,
+        fields: [
+          { key: "title", label: "Title", type: "text" },
+          { key: "body", label: "Body", type: "textarea" },
+        ],
+      },
+      {
+        key: "actions",
+        type: "group",
+        label: "Actions",
+        defaultOpen: false,
+        fields: [
+          { key: "ctas", label: "Calls to action", type: "ctas" },
+        ],
+      },
+      {
+        key: "media",
+        type: "group",
+        label: "Media",
+        defaultOpen: false,
+        fields: [
+          { key: "imageMediaId", label: "Image media ID", type: "media" },
+        ],
+      },
     ],
+    normalizeProps: (props) => {
+      const value = props && typeof props === "object" && !Array.isArray(props) ? props : {};
+      const normalizedCtaList = normalizeCtas(value.ctas, { label: value.ctaText, href: value.ctaHref });
+      assertValidCtaContract(normalizedCtaList, "CTASection.ctas");
+      return {
+        title: normalizeText(value.title),
+        body: normalizeText(value.body),
+        ctas: normalizedCtaList,
+        imageMediaId: normalizeText(value.imageMediaId),
+      };
+    },
+    evaluateReadiness: (props) => {
+      const missing = evaluateCtaReadiness(props?.ctas);
+      return {
+        readyForDraft: missing.length === 0,
+        readyForPublish: missing.length === 0,
+        missingRequiredFields: missing,
+        missingCount: missing.length,
+      };
+    },
   },
   {
     type: "FeatureGridSection",
@@ -135,34 +294,20 @@ const BLOCK_DEFINITIONS = [
     ],
   },
   {
-    type: "FAQSection",
-    label: "FAQ",
-    variants: ["compact", "detailed"],
-    defaultVariant: "compact",
+    type: "AccordionSection",
+    label: "Accordion",
+    variants: ["default"],
+    defaultVariant: "default",
     variantDescriptions: {
-      compact: "Tighter accordion spacing for short answers.",
-      detailed: "Expanded spacing for longer explanatory content.",
+      default: "Reusable single-open accordion for FAQs, policies, and explainers.",
     },
-    defaultProps: {
-      title: "Frequently asked questions",
-      itemsText: "Question one|Answer one\nQuestion two|Answer two",
-    },
+    defaultProps: ACCORDION_SECTION_DEFAULT_PROPS,
     previewPropsByVariant: {
-      compact: {
-        title: "Frequently asked questions",
-        itemsText:
-          "Who can join?|Anyone can create an account and request membership.\nHow do I register for events?|Choose an event and complete registration from your account.",
-      },
-      detailed: {
-        title: "Membership and event FAQs",
-        itemsText:
-          "Can guests attend?|Eligibility depends on event settings and hub policy.\nDo I need to renew?|Paid plans renew based on plan duration and hub rules.",
-      },
+      default: ACCORDION_SECTION_PREVIEW_PROPS,
     },
-    schema: [
-      { key: "title", label: "Title", type: "text" },
-      { key: "itemsText", label: "Items (question|answer per line)", type: "textarea" },
-    ],
+    schema: ACCORDION_SECTION_SCHEMA,
+    normalizeProps: normalizeAccordionSectionProps,
+    evaluateReadiness: evaluateAccordionReadiness,
   },
   {
     type: "EventListSection",
@@ -393,6 +538,13 @@ const BLOCK_DEFINITIONS = [
   },
 ];
 
+function cloneValue(value) {
+  if (typeof structuredClone === "function") {
+    return structuredClone(value);
+  }
+  return JSON.parse(JSON.stringify(value));
+}
+
 export function listCmsBlocks() {
   return BLOCK_DEFINITIONS.map((definition) => ({
     type: definition.type,
@@ -400,7 +552,7 @@ export function listCmsBlocks() {
     variants: [...definition.variants],
     variantDescriptions: { ...(definition.variantDescriptions || {}) },
     defaultVariant: definition.defaultVariant,
-    defaultProps: { ...definition.defaultProps },
+    defaultProps: cloneValue(definition.defaultProps || {}),
   }));
 }
 
@@ -424,7 +576,7 @@ export function buildBlockForVariant(type, variant) {
   return {
     type: definition.type,
     variant: normalizeVariant(type, variant),
-    props: { ...definition.defaultProps },
+    props: cloneValue(definition.defaultProps || {}),
     label: definition.label,
   };
 }
@@ -445,10 +597,10 @@ export function buildPreviewBlockForVariant(type, variant) {
 
   return {
     ...block,
-    props: {
-      ...block.props,
-      ...previewProps,
-    },
+    props: cloneValue({
+      ...(definition.defaultProps || {}),
+      ...(previewProps || {}),
+    }),
   };
 }
 
@@ -461,7 +613,39 @@ export function getVariantDescription(type, variant) {
 
 export function getBlockEditorSchema(type) {
   const definition = getCmsBlockDefinition(type);
-  return definition?.schema ? definition.schema.map((field) => ({ ...field })) : [];
+  return definition?.schema ? cloneValue(definition.schema) : [];
+}
+
+export function normalizeBlockProps(type, props) {
+  const definition = getCmsBlockDefinition(type);
+  if (!definition) return {};
+  if (typeof definition.normalizeProps === "function") {
+    return definition.normalizeProps(props);
+  }
+  return props && typeof props === "object" && !Array.isArray(props) ? props : {};
+}
+
+export function evaluateBlockReadiness(block) {
+  const definition = getCmsBlockDefinition(block?.type);
+  if (!definition) {
+    return {
+      readyForDraft: true,
+      readyForPublish: true,
+      missingRequiredFields: [],
+      missingCount: 0,
+    };
+  }
+
+  if (typeof definition.evaluateReadiness === "function") {
+    return definition.evaluateReadiness(block?.props || {});
+  }
+
+  return {
+    readyForDraft: true,
+    readyForPublish: true,
+    missingRequiredFields: [],
+    missingCount: 0,
+  };
 }
 
 export function isSupportedBlockType(type) {

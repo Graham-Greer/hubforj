@@ -36,7 +36,7 @@
 }
 
 .label {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   line-height: var(--line-height-snug);
 }
 

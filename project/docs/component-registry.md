@@ -146,6 +146,8 @@ Columns:
 | patterns | CMS BlockPicker | `src/components/patterns/cms/block-picker/BlockPicker.jsx` | Select section type to add | n/a | `availableBlocks`, `onPick` | Drawer/Modal, Card | CMS/SuperAdmin |
 | patterns | CMS BlockList | `src/components/patterns/cms/block-list/BlockList.jsx` | Reorder/delete blocks | n/a | `blocks`, `onMove`, `onRemove`, `onSelect` | Card, Button, Icon | CMS/SuperAdmin |
 | patterns | CMS BlockEditor | `src/components/patterns/cms/block-editor/BlockEditor.jsx` | Structured prop forms per block | n/a | `block`, `schema`, `onChange` | Field controls | CMS/SuperAdmin |
+| patterns | CMS RepeatableListEditor | `src/components/patterns/cms/repeatable-list-editor/RepeatableListEditor.jsx` | Reusable repeatable item editor with vertical DnD and destructive confirm | n/a | `items`, `onChange`, `renderItemFields`, `addLabel` | ConfirmModal, Button, dnd-kit | CMS/SuperAdmin |
+| patterns | CMS DraggableAccordionItem | `src/components/patterns/cms/draggable-accordion-item/DraggableAccordionItem.jsx` | Reusable draggable row shell with collapsible content for repeatable CMS item editing | n/a | `title`, `subtitle`, `statusLabel`, `actionItems`, `dragAttributes`, `dragListeners` | Badge, Button, Icon | CMS/SuperAdmin |
 | patterns | CMS PublishBar | `src/components/patterns/cms/publish-bar/PublishBar.jsx` | Draft/publish controls | n/a | `status`, `onPublish`, `onUnpublish?` | Button, Badge | CMS/SuperAdmin |
 | patterns | CMS MediaLibrary | `src/components/patterns/cms/media-library/MediaLibrary.jsx` | Select/upload media | n/a | `media`, `onSelect`, `onUpload` | FileUpload, AppImage | CMS/SuperAdmin |
 | patterns | CMS PageSettingsForm | `src/components/patterns/cms/page-settings/PageSettingsForm.jsx` | title/slug/seo/status | n/a | `value`, `onChange` | Form controls | CMS/SuperAdmin |
@@ -162,7 +164,7 @@ All sections are CMS-renderable blocks. Each has explicit variants.
 | sections | RichTextSection | `src/components/sections/rich-text/RichTextSection.jsx` | Rich text content block | `default` | `content` (WYSIWYG) | WYSIWYG renderer | Public/Member/CMS |
 | sections | CTASection | `src/components/sections/cta/CTASection.jsx` | CTA block | `centered`, `split` | `title`, `body`, `ctaText`, `ctaHref`, `imageId?` | Button, AppImage | Public/Member/CMS |
 | sections | FeatureGridSection | `src/components/sections/feature-grid/FeatureGridSection.jsx` | Feature grid | `2col`, `3col`, `4col` | `title`, `items[]` | Card, Icon, Text | Public/Member/CMS |
-| sections | FAQSection | `src/components/sections/faq/FAQSection.jsx` | FAQ section | `compact`, `detailed` | `title?`, `items[]` | Accordion | Public/Member/CMS |
+| sections | AccordionSection | `src/components/sections/accordion/AccordionSection.jsx` | Domain-neutral accordion section for FAQs, policies, and structured explainers | `default` | `eyebrow?`, `title?`, `description?`, `items[]` | Accordion, Wysiwyg renderer | Public/Member/CMS |
 | sections | EventListSection | `src/components/sections/event-list/EventListSection.jsx` | Events list block | `upcoming`, `featured`, `category` | `title?`, `category?`, `limit?` | Card, Badge, Link | Public/Member/CMS |
 | sections | ContactSection | `src/components/sections/contact/ContactSection.jsx` | Contact block | `card`, `split` | `address`, `email`, `phone?`, `mapLink?` | Card, Text | Public/Member/CMS |
 | sections | LogoMarqueeSection | `src/components/sections/logo-marquee/LogoMarqueeSection.jsx` | Logo display | `marquee`, `grid` | `logos[]` | AppImage, Grid/Inline | Public/Member/CMS |

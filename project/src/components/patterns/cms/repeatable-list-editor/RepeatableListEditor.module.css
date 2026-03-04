@@ -1,0 +1,40 @@
+.root {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.item {
+  list-style: none;
+  transition:
+    transform 180ms var(--ease-standard),
+    filter 160ms var(--ease-standard);
+}
+
+.dragging {
+  z-index: var(--z-dropdown);
+  filter: drop-shadow(0 10px 16px rgba(17, 24, 39, 0.16));
+}
+
+.over {
+  transform: scale(1.01);
+}
+
+.empty {
+  margin: 0;
+  color: var(--text-muted);
+}

@@ -36,6 +36,7 @@ async function createPageAction(formData) {
         description: "",
         imageMediaId: "",
       },
+      parentPageId: "",
       headerIdOverride: "",
       footerIdOverride: "",
       draftComposition: [],

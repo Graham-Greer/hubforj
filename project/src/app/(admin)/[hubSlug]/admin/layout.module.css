@@ -48,7 +48,7 @@
 }
 
 .collapseButton span {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
 }
 
 .shell {

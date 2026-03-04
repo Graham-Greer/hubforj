@@ -1,8 +1,22 @@
-import "server-only";
+try {
+  await import("server-only");
+} catch {
+  // Unit tests run in plain Node where this package may not be installed.
+}
 import crypto from "node:crypto";
-import { getDataProvider } from "@/lib/data/shared/provider";
-import { getMediaByIds } from "@/lib/data/media/media-repository";
-import { normalizeFooterOverride, normalizeHeaderOverride } from "@/lib/data/pages/layout-config";
+import { getDataProvider } from "../shared/provider.js";
+import { getMediaByIds } from "../media/media-repository.js";
+import { normalizeFooterOverride, normalizeHeaderOverride } from "./layout-config.js";
+import { assertCompositionPublishReady } from "../../validation/pages.js";
+
+const MAX_PAGE_TREE_DEPTH = 4;
+const STALE_DRAFT_ERROR_CODE = "STALE_DRAFT";
+
+function createStaleDraftError() {
+  const error = new Error("This page was updated by another session. Reload latest draft and retry.");
+  error.code = STALE_DRAFT_ERROR_CODE;
+  return error;
+}
 
 function pageToViewModel(page) {
   return {
@@ -18,6 +32,7 @@ function pageToViewModel(page) {
       description: String(page.seo?.description || "").trim(),
       imageMediaId: String(page.seo?.imageMediaId || "").trim(),
     },
+    parentPageId: String(page.parentPageId || "").trim(),
     headerIdOverride: normalizeHeaderOverride(page.headerIdOverride),
     footerIdOverride: normalizeFooterOverride(page.footerIdOverride),
     createdAt: page.createdAt,
@@ -26,6 +41,57 @@ function pageToViewModel(page) {
     createdBy: page.createdBy || null,
     updatedBy: page.updatedBy || null,
   };
+}
+
+function computePageDepth(pageId, pageById) {
+  let depth = 0;
+  let cursor = String(pageId || "").trim();
+  const seen = new Set();
+
+  while (cursor) {
+    if (seen.has(cursor)) {
+      throw new Error("Page hierarchy contains a cycle.");
+    }
+    seen.add(cursor);
+    depth += 1;
+    const next = pageById.get(cursor);
+    cursor = String(next?.parentPageId || "").trim();
+  }
+
+  return depth;
+}
+
+async function assertValidParentPageSelection(hubId, pageId, parentPageId) {
+  const normalizedParentId = String(parentPageId || "").trim();
+  if (!normalizedParentId) return;
+  if (pageId && normalizedParentId === pageId) {
+    throw new Error("A page cannot be its own parent.");
+  }
+
+  const pages = await listPagesByHub(hubId);
+  const pageById = new Map(pages.map((page) => [page.id, page]));
+  if (!pageById.has(normalizedParentId)) {
+    throw new Error("Selected parent page was not found for this hub.");
+  }
+
+  if (pageId) {
+    let cursor = normalizedParentId;
+    const seen = new Set();
+    while (cursor) {
+      if (cursor === pageId) {
+        throw new Error("Cannot set parent page: cyclical hierarchy detected.");
+      }
+      if (seen.has(cursor)) break;
+      seen.add(cursor);
+      const node = pageById.get(cursor);
+      cursor = String(node?.parentPageId || "").trim();
+    }
+  }
+
+  const resultingDepth = computePageDepth(normalizedParentId, pageById) + 1;
+  if (resultingDepth > MAX_PAGE_TREE_DEPTH) {
+    throw new Error(`Page hierarchy depth cannot exceed ${MAX_PAGE_TREE_DEPTH} levels.`);
+  }
 }
 
 function collectMediaIdsFromValue(value, ids) {
@@ -247,6 +313,7 @@ export async function createPage(hubId, payload, actorId = "system") {
   const now = new Date().toISOString();
 
   await assertPageSlugUnique(provider, hubId, payload.slug);
+  await assertValidParentPageSelection(hubId, null, payload.parentPageId);
   const mediaIds = collectMediaIdsForPage(payload);
   await assertReferencedMediaExists(hubId, mediaIds);
 
@@ -281,12 +348,17 @@ export async function createPage(hubId, payload, actorId = "system") {
   return pageToViewModel(row);
 }
 
-export async function savePageDraft(hubId, pageId, patch, actorId = "system") {
+export async function savePageDraft(hubId, pageId, patch, actorId = "system", options = {}) {
   const provider = getDataProvider();
   const existing = await getPageById(hubId, pageId);
   if (!existing) return null;
+  const expectedUpdatedAt = String(options?.expectedUpdatedAt || "").trim();
+  if (expectedUpdatedAt && String(existing.updatedAt || "").trim() !== expectedUpdatedAt) {
+    throw createStaleDraftError();
+  }
 
   await assertPageSlugUnique(provider, hubId, patch.slug, pageId);
+  await assertValidParentPageSelection(hubId, pageId, patch.parentPageId);
 
   const nextCandidate = {
     ...existing,
@@ -326,9 +398,14 @@ export async function savePageDraft(hubId, pageId, patch, actorId = "system") {
   return pageToViewModel(next);
 }
 
-export async function publishPage(hubId, pageId, actorId = "system") {
+export async function publishPage(hubId, pageId, actorId = "system", options = {}) {
   const existing = await getPageById(hubId, pageId);
   if (!existing) return null;
+  const expectedUpdatedAt = String(options?.expectedUpdatedAt || "").trim();
+  if (expectedUpdatedAt && String(existing.updatedAt || "").trim() !== expectedUpdatedAt) {
+    throw createStaleDraftError();
+  }
+  assertCompositionPublishReady(existing.draftComposition || []);
 
   const mediaIds = collectMediaIdsForPage({
     draftComposition: existing.draftComposition,
@@ -347,5 +424,5 @@ export async function publishPage(hubId, pageId, actorId = "system") {
     updatedBy: actorId,
   };
 
-  return savePageDraft(hubId, pageId, patch, actorId);
+  return savePageDraft(hubId, pageId, patch, actorId, { expectedUpdatedAt: String(existing.updatedAt || "") });
 }

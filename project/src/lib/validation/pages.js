@@ -1,4 +1,9 @@
-import { isSupportedBlockType, normalizeVariant } from "../data/pages/block-registry.js";
+import {
+  evaluateBlockReadiness,
+  isSupportedBlockType,
+  normalizeBlockProps,
+  normalizeVariant,
+} from "../data/pages/block-registry.js";
 import {
   normalizeFooterOverride,
   normalizeHeaderOverride,
@@ -50,9 +55,7 @@ function normalizeBlock(input, index) {
     throw new Error(`composition[${index}] is missing a stable block id.`);
   }
   const label = String(value.label || "").trim();
-  const props = value.props && typeof value.props === "object" && !Array.isArray(value.props)
-    ? value.props
-    : {};
+  const props = normalizeBlockProps(type, value.props);
 
   return {
     id,
@@ -92,6 +95,7 @@ export function validatePageSettingsInput(input) {
     title,
     slug: validatePageSlug(payload.slug),
     status,
+    parentPageId: String(payload.parentPageId || "").trim(),
     seo: normalizeSeo(payload.seo),
     headerIdOverride: normalizeHeaderOverride(payload.headerIdOverride),
     footerIdOverride: normalizeFooterOverride(payload.footerIdOverride),
@@ -105,6 +109,22 @@ export function validateCompositionInput(composition) {
   }
 
   return value.map((block, index) => normalizeBlock(block, index));
+}
+
+export function assertCompositionPublishReady(composition) {
+  const normalized = validateCompositionInput(composition);
+  const blocking = normalized
+    .map((block) => ({
+      block,
+      readiness: evaluateBlockReadiness(block),
+    }))
+    .find(({ readiness }) => !readiness.readyForPublish);
+
+  if (!blocking) return normalized;
+
+  const label = blocking.block.label || blocking.block.type;
+  const reason = blocking.readiness.missingRequiredFields?.[0] || "Fields required.";
+  throw new Error(`Cannot publish page: ${label} is incomplete. ${reason}`);
 }
 
 export function validateCreatePageInput(input) {

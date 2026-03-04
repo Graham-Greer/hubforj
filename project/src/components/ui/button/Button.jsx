@@ -17,6 +17,7 @@ function ButtonInner({ children, loading, leftIcon, rightIcon, icon, iconOnly, .
 
 export default function Button({
   href,
+  external = false,
   loading = false,
   fullWidth = false,
   leftIcon,
@@ -45,6 +46,24 @@ export default function Button({
     .join(" ");
 
   if (href) {
+    if (external) {
+      return (
+        <a
+          className={classes}
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={resolvedAriaLabel}
+        >
+          {loading ? <Spinner size="sm" ariaLabel="Loading" /> : null}
+          {!loading && leftIcon ? <Icon name={leftIcon} decorative /> : null}
+          {!loading && icon ? <Icon name={icon} decorative /> : null}
+          {!iconOnly ? <span>{children}</span> : null}
+          {!loading && rightIcon ? <Icon name={rightIcon} decorative /> : null}
+        </a>
+      );
+    }
+
     return (
       <NextLink className={classes} href={href} aria-label={resolvedAriaLabel}>
         {loading ? <Spinner size="sm" ariaLabel="Loading" /> : null}

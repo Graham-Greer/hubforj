@@ -280,6 +280,7 @@ if (!root.__communityAppMemoryDb) {
         description: "Learn more about our mission and programs.",
         imageMediaId: "media_demo_hero",
       },
+      parentPageId: "",
       headerIdOverride: "",
       footerIdOverride: "",
       createdAt: new Date().toISOString(),

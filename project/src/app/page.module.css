@@ -13,7 +13,7 @@
   min-height: 100vh;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-geist-sans);
+  font-family: var(--font-family-sans);
   background-color: var(--background);
 }
 
@@ -39,9 +39,9 @@
 
 .intro h1 {
   max-width: 320px;
-  font-size: 40px;
+  font-size: var(--font-size-4xl);
   font-weight: 600;
-  line-height: 48px;
+  line-height: var(--line-height-snug);
   letter-spacing: -2.4px;
   text-wrap: balance;
   color: var(--text-primary);
@@ -49,8 +49,8 @@
 
 .intro p {
   max-width: 440px;
-  font-size: 18px;
-  line-height: 32px;
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-relaxed);
   text-wrap: balance;
   color: var(--text-secondary);
 }
@@ -66,7 +66,7 @@
   width: 100%;
   max-width: 440px;
   gap: 16px;
-  font-size: 14px;
+  font-size: var(--font-size-sm);
 }
 
 .ctas a {
@@ -116,8 +116,8 @@ a.secondary {
   }
 
   .intro h1 {
-    font-size: 32px;
-    line-height: 40px;
+    font-size: var(--font-size-3xl);
+    line-height: var(--line-height-snug);
     letter-spacing: -1.92px;
   }
 }

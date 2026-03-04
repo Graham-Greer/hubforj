@@ -30,6 +30,14 @@ Each page has:
 - Preview uses draft and must be no-store.
 - Live site uses published and should be cached/revalidated.
 
+### Concurrency and stale-edit recovery (implemented)
+- Save draft and publish flows enforce optimistic concurrency using the page `updatedAt` snapshot from the editor session.
+- If the server detects stale editor state, mutation is rejected with a stale conflict error.
+- CMS editor shows explicit recovery guidance and action:
+  - message: page changed in another session
+  - action: `Reload latest draft`
+- Editor does not silently overwrite newer server state.
+
 ## Block registry approach (locked)
 - Blocks correspond to **section components** registered in code.
 - Each block has:
@@ -47,6 +55,16 @@ Each page has:
   - clickable variant cards with variant name + description
   - live preview of selected variant rendered with mock data
 - Section is added only when user clicks `Add section to page`.
+
+### Section editing guard behavior (implemented)
+- Section settings remain hidden unless user opens a section (or immediately after adding a new section).
+- Internal CMS transitions that would discard unsaved section edits use confirmation flow.
+- Route-level leave transitions (internal nav, browser back/refresh) use unsaved-change protection.
+
+### Performance guardrails (implemented)
+- Heavy CMS editor panels are lazy-mounted (section editor and media library panels).
+- Non-active section editors remain unmounted.
+- Virtualization is deferred unless profiling demonstrates necessity.
 
 ## Headers/Footers as CMS-selectable sections (locked)
 Hub config stores:

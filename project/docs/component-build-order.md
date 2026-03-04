@@ -234,7 +234,7 @@ Core blocks:
 4) `sections/rich-text/RichTextSection`
 5) `sections/cta/CTASection` (variants: centered|split)
 6) `sections/feature-grid/FeatureGridSection` (variants: 2col|3col|4col)
-7) `sections/faq/FAQSection` (variants: compact|detailed)
+7) `sections/accordion/AccordionSection` (variant: default)
 8) `sections/event-list/EventListSection` (variants: upcoming|featured|category)
 9) `sections/contact/ContactSection` (variants: card|split)
 10) `sections/logo-marquee/LogoMarqueeSection` (variants: marquee|grid)

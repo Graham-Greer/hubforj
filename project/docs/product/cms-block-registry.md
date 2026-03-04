@@ -30,11 +30,19 @@ Example:
     "heading": "Welcome",
     "subheading": "Join the community",
     "imageMediaId": "media_abc",
-    "ctaText": "Become a member",
-    "ctaHref": "/join"
+    "ctas": [
+      { "label": "Become a member", "href": "/join" },
+      { "label": "Contact us", "href": "https://example.org/contact" }
+    ]
   }
 }
 ```
+
+CTA contract (M3 foundation):
+- CTA-capable sections support `ctas[]` with up to 2 items.
+- CTA fields are optional until a CTA is added.
+- Each CTA requires `label` and `href`.
+- `href` must be internal (`/path`) or external (`http/https`).
 
 ## Draft vs published (locked)
 - Pages store `draftComposition[]` and `publishedComposition[]`.
@@ -49,7 +57,7 @@ All sections listed under “Sections (CMS Registry Blocks)” in `docs/componen
 - RichTextSection
 - CTASection (centered|split)
 - FeatureGridSection (2col|3col|4col)
-- FAQSection (compact|detailed)
+- AccordionSection (default)
 - EventListSection (upcoming|featured|category)
 - ContactSection (card|split)
 - LogoMarqueeSection (marquee|grid)

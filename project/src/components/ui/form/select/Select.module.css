@@ -16,6 +16,7 @@
   background: var(--field-bg);
   color: var(--field-fg);
   font: inherit;
+  font-size: var(--font-size-sm);
 }
 
 .root:hover {

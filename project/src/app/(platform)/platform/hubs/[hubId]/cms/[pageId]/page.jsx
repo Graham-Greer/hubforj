@@ -14,7 +14,7 @@ import {
   updateMediaFolder,
 } from "@/lib/data/media/media-repository";
 import { listCmsBlocks } from "@/lib/data/pages/block-registry";
-import { getPageById, publishPage, savePageDraft } from "@/lib/data/pages/page-repository";
+import { getPageById, listPagesByHub, publishPage, savePageDraft } from "@/lib/data/pages/page-repository";
 import { validateCompositionInput, validateUpdatePageDraftInput } from "@/lib/validation/pages";
 import CmsPageEditorClient from "../_components/CmsPageEditorClient";
 import styles from "./page.module.css";
@@ -39,6 +39,7 @@ async function saveDraftAction(formData) {
   const session = await requireSessionRole("superadmin", "/platform/sign-in");
   const hubId = String(formData.get("hubId") || "").trim();
   const pageId = String(formData.get("pageId") || "").trim();
+  const expectedUpdatedAt = String(formData.get("expectedUpdatedAt") || "").trim();
 
   try {
     const settings = parseJson(formData.get("settings"), {});
@@ -50,12 +51,15 @@ async function saveDraftAction(formData) {
     });
     delete patch.status;
 
-    await savePageDraft(hubId, pageId, patch, session?.uid || "local-superadmin");
+    await savePageDraft(hubId, pageId, patch, session?.uid || "local-superadmin", {
+      expectedUpdatedAt,
+    });
     redirect(`/platform/hubs/${hubId}/cms/${pageId}?success=draftSaved`);
   } catch (error) {
     rethrowIfRedirectError(error);
     const message = encodeURIComponent(error?.message || "Unable to save page draft.");
-    redirect(`/platform/hubs/${hubId}/cms/${pageId}?error=${message}`);
+    const errorCode = encodeURIComponent(String(error?.code || ""));
+    redirect(`/platform/hubs/${hubId}/cms/${pageId}?error=${message}&errorCode=${errorCode}`);
   }
 }
 
@@ -65,14 +69,18 @@ async function publishPageAction(formData) {
   const session = await requireSessionRole("superadmin", "/platform/sign-in");
   const hubId = String(formData.get("hubId") || "").trim();
   const pageId = String(formData.get("pageId") || "").trim();
+  const expectedUpdatedAt = String(formData.get("expectedUpdatedAt") || "").trim();
 
   try {
-    await publishPage(hubId, pageId, session?.uid || "local-superadmin");
+    await publishPage(hubId, pageId, session?.uid || "local-superadmin", {
+      expectedUpdatedAt,
+    });
     redirect(`/platform/hubs/${hubId}/cms/${pageId}?success=published`);
   } catch (error) {
     rethrowIfRedirectError(error);
     const message = encodeURIComponent(error?.message || "Unable to publish page.");
-    redirect(`/platform/hubs/${hubId}/cms/${pageId}?error=${message}`);
+    const errorCode = encodeURIComponent(String(error?.code || ""));
+    redirect(`/platform/hubs/${hubId}/cms/${pageId}?error=${message}&errorCode=${errorCode}`);
   }
 }
 
@@ -175,8 +183,16 @@ export default async function HubCmsPageEditorPage({ params, searchParams }) {
     listMediaFoldersByHub(hub.id),
     Promise.resolve(listCmsBlocks()),
   ]);
+  const pages = await listPagesByHub(hub.id);
+  const parentPageOptions = pages
+    .filter((candidate) => candidate.id !== page.id)
+    .map((candidate) => ({
+      value: candidate.id,
+      label: `${candidate.title} (/pages/${candidate.slug})`,
+    }));
 
   const errorMessage = resolvedSearchParams?.error ? decodeURIComponent(resolvedSearchParams.error) : null;
+  const errorCode = String(resolvedSearchParams?.errorCode || "").trim();
   const success = String(resolvedSearchParams?.success || "").trim();
 
   return (
@@ -191,7 +207,9 @@ export default async function HubCmsPageEditorPage({ params, searchParams }) {
       <CmsPageEditorClient
         hub={hub}
         initialPage={page}
+        initialErrorCode={errorCode}
         availableBlocks={availableBlocks}
+        parentPageOptions={parentPageOptions}
         media={media}
         mediaFolders={mediaFolders}
         saveDraftAction={saveDraftAction}

@@ -9,7 +9,7 @@ import {
   listHeaderSectionOptions,
 } from "@/lib/data/pages/layout-config";
 
-export default function PageSettingsForm({ value = {}, onChange, onOpenMediaLibrary, columns = 2 }) {
+export default function PageSettingsForm({ value = {}, onChange, onOpenMediaLibrary, pageOptions = [], columns = 2 }) {
   const seo = value.seo || {};
   const headerOptions = listHeaderSectionOptions();
   const footerOptions = listFooterSectionOptions();
@@ -31,6 +31,19 @@ export default function PageSettingsForm({ value = {}, onChange, onOpenMediaLibr
             { label: "Published", value: "published" },
           ]}
           disabled
+        />
+      </Field>
+      <Field
+        id="parentPageId"
+        label="Parent page"
+        hint="Optional. Choose a parent to nest this page in the page hierarchy."
+      >
+        <Select
+          id="parentPageId"
+          value={value.parentPageId || ""}
+          options={pageOptions}
+          onChange={(nextValue) => onChange?.({ ...value, parentPageId: nextValue })}
+          placeholder="No parent"
         />
       </Field>
       <Field id="seoTitle" label="SEO title">

@@ -12,11 +12,14 @@
 .variant_solid.tone_neutral { background: var(--color-neutral-900); color: var(--text-inverse); }
 .variant_solid.tone_brand { background: var(--color-primary-600); color: var(--text-inverse); }
 .variant_solid.tone_danger { background: var(--color-danger-500); color: var(--text-inverse); }
+.variant_solid.tone_success { background: var(--color-success); color: var(--text-inverse); }
 
 .variant_soft.tone_neutral { background: var(--surface-2); color: var(--text-primary); }
 .variant_soft.tone_brand { background: var(--color-primary-50); color: var(--color-primary-800); }
 .variant_soft.tone_danger { background: var(--color-danger-50); color: var(--color-danger-900); }
+.variant_soft.tone_success { background: color-mix(in srgb, var(--color-success) 16%, var(--surface-1)); color: var(--color-success); }
 
 .variant_outline.tone_neutral { border-color: var(--border-strong); color: var(--text-primary); }
 .variant_outline.tone_brand { border-color: var(--color-primary-300); color: var(--color-primary-700); }
 .variant_outline.tone_danger { border-color: var(--color-danger-500); color: var(--color-danger-500); }
+.variant_outline.tone_success { border-color: var(--color-success); color: var(--color-success); }

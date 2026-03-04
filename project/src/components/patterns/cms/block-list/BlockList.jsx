@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -14,12 +14,14 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
   useSortable,
-  arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Icon from "../../../primitives/icon/Icon";
 import Button from "../../../ui/button/Button";
+import Badge from "../../../ui/badge/Badge";
 import ConfirmModal from "../../../ui/confirm-modal/ConfirmModal";
+import useHydrated from "@/hooks/useHydrated";
+import { reorderItemsByIds } from "@/lib/cms/editor-interactions";
 import styles from "./BlockList.module.css";
 
 function restrictToVerticalAxis({ transform }) {
@@ -29,7 +31,7 @@ function restrictToVerticalAxis({ transform }) {
   };
 }
 
-function SortableItem({ block, onSelect, onRemove }) {
+function SortableItem({ block, onSelect, onRemove, onEdit, getReadiness }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging, isOver } = useSortable({
     id: block.id,
   });
@@ -37,6 +39,10 @@ function SortableItem({ block, onSelect, onRemove }) {
     transform: CSS.Transform.toString(transform),
     transition,
   };
+
+  const readiness = getReadiness?.(block);
+  const ready = readiness?.readyForDraft ?? true;
+  const missingCount = readiness?.missingCount ?? 0;
 
   return (
     <li
@@ -54,13 +60,23 @@ function SortableItem({ block, onSelect, onRemove }) {
         <Icon name="drag_indicator" size="md" tone="muted" decorative />
       </button>
       <button type="button" className={styles.selectButton} onClick={() => onSelect?.(block.id)}>
-        {block.label || block.type}
+        <span>{block.label || block.type}</span>
+        <Badge className={styles.statusBadge} size="sm" tone={ready ? "success" : "danger"}>
+          {ready ? "Ready" : `Fields required (${missingCount})`}
+        </Badge>
       </button>
       <Button
         type="button"
         variant="tertiary"
+        icon="edit"
+        ariaLabel={`Edit ${block.label || block.type}`}
+        onClick={() => onEdit?.(block.id)}
+      />
+      <Button
+        type="button"
+        variant="tertiary"
         intent="danger"
-        icon={<Icon name="delete" size="sm" decorative />}
+        icon="delete"
         ariaLabel={`Remove ${block.label || block.type}`}
         onClick={() => onRemove?.(block.id)}
       />
@@ -68,7 +84,11 @@ function SortableItem({ block, onSelect, onRemove }) {
   );
 }
 
-function StaticItem({ block, onSelect, onRemove }) {
+function StaticItem({ block, onSelect, onRemove, onEdit, getReadiness }) {
+  const readiness = getReadiness?.(block);
+  const ready = readiness?.readyForDraft ?? true;
+  const missingCount = readiness?.missingCount ?? 0;
+
   return (
     <li className={styles.item}>
       <button
@@ -80,13 +100,23 @@ function StaticItem({ block, onSelect, onRemove }) {
         <Icon name="drag_indicator" size="md" tone="muted" decorative />
       </button>
       <button type="button" className={styles.selectButton} onClick={() => onSelect?.(block.id)}>
-        {block.label || block.type}
+        <span>{block.label || block.type}</span>
+        <Badge className={styles.statusBadge} size="sm" tone={ready ? "success" : "danger"}>
+          {ready ? "Ready" : `Fields required (${missingCount})`}
+        </Badge>
       </button>
       <Button
         type="button"
         variant="tertiary"
+        icon="edit"
+        ariaLabel={`Edit ${block.label || block.type}`}
+        onClick={() => onEdit?.(block.id)}
+      />
+      <Button
+        type="button"
+        variant="tertiary"
         intent="danger"
-        icon={<Icon name="delete" size="sm" decorative />}
+        icon="delete"
         ariaLabel={`Remove ${block.label || block.type}`}
         onClick={() => onRemove?.(block.id)}
       />
@@ -94,13 +124,9 @@ function StaticItem({ block, onSelect, onRemove }) {
   );
 }
 
-export default function BlockList({ blocks = [], onMove, onRemove, onSelect }) {
+export default function BlockList({ blocks = [], onMove, onRemove, onSelect, onEdit, getReadiness }) {
   const [pendingRemoveId, setPendingRemoveId] = useState("");
-  const [isHydrated, setIsHydrated] = useState(false);
-
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
+  const isHydrated = useHydrated();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -113,12 +139,8 @@ export default function BlockList({ blocks = [], onMove, onRemove, onSelect }) {
 
   const onDragEnd = (event) => {
     const { active, over } = event;
-    if (!over || active.id === over.id) return;
-
-    const oldIndex = blocks.findIndex((item) => item.id === active.id);
-    const newIndex = blocks.findIndex((item) => item.id === over.id);
-    if (oldIndex < 0 || newIndex < 0) return;
-    const reordered = arrayMove(blocks, oldIndex, newIndex);
+    const reordered = reorderItemsByIds(blocks, active?.id, over?.id);
+    if (reordered === blocks) return;
     onMove?.(reordered);
   };
 
@@ -147,7 +169,9 @@ export default function BlockList({ blocks = [], onMove, onRemove, onSelect }) {
                   key={block.id}
                   block={block}
                   onSelect={onSelect}
+                  onEdit={onEdit}
                   onRemove={() => setPendingRemoveId(block.id)}
+                  getReadiness={getReadiness}
                 />
               ))}
             </ul>
@@ -160,7 +184,9 @@ export default function BlockList({ blocks = [], onMove, onRemove, onSelect }) {
               key={block.id}
               block={block}
               onSelect={onSelect}
+              onEdit={onEdit}
               onRemove={() => setPendingRemoveId(block.id)}
+              getReadiness={getReadiness}
             />
           ))}
         </ul>

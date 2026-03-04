@@ -21,6 +21,18 @@ Authority alignment:
 
 ## Locked decisions from planning
 
+### Pilot Gate (AccordionSection only — Phase A hard constraint)
+
+For Phase A (CMS editor foundation), Codex MUST implement editor foundations using ONLY the `AccordionSection` pilot and MUST NOT migrate other sections until the Phase A exit criteria are met.
+
+Reference:
+- `docs/roadmap/cms-accordionsection-pilot.md`
+
+Hard rules:
+- No multi-section contract migrations in Phase A.
+- No public-facing visual redesign scope creep in Phase A (contract/editor improvements only).
+- Pilot must pass end-to-end: schema → editor → preview → publish gate → renderer, with tests.
+
 ## 1) Data contract strategy (clean break)
 - Project is early-stage with no legacy CMS content migration requirement.
 - Do NOT keep delimiter-string fallbacks (e.g. `itemsText` parsing) once structured contracts are implemented.
@@ -154,6 +166,12 @@ Authority alignment:
 - Maintain layering integrity:
   - primitives -> ui -> patterns -> sections -> routes
 
+Implementation alignment note:
+- Implemented in CMS page editor:
+  - lazy-mount heavy editor panels (`BlockEditor`, `MediaLibrary`)
+  - keep non-active section editors unmounted
+  - virtualization intentionally deferred pending profiling evidence
+
 ## 8.1) Large-page performance guardrails
 - Ensure editor remains responsive with large section counts:
   - avoid mounting all section edit surfaces simultaneously
@@ -163,6 +181,11 @@ Authority alignment:
 ## 8.2) Concurrency safety
 - Add optimistic concurrency/version protection on save/publish to avoid silent overwrite.
 - Provide conflict UI when stale editor state attempts to save over newer server state.
+
+Implementation alignment note:
+- Implemented in CMS page editor:
+  - optimistic concurrency precondition via editor session `updatedAt`
+  - stale conflict handling with explicit recovery action (`Reload latest draft`)
 
 ## 9) Page hierarchy (required early)
 - Add page settings support for optional parent page selection (`parentPageId`).
@@ -197,6 +220,12 @@ Authority alignment:
   - repeatable item add/remove/reorder
   - keyboard and pointer DnD behavior
   - destructive action confirmation flows
+
+Implementation alignment note:
+- Added unit-level interaction contract coverage for:
+  - repeatable item add/update/remove helpers
+  - DnD reorder behavior contract (pointer/keyboard parity at reorder layer)
+  - dirty-state transition guard helper behavior and pending transition execution
 
 ## 12) Content governance helpers
 - Provide reusable helpers for:

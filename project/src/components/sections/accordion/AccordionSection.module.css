@@ -1,0 +1,10 @@
+.root {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: var(--font-size-sm);
+}
