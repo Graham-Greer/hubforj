@@ -165,7 +165,7 @@ test("rules harness boots", async () => {
       title: "Draft",
       slug: "draft-only",
       status: "draft",
-      draftComposition: [{ id: "blk_2", type: "RichTextSection", variant: "default", props: {} }],
+      draftComposition: [{ id: "blk_2", type: "AccordionSection", variant: "default", props: {} }],
       publishedComposition: [],
       seo: { title: "Draft", description: "Draft page", imageMediaId: "" },
       createdAt: "2026-01-10T09:00:00.000Z",

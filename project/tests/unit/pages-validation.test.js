@@ -48,7 +48,7 @@ test("validateCompositionInput requires stable block id", () => {
 
 test("validateCompositionInput normalizes unsupported variants to default", () => {
   const [block] = validateCompositionInput([
-    { id: "blk_1", type: "HeroSection", variant: "invalid", props: { heading: "x" } },
+    { id: "blk_1", type: "HeroSection", variant: "invalid", props: { title: "x" } },
   ]);
 
   assert.equal(block.variant, "centered");
@@ -99,7 +99,7 @@ test("validateCompositionInput enforces CTA href scheme rules", () => {
       type: "HeroSection",
       variant: "centered",
       props: {
-        heading: "Welcome",
+        title: "Welcome",
         ctas: [{ label: "Join", href: "javascript:alert(1)" }],
       },
     },
@@ -119,7 +119,7 @@ test("validateCompositionInput rejects empty CTA rows once added", () => {
       type: "HeroSection",
       variant: "centered",
       props: {
-        heading: "Welcome",
+        title: "Welcome",
         ctas: [{ label: "", href: "" }],
       },
     },

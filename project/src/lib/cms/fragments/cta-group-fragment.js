@@ -1,4 +1,4 @@
-import { isPlainObject, normalizeText, pickFirstText } from "./shared.js";
+import { isPlainObject, normalizeText } from "./shared.js";
 
 const FORBIDDEN_SCHEME_PATTERN = /^(javascript|data|vbscript):/i;
 
@@ -20,18 +20,11 @@ function normalizeCtaItem(input = {}) {
   };
 }
 
-export function normalizeCtaGroup(input, fallback = null) {
+export function normalizeCtaGroup(input) {
   const source = Array.isArray(input) ? input : [];
-  const normalized = source
+  return source
     .map((item) => (isPlainObject(item) ? item : {}))
     .map((item) => normalizeCtaItem(item));
-
-  if (normalized.length) return normalized;
-  if (!isPlainObject(fallback)) return [];
-
-  const label = pickFirstText([fallback.label]);
-  const href = pickFirstText([fallback.href]);
-  return label || href ? [{ label, href, id: "", variant: "" }] : [];
 }
 
 export function assertValidCtaGroup(ctas = [], fieldPrefix = "ctas") {

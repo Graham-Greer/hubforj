@@ -1,6 +1,0 @@
-.root {
-  padding: var(--space-5) var(--space-4);
-  border: var(--border-width-1) solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  background: var(--surface-1);
-}

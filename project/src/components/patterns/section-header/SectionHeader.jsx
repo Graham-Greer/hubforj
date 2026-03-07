@@ -6,7 +6,6 @@ export default function SectionHeader({
   eyebrow,
   title,
   description,
-  subtitle,
   actions,
   titleAs = "h2",
   titleSize = "md",
@@ -15,7 +14,7 @@ export default function SectionHeader({
 }) {
   const resolvedEyebrow = String(eyebrow || "").trim();
   const resolvedTitle = String(title || "").trim();
-  const resolvedDescription = String(description || subtitle || "").trim();
+  const resolvedDescription = String(description || "").trim();
   const resolvedAlign = align === "center" ? "center" : "left";
 
   if (!resolvedEyebrow && !resolvedTitle && !resolvedDescription && !actions) {

@@ -1,4 +1,4 @@
-import { clampText, normalizeText, pickFirstText } from "./shared.js";
+import { clampText, normalizeText } from "./shared.js";
 
 export function createSectionHeaderFragment({
   titleRequired = false,
@@ -8,11 +8,8 @@ export function createSectionHeaderFragment({
   function normalizeHeaderFields(input = {}) {
     return {
       eyebrow: normalizeText(input.eyebrow),
-      title: pickFirstText([input.title, input.heading]),
-      description: clampText(
-        pickFirstText([input.description, input.subheading]),
-        descriptionMaxLength
-      ),
+      title: normalizeText(input.title),
+      description: clampText(normalizeText(input.description), descriptionMaxLength),
     };
   }
 

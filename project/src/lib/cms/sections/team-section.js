@@ -34,10 +34,7 @@ function normalizeTeamLayoutFragment(value = {}) {
 export function normalizeTeamSectionProps(props) {
   const value = props && typeof props === "object" && !Array.isArray(props) ? props : {};
   const header = headerFragment.normalizeHeaderFields(value);
-  const ctas = normalizeCtaGroup(value.ctas, {
-    label: value.ctaText,
-    href: value.ctaHref,
-  });
+  const ctas = normalizeCtaGroup(value.ctas);
   if (ctas.length > 2) {
     throw new Error("TeamSection.ctas supports up to two items.");
   }

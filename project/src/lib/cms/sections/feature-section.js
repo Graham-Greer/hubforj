@@ -33,17 +33,12 @@ export function normalizeFeatureSectionProps(props, variant = "centered") {
   const normalizedVariant = normalizeVariant(variant);
   const value = props && typeof props === "object" && !Array.isArray(props) ? props : {};
   const header = headerFragment.normalizeHeaderFields(value);
-  const ctas = normalizeCtaGroup(value.ctas, {
-    label: value.ctaText,
-    href: value.ctaHref,
-  });
+  const ctas = normalizeCtaGroup(value.ctas);
   if (ctas.length > 2) {
     throw new Error("FeatureSection.ctas supports up to two items.");
   }
 
-  const media = normalizeMediaFragment(value.media, {
-    fallbackMediaId: value.imageMediaId,
-  });
+  const media = normalizeMediaFragment(value.media);
   const layout = normalizeSectionLayoutFields(value, normalizedVariant, {
     centeredDefaults: {
       backgroundTone: "surface",

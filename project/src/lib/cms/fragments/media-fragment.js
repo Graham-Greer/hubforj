@@ -3,9 +3,9 @@ import { isPlainObject, normalizeText } from "./shared.js";
 const ALLOWED_MEDIA_KINDS = new Set(["image", "video"]);
 const ALLOWED_MEDIA_ASPECTS = new Set(["auto", "16:9", "4:3", "1:1"]);
 
-export function normalizeMediaFragment(input = {}, { fallbackMediaId = "" } = {}) {
+export function normalizeMediaFragment(input = {}) {
   const source = isPlainObject(input) ? input : {};
-  const mediaId = normalizeText(source.mediaId) || normalizeText(fallbackMediaId);
+  const mediaId = normalizeText(source.mediaId);
   const kind = normalizeText(source.kind);
   const aspect = normalizeText(source.aspect);
 

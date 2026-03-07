@@ -35,8 +35,14 @@
 - `docs/product/events-and-registrations.md`
 - `docs/product/cms-pages.md`
 - `docs/product/cms-block-registry.md`
-- `docs/roadmap/milestones.md`
 - `docs/product/open-questions.md`
+
+## E) Roadmap / Delivery Specs
+- `docs/roadmap/milestones.md`
+- `docs/roadmap/implementation-roadmap.md`
+- `docs/roadmap/section-composition-policy.md`
+- `docs/roadmap/superadmin-cms-ux-upgrade-spec-v2.1-aligned.md`
+- `docs/roadmap/superadmin-cms-ux-upgrade-implementation-checklist-v2.1.md`
 
 Rule:
 - If Codex changes behavior/contracts, it MUST update relevant `docs/product/*.md` in the same cycle.
