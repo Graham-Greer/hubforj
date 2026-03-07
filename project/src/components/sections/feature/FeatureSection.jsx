@@ -17,21 +17,14 @@ export default function FeatureSection({
   mediaPosition = "right",
   splitRatio = "50-50",
   contentAlign = "left",
-  heading,
-  subheading,
-  ctaText,
-  ctaHref,
-  imageMediaId,
   mediaById,
 }) {
-  const normalizedTitle = String(title || heading || "").trim();
-  const normalizedDescription = String(description || subheading || "").trim();
+  const normalizedTitle = String(title || "").trim();
+  const normalizedDescription = String(description || "").trim();
   const normalizedEyebrow = String(eyebrow || "").trim();
-  const normalizedCtas = Array.isArray(ctas) && ctas.length
-    ? ctas
-    : (ctaText && ctaHref ? [{ label: ctaText, href: ctaHref }] : []);
+  const normalizedCtas = Array.isArray(ctas) ? ctas : [];
   const mediaRef = media && typeof media === "object" ? media : {};
-  const mediaId = String(mediaRef.mediaId || imageMediaId || "").trim();
+  const mediaId = String(mediaRef.mediaId || "").trim();
   const selectedMedia = mediaId ? mediaById?.get(mediaId) : null;
   const kind = String(mediaRef.kind || "image").trim() || "image";
   const alt = String(mediaRef.alt || selectedMedia?.alt || normalizedTitle || "Feature media").trim();

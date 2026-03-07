@@ -162,7 +162,9 @@ Before any code:
    - `docs/component-registry.md`
    - `docs/component-build-order.md`
    - `docs/roadmap/section-composition-policy.md`
-   - `docs/roadmap/cms-fragment-catalogue.md` (use fragments; no ad-hoc schemas)
+   - `docs/product/cms-block-registry.md` (fragment-composed block contracts; no ad-hoc schemas)
+   - `docs/roadmap/superadmin-cms-ux-upgrade-spec-v2.1-aligned.md` (if CMS UX/editor surfaces are touched)
+   - `docs/roadmap/superadmin-cms-ux-upgrade-implementation-checklist-v2.1.md` (if CMS UX/editor surfaces are touched)
    - `docs/roadmap/implementation-roadmap.md`
    - Relevant product specs in `docs/product/*` (especially CMS/editor specs and media rules)
    - Relevant firebase specs in `docs/firebase/*` (only if touched)
@@ -179,19 +181,19 @@ Hard enforcement (non-negotiable):
 - Obey build order in `docs/component-build-order.md`.
 - Follow `docs/roadmap/section-composition-policy.md`:
   - semantic sections only; variants are layout-only; no god-section merges.
-- Follow `docs/roadmap/cms-fragment-catalogue.md`:
-  - section schemas MUST compose fragments; do not redefine fragment logic ad-hoc.
+- Follow `docs/product/cms-block-registry.md`:
+  - section/block schemas MUST compose shared fragments; do not redefine fragment logic ad-hoc.
 - This slice MUST NOT modify or migrate unrelated sections.
-- This slice MUST NOT do “visual redesign” beyond what the section doc requires for correct rendering.
-- If a missing fragment is required, Codex MUST propose a doc update to `cms-fragment-catalogue.md` first and ask for approval before implementing it.
+- This slice MUST NOT do broad visual redesign beyond what canonical section contracts and approved UX specs require.
+- If a missing fragment is required, Codex MUST propose doc updates to `docs/product/cms-block-registry.md` and `docs/roadmap/section-composition-policy.md` first and ask for approval before implementing it.
 
 Fragment enforcement (HARD):
-- The section MUST be implemented using fragment-composed schemas per `docs/roadmap/cms-fragment-catalogue.md`.
-- If any required fragment is missing in `src/lib/cms/**`, Codex MUST implement it in this slice exactly as specified in the fragment catalogue.
-- Codex MUST NOT invent new fragment shapes. If the catalogue lacks a needed fragment, Codex MUST propose a catalogue update and ask for approval before coding.
+- The section MUST be implemented using fragment-composed schemas per `docs/product/cms-block-registry.md` and `docs/roadmap/section-composition-policy.md`.
+- If any required fragment is missing in `src/lib/cms/**`, Codex MUST implement it in this slice with a corresponding docs update in the same change.
+- Codex MUST NOT invent undocumented fragment shapes. If canonical docs lack a needed fragment, Codex MUST propose the docs update and ask for approval before coding.
 
 Deliverables for every section migration (required):
-- Implement the section per the section doc:
+- Implement the section per canonical section contracts:
   - schema (single source of truth)
   - editor groups + fields (schema-driven)
   - renderer behavior
@@ -202,19 +204,19 @@ Deliverables for every section migration (required):
   - repeatable editor add/remove/reorder tests (if repeatables)
 - Docs updates in the same change:
   - `docs/product/cms-block-registry.md` updated if block added/changed
-  - `docs/roadmap/cms-fragment-catalogue.md` updated if fragments changed
+  - `docs/roadmap/section-composition-policy.md` updated if fragment composition policy changes
   - any section list/registry docs updated if needed
 
 Precedence (HARD):
-- `docs/roadmap/cms-SECTIONNAME.md` is the source of truth for that section.
-- `docs/roadmap/cms-fragment-catalogue.md` provides fragment definitions and mapping guidance only.
-- If a mapping conflicts with the section doc, follow the section doc and update the mapping for consistency.
+- `docs/roadmap/section-composition-policy.md` defines section composition constraints and migration rules.
+- `docs/product/cms-block-registry.md` defines allowed block types, variants, and contract-level behavior.
+- If these conflict, resolve by updating docs explicitly before implementation (no silent interpretation drift).
 
 Now perform the following task:
 
-[M3] Implement next CMS section from its canonical roadmap doc:
-- Section doc to implement: `docs/roadmap/cms-SECTIONNAME.md`
-- Only implement what this section doc specifies.
+[M3] Implement next CMS section from canonical contracts:
+- Source of truth: `docs/product/cms-block-registry.md` + `docs/roadmap/section-composition-policy.md`
+- Only implement what these docs specify for the target section block.
 
 ```
 

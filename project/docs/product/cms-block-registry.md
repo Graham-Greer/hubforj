@@ -67,16 +67,10 @@ All sections listed under “Sections (CMS Registry Blocks)” in `docs/componen
 - FeatureSection (centered|split)
 - GridSection (default, layout=grid|lead)
 - StatsSection (cards|split)
-- RichTextSection
-- CTASection (centered|split)
 - AccordionSection (default)
-- EventListSection (upcoming|featured|category)
-- ContactSection (card|split)
-- LogoMarqueeSection (marquee|grid)
 - PricingSection (tiers)
 - TeamSection (default)
 - TestimonialsSection (grid|lead)
-- LegalDocumentSection
 - SectionRenderFallback
 
 Variant metadata contract:
@@ -160,7 +154,6 @@ TestimonialsSection contract (M3):
 
 ## WYSIWYG fields (locked)
 WYSIWYG is allowed only for approved fields (no HTML/source mode):
-- RichTextSection content
 - Event description
 - MembershipPlan description (optional)
 

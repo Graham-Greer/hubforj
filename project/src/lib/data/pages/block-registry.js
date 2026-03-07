@@ -60,74 +60,6 @@ import {
   TESTIMONIALS_SECTION_SCHEMA,
 } from "../../cms/sections/testimonials-section.js";
 
-function normalizeText(value) {
-  return String(value || "").trim();
-}
-
-function isValidCtaHref(href) {
-  if (!href) return false;
-  if (href.startsWith("/")) return true;
-  if (/^https?:\/\//i.test(href)) return true;
-  return false;
-}
-
-function normalizeCtas(input, fallback = null) {
-  const source = Array.isArray(input) ? input : [];
-  const normalized = source
-    .map((cta) => (cta && typeof cta === "object" ? cta : {}))
-    .map((cta) => ({
-      label: normalizeText(cta.label),
-      href: normalizeText(cta.href),
-    }));
-
-  if (normalized.length) return normalized;
-  if (!fallback || typeof fallback !== "object") return [];
-
-  const label = normalizeText(fallback.label);
-  const href = normalizeText(fallback.href);
-  return label || href ? [{ label, href }] : [];
-}
-
-function evaluateCtaReadiness(ctas = []) {
-  const missing = [];
-  const normalized = normalizeCtas(ctas);
-  normalized.forEach((cta, index) => {
-    if (!cta.label) missing.push(`CTA ${index + 1}: label is required.`);
-    if (!cta.href) missing.push(`CTA ${index + 1}: link is required.`);
-    if (cta.href && !isValidCtaHref(cta.href)) {
-      missing.push(`CTA ${index + 1}: link must be internal (/path) or external (http/https).`);
-    }
-  });
-  return missing;
-}
-
-function assertValidCtaContract(ctas = [], fieldPrefix = "ctas") {
-  if (!Array.isArray(ctas)) {
-    throw new Error(`${fieldPrefix} must be an array.`);
-  }
-  if (ctas.length > 2) {
-    throw new Error(`${fieldPrefix} supports up to two items.`);
-  }
-
-  ctas.forEach((cta, index) => {
-    if (!cta || typeof cta !== "object" || Array.isArray(cta)) {
-      throw new Error(`${fieldPrefix}[${index}] must be an object.`);
-    }
-
-    const label = normalizeText(cta.label);
-    const href = normalizeText(cta.href);
-    if (!label) {
-      throw new Error(`${fieldPrefix}[${index}].label is required when CTA is added.`);
-    }
-    if (!href) {
-      throw new Error(`${fieldPrefix}[${index}].href is required when CTA is added.`);
-    }
-    if (!isValidCtaHref(href)) {
-      throw new Error(`${fieldPrefix}[${index}].href must be internal (/path) or external (http/https).`);
-    }
-  });
-}
-
 const BLOCK_DEFINITIONS = [
   {
     type: "HeroSection",
@@ -144,25 +76,6 @@ const BLOCK_DEFINITIONS = [
     normalizeProps: (props, variant) => normalizeHeroSectionProps(props, variant),
     evaluateReadiness: (props, variant) => evaluateHeroSectionReadiness(props, variant),
     extractMediaRefs: (props) => extractHeroSectionMediaRefs(props),
-  },
-  {
-    type: "RichTextSection",
-    label: "Rich text",
-    variants: ["default"],
-    defaultVariant: "default",
-    variantDescriptions: {
-      default: "Simple long-form content block for copy-driven pages.",
-    },
-    defaultProps: {
-      content: "",
-    },
-    previewPropsByVariant: {
-      default: {
-        content:
-          "This block is great for mission statements, policy notes, and long-form updates.",
-      },
-    },
-    schema: [{ key: "content", label: "Content", type: "wysiwyg" }],
   },
   {
     type: "FeatureSection",
@@ -196,89 +109,6 @@ const BLOCK_DEFINITIONS = [
     extractMediaRefs: (props) => extractGridSectionMediaRefs(props),
   },
   {
-    type: "CTASection",
-    label: "Call to action",
-    variants: ["centered", "split"],
-    defaultVariant: "centered",
-    variantDescriptions: {
-      centered: "Focused CTA with centered content.",
-      split: "CTA copy paired with supporting media.",
-    },
-    defaultProps: {
-      title: "Ready to join?",
-      body: "Add supporting text for the CTA.",
-      ctas: [{ label: "Get started", href: "/join" }],
-      imageMediaId: "",
-    },
-    previewPropsByVariant: {
-      centered: {
-        title: "Ready to take the next step?",
-        body: "Invite visitors to become members, register, or contact your team.",
-        ctas: [{ label: "Become a member", href: "/join" }],
-        imageMediaId: "media_preview_feature",
-      },
-      split: {
-        title: "Partner with our programs",
-        body: "Highlight your value proposition with a visual and concise copy.",
-        ctas: [
-          { label: "Contact us", href: "/contact" },
-          { label: "View programs", href: "/programs" },
-        ],
-        imageMediaId: "media_preview_cta",
-      },
-    },
-    schema: [
-      {
-        key: "core",
-        type: "group",
-        label: "Core",
-        defaultOpen: true,
-        fields: [
-          { key: "title", label: "Title", type: "text" },
-          { key: "body", label: "Body", type: "textarea" },
-        ],
-      },
-      {
-        key: "actions",
-        type: "group",
-        label: "Actions",
-        defaultOpen: false,
-        fields: [
-          { key: "ctas", label: "Calls to action", type: "ctas" },
-        ],
-      },
-      {
-        key: "media",
-        type: "group",
-        label: "Media",
-        defaultOpen: false,
-        fields: [
-          { key: "imageMediaId", label: "Image media ID", type: "media" },
-        ],
-      },
-    ],
-    normalizeProps: (props) => {
-      const value = props && typeof props === "object" && !Array.isArray(props) ? props : {};
-      const normalizedCtaList = normalizeCtas(value.ctas, { label: value.ctaText, href: value.ctaHref });
-      assertValidCtaContract(normalizedCtaList, "CTASection.ctas");
-      return {
-        title: normalizeText(value.title),
-        body: normalizeText(value.body),
-        ctas: normalizedCtaList,
-        imageMediaId: normalizeText(value.imageMediaId),
-      };
-    },
-    evaluateReadiness: (props) => {
-      const missing = evaluateCtaReadiness(props?.ctas);
-      return {
-        readyForDraft: missing.length === 0,
-        readyForPublish: missing.length === 0,
-        missingRequiredFields: missing,
-        missingCount: missing.length,
-      };
-    },
-  },
-  {
     type: "AccordionSection",
     label: "Accordion",
     variants: ["default"],
@@ -293,102 +123,6 @@ const BLOCK_DEFINITIONS = [
     schema: ACCORDION_SECTION_SCHEMA,
     normalizeProps: normalizeAccordionSectionProps,
     evaluateReadiness: evaluateAccordionReadiness,
-  },
-  {
-    type: "EventListSection",
-    label: "Event list",
-    variants: ["upcoming", "featured", "category"],
-    defaultVariant: "upcoming",
-    variantDescriptions: {
-      upcoming: "Chronological list of upcoming events.",
-      featured: "Highlight a shorter set of key events.",
-      category: "Filter event cards by a selected category.",
-    },
-    defaultProps: {
-      title: "Upcoming events",
-      category: "",
-      limit: "6",
-    },
-    previewPropsByVariant: {
-      upcoming: {
-        title: "Upcoming events",
-        category: "",
-        limit: "6",
-      },
-      featured: {
-        title: "Featured events",
-        category: "",
-        limit: "2",
-      },
-      category: {
-        title: "Workshop events",
-        category: "Workshop",
-        limit: "6",
-      },
-    },
-    schema: [
-      { key: "title", label: "Title", type: "text" },
-      { key: "category", label: "Category filter", type: "text" },
-      { key: "limit", label: "Limit", type: "text" },
-    ],
-  },
-  {
-    type: "ContactSection",
-    label: "Contact",
-    variants: ["card", "split"],
-    defaultVariant: "card",
-    variantDescriptions: {
-      card: "Single card layout for straightforward contact details.",
-      split: "Split arrangement for broader contact content.",
-    },
-    defaultProps: {
-      address: "123 Main St",
-      email: "hello@example.com",
-      phone: "",
-      mapLink: "",
-    },
-    previewPropsByVariant: {
-      card: {
-        address: "120 Market Street, San Diego, CA",
-        email: "support@communityhub.org",
-        phone: "(555) 010-1200",
-        mapLink: "https://maps.google.com",
-      },
-      split: {
-        address: "500 Lakeshore Avenue, Oakland, CA",
-        email: "hello@communityhub.org",
-        phone: "(555) 014-4400",
-        mapLink: "https://maps.google.com",
-      },
-    },
-    schema: [
-      { key: "address", label: "Address", type: "textarea" },
-      { key: "email", label: "Email", type: "text" },
-      { key: "phone", label: "Phone", type: "text" },
-      { key: "mapLink", label: "Map link", type: "text" },
-    ],
-  },
-  {
-    type: "LogoMarqueeSection",
-    label: "Logo marquee",
-    variants: ["marquee", "grid"],
-    defaultVariant: "grid",
-    variantDescriptions: {
-      marquee: "Auto-flowing row style for partner logos.",
-      grid: "Static grid for partner and sponsor marks.",
-    },
-    defaultProps: {
-      logosMediaIds: "",
-    },
-    previewPropsByVariant: {
-      marquee: {
-        logosMediaIds: "media_preview_logo_a,media_preview_logo_b,media_preview_logo_c",
-      },
-      grid: {
-        logosMediaIds: "media_preview_logo_a,media_preview_logo_b,media_preview_logo_c,media_preview_logo_d",
-      },
-    },
-    schema: [{ key: "logosMediaIds", label: "Logo media IDs (comma separated)", type: "media-list" }],
   },
   {
     type: "PricingSection",
@@ -449,25 +183,6 @@ const BLOCK_DEFINITIONS = [
     normalizeProps: (props, variant) => normalizeTestimonialsSectionProps(props, variant),
     evaluateReadiness: (props, variant) => evaluateTestimonialsSectionReadiness(props, variant),
     extractMediaRefs: (props, variant) => extractTestimonialsSectionMediaRefs(props, variant),
-  },
-  {
-    type: "LegalDocumentSection",
-    label: "Legal document",
-    variants: ["default"],
-    defaultVariant: "default",
-    variantDescriptions: {
-      default: "Simple legal content section with standardized heading.",
-    },
-    defaultProps: {
-      content: "",
-    },
-    previewPropsByVariant: {
-      default: {
-        content:
-          "By continuing, you agree to the member code of conduct and attendance policy.",
-      },
-    },
-    schema: [{ key: "content", label: "Content", type: "wysiwyg" }],
   },
 ];
 

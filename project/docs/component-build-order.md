@@ -231,21 +231,15 @@ Build in this order:
 
 Core blocks:
 3) `sections/hero/HeroSection` (variants: centered|split)
-4) `sections/rich-text/RichTextSection`
-5) `sections/cta/CTASection` (variants: centered|split)
-6) `sections/grid/GridSection` (variant: default with `layout=grid|lead`)
-7) `sections/accordion/AccordionSection` (variant: default)
-8) `sections/event-list/EventListSection` (variants: upcoming|featured|category)
-9) `sections/contact/ContactSection` (variants: card|split)
-10) `sections/logo-marquee/LogoMarqueeSection` (variants: marquee|grid)
+4) `sections/grid/GridSection` (variant: default with `layout=grid|lead`)
+5) `sections/accordion/AccordionSection` (variant: default)
 
 Optional sections (now MVP per decision):
-11) `sections/pricing/PricingSection` (variant: tiers)
-12) `sections/stats/StatsSection` (variants: row|cards)
-13) `sections/team/TeamSection` (variant: default)
-14) `sections/testimonials/TestimonialsSection` (variants: grid|lead)
-15) `sections/legal/LegalDocumentSection`
-16) `sections/fallback/SectionRenderFallback`
+6) `sections/pricing/PricingSection` (variant: tiers)
+7) `sections/stats/StatsSection` (variants: cards|split)
+8) `sections/team/TeamSection` (variant: default)
+9) `sections/testimonials/TestimonialsSection` (variants: grid|lead)
+10) `sections/fallback/SectionRenderFallback`
 
 Definition of Done:
 - Each section is variant-driven (no duplicate files per variant).

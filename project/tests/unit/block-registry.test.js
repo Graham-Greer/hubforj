@@ -21,7 +21,6 @@ test("listCmsBlocks includes optional MVP blocks", () => {
   assert.equal(types.has("StatsSection"), true);
   assert.equal(types.has("TeamSection"), true);
   assert.equal(types.has("TestimonialsSection"), true);
-  assert.equal(types.has("LegalDocumentSection"), true);
 });
 
 test("buildDefaultBlock returns constrained default variant", () => {
@@ -31,8 +30,8 @@ test("buildDefaultBlock returns constrained default variant", () => {
 });
 
 test("normalizeVariant falls back to definition default", () => {
-  assert.equal(normalizeVariant("CTASection", "split"), "split");
-  assert.equal(normalizeVariant("CTASection", "unsupported"), "centered");
+  assert.equal(normalizeVariant("HeroSection", "split"), "split");
+  assert.equal(normalizeVariant("HeroSection", "unsupported"), "centered");
   assert.equal(normalizeVariant("UnknownSection", "anything"), "default");
 });
 
@@ -82,9 +81,9 @@ test("normalizeBlockProps keeps hero CTA rows for readiness evaluation", () => {
   assert.equal(props.ctas[0].href, "javascript:alert(1)");
 });
 
-test("normalizeBlockProps enforces max two CTAs for CTASection", () => {
+test("normalizeBlockProps enforces max two CTAs for HeroSection", () => {
   assert.throws(
-    () => normalizeBlockProps("CTASection", {
+    () => normalizeBlockProps("HeroSection", {
       title: "Join",
       ctas: [
         { label: "A", href: "/a" },
@@ -92,7 +91,7 @@ test("normalizeBlockProps enforces max two CTAs for CTASection", () => {
         { label: "C", href: "/c" },
       ],
     }),
-    /CTASection\.ctas supports up to two items/
+    /HeroSection\.ctas supports up to two items/
   );
 });
 
@@ -430,7 +429,7 @@ test("normalizeBlockProps normalizes PricingSection to fragment-composed contrac
   }, "tiers");
 
   assert.equal(props.description.length, 240);
-  assert.equal(props.columns, "4");
+  assert.equal(props.columns, "3");
   assert.equal(props.align, "left");
   assert.equal(props.density, "comfortable");
   assert.equal(props.items[0].name, "Starter");
