@@ -25,6 +25,11 @@
     filter 160ms var(--ease-standard);
 }
 
+.itemFields {
+  display: grid;
+  gap: var(--space-3);
+}
+
 .dragging {
   z-index: var(--z-dropdown);
   filter: drop-shadow(0 10px 16px rgba(17, 24, 39, 0.16));

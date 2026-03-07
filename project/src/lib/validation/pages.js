@@ -55,7 +55,7 @@ function normalizeBlock(input, index) {
     throw new Error(`composition[${index}] is missing a stable block id.`);
   }
   const label = String(value.label || "").trim();
-  const props = normalizeBlockProps(type, value.props);
+  const props = normalizeBlockProps(type, value.props, value.variant);
 
   return {
     id,

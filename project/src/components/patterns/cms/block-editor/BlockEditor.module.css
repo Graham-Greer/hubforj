@@ -13,6 +13,11 @@
   gap: var(--space-2);
 }
 
+.mediaRefGroup {
+  display: grid;
+  gap: var(--space-3);
+}
+
 .groupFields {
   display: grid;
   gap: var(--space-3);
@@ -54,5 +59,25 @@
   display: flex;
   justify-content: flex-start;
   flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.nestedList {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.nestedCard {
+  display: grid;
+  gap: var(--space-2);
+  border: var(--border-width-1) solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+}
+
+.nestedHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--space-2);
 }

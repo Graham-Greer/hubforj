@@ -239,11 +239,7 @@ export default function MediaLibrary({
 
     const result = await onUpload({
       folderId: activeFolderId,
-      files: files.map((file) => ({
-        filename: file.name,
-        contentType: file.type,
-        sizeBytes: file.size,
-      })),
+      files,
     });
 
     if (!result?.ok) {

@@ -137,8 +137,8 @@ Columns:
 | Layer | Component | Path | Responsibility | Variants | Key props | Composes / depends on | Used by |
 |---|---|---|---|---|---|---|---|
 | patterns | PageHeader | `src/components/patterns/page-header/PageHeader.jsx` | Title + actions row | `default`, `dense` | `title`, `actions`, `breadcrumbs?` | Heading, Button | HubAdmin/SuperAdmin |
-| patterns | Section | `src/components/patterns/section/Section.jsx` | Standard content wrapper | n/a | `tone`, `padding`, `maxWidth` | Surface/Stack | Public/Member |
-| patterns | SectionHeader | `src/components/patterns/section-header/SectionHeader.jsx` | Section title block | n/a | `title`, `subtitle?`, `actions?` | Heading/Text | Public/Member |
+| patterns | Section | `src/components/patterns/section/Section.jsx` | Semantic section wrapper for top-level section blocks (built on Surface) | n/a | `as?`, `maxWidth?`, `className` (semantic/container only, no visual styling props) | Surface | Public/Member/CMS |
+| patterns | SectionHeader | `src/components/patterns/section-header/SectionHeader.jsx` | Section title block aligned to CMS fragment header contract | n/a | `eyebrow?`, `title?`, `description?`, `actions?`, `subtitle?` (compat) | Heading/Text | Public/Member/CMS |
 | patterns | FeatureLocked | `src/components/patterns/feature-locked/FeatureLocked.jsx` | Locked feature upsell | n/a | `featureKey`, `benefits[]`, `cta` | Card/Button/Icon | HubAdmin |
 | patterns | DataTable | `src/components/patterns/data-table/DataTable.jsx` | Table + empty/loading/error | `dense`, `default` | `columns`, `rows`, `loading`, `error`, `empty` | Table, FilterBar, Pagination | HubAdmin/SuperAdmin |
 | patterns | DomainListManager | `src/components/patterns/domain-list-manager/DomainListManager.jsx` | Domain list with explicit remove confirmation | n/a | `hubId`, `domains[]`, `removeDomainAction` | ConfirmModal, Button, Text | SuperAdmin |
@@ -146,6 +146,7 @@ Columns:
 | patterns | CMS BlockPicker | `src/components/patterns/cms/block-picker/BlockPicker.jsx` | Select section type to add | n/a | `availableBlocks`, `onPick` | Drawer/Modal, Card | CMS/SuperAdmin |
 | patterns | CMS BlockList | `src/components/patterns/cms/block-list/BlockList.jsx` | Reorder/delete blocks | n/a | `blocks`, `onMove`, `onRemove`, `onSelect` | Card, Button, Icon | CMS/SuperAdmin |
 | patterns | CMS BlockEditor | `src/components/patterns/cms/block-editor/BlockEditor.jsx` | Structured prop forms per block | n/a | `block`, `schema`, `onChange` | Field controls | CMS/SuperAdmin |
+| patterns | CMS PricingTierEditor | `src/components/patterns/cms/pricing-tier-editor/PricingTierEditor.jsx` | Two-pane pricing tier editor with master list, DnD reorder, and detail panel editing | n/a | `items`, `onChange`, `onCreateItem`, `getItemTitle`, `getItemStatus` | ConfirmModal, Button, dnd-kit, form controls | CMS/SuperAdmin |
 | patterns | CMS RepeatableListEditor | `src/components/patterns/cms/repeatable-list-editor/RepeatableListEditor.jsx` | Reusable repeatable item editor with vertical DnD and destructive confirm | n/a | `items`, `onChange`, `renderItemFields`, `addLabel` | ConfirmModal, Button, dnd-kit | CMS/SuperAdmin |
 | patterns | CMS DraggableAccordionItem | `src/components/patterns/cms/draggable-accordion-item/DraggableAccordionItem.jsx` | Reusable draggable row shell with collapsible content for repeatable CMS item editing | n/a | `title`, `subtitle`, `statusLabel`, `actionItems`, `dragAttributes`, `dragListeners` | Badge, Button, Icon | CMS/SuperAdmin |
 | patterns | CMS PublishBar | `src/components/patterns/cms/publish-bar/PublishBar.jsx` | Draft/publish controls | n/a | `status`, `onPublish`, `onUnpublish?` | Button, Badge | CMS/SuperAdmin |
@@ -160,19 +161,20 @@ All sections are CMS-renderable blocks. Each has explicit variants.
 
 | Layer | Component | Path | Responsibility | Variants | Key props | Composes / depends on | Used by |
 |---|---|---|---|---|---|---|---|
-| sections | HeroSection | `src/components/sections/hero/HeroSection.jsx` | Hero block | `centered`, `split` | `heading`, `subheading`, `imageId?`, `ctaText?`, `ctaHref?` | Heading, Text, Button, AppImage | Public/Member/CMS |
+| sections | HeroSection | `src/components/sections/hero/HeroSection.jsx` | Hero block | `centered`, `split` | `eyebrow?`, `title` (`heading` compat), `description?` (`subheading` compat), `media?`, `ctas[]?` (max 2) | SectionHeader, Button, AppImage | Public/Member/CMS |
+| sections | FeatureSection | `src/components/sections/feature/FeatureSection.jsx` | Mid-page feature highlight block | `centered`, `split` | `eyebrow?`, `title`, `description?`, `centeredMediaMode`, `media?`, `ctas[]?` (max 2) | SectionHeader, Button, AppImage | Public/Member/CMS |
+| sections | GridSection | `src/components/sections/grid/GridSection.jsx` | Generic marketing card grid with lead option | `default` (`layout=grid|lead`) | `eyebrow?`, `title?`, `description?`, `layout`, `columns`, `align`, `density`, `items[]` | SectionHeader, Card, Badge, AppImage | Public/Member/CMS |
 | sections | RichTextSection | `src/components/sections/rich-text/RichTextSection.jsx` | Rich text content block | `default` | `content` (WYSIWYG) | WYSIWYG renderer | Public/Member/CMS |
-| sections | CTASection | `src/components/sections/cta/CTASection.jsx` | CTA block | `centered`, `split` | `title`, `body`, `ctaText`, `ctaHref`, `imageId?` | Button, AppImage | Public/Member/CMS |
-| sections | FeatureGridSection | `src/components/sections/feature-grid/FeatureGridSection.jsx` | Feature grid | `2col`, `3col`, `4col` | `title`, `items[]` | Card, Icon, Text | Public/Member/CMS |
-| sections | AccordionSection | `src/components/sections/accordion/AccordionSection.jsx` | Domain-neutral accordion section for FAQs, policies, and structured explainers | `default` | `eyebrow?`, `title?`, `description?`, `items[]` | Accordion, Wysiwyg renderer | Public/Member/CMS |
-| sections | EventListSection | `src/components/sections/event-list/EventListSection.jsx` | Events list block | `upcoming`, `featured`, `category` | `title?`, `category?`, `limit?` | Card, Badge, Link | Public/Member/CMS |
-| sections | ContactSection | `src/components/sections/contact/ContactSection.jsx` | Contact block | `card`, `split` | `address`, `email`, `phone?`, `mapLink?` | Card, Text | Public/Member/CMS |
+| sections | CTASection | `src/components/sections/cta/CTASection.jsx` | CTA block | `centered`, `split` | `title`, `body`, `imageMediaId?`, `ctas[]?` (max 2) | SectionHeader, Button, AppImage | Public/Member/CMS |
+| sections | AccordionSection | `src/components/sections/accordion/AccordionSection.jsx` | Domain-neutral accordion section for FAQs, policies, and structured explainers | `default` | `eyebrow?`, `title?`, `description?`, `items[]` | SectionHeader, Accordion, Wysiwyg renderer | Public/Member/CMS |
+| sections | EventListSection | `src/components/sections/event-list/EventListSection.jsx` | Events list block | `upcoming`, `featured`, `category` | `title?`, `category?`, `limit?` | SectionHeader, Card, Badge, Link | Public/Member/CMS |
+| sections | ContactSection | `src/components/sections/contact/ContactSection.jsx` | Contact block | `card`, `split` | `address`, `email`, `phone?`, `mapLink?` | SectionHeader, Card, Text | Public/Member/CMS |
 | sections | LogoMarqueeSection | `src/components/sections/logo-marquee/LogoMarqueeSection.jsx` | Logo display | `marquee`, `grid` | `logos[]` | AppImage, Grid/Inline | Public/Member/CMS |
-| sections | PricingSection | `src/components/sections/pricing/PricingSection.jsx` | Pricing block | `3tier`, `enterprise` | `title?`, `tiers[]` | Card, Button | Public/Member/CMS |
-| sections | StatsSection | `src/components/sections/stats/StatsSection.jsx` | Stats block | `row`, `cards` | `items[]` | Card, Text | Public/Member/CMS |
-| sections | TeamSection | `src/components/sections/team/TeamSection.jsx` | Team block | `grid`, `withLead` | `title?`, `members[]` | Card, Avatar/AppImage | Public/Member/CMS |
-| sections | TestimonialsSection | `src/components/sections/testimonials/TestimonialsSection.jsx` | Testimonials | `grid`, `spotlight` | `title?`, `items[]` | Card, Text | Public/Member/CMS |
-| sections | LegalDocumentSection | `src/components/sections/legal/LegalDocumentSection.jsx` | Legal content page | `default` | `content` (WYSIWYG) | RichText renderer | Public/Member/CMS |
+| sections | PricingSection | `src/components/sections/pricing/PricingSection.jsx` | Pricing block | `tiers` | `eyebrow?`, `title?`, `description?`, `columns`, `align`, `density`, `items[]` | SectionHeader, Card, Badge, Button | Public/Member/CMS |
+| sections | StatsSection | `src/components/sections/stats/StatsSection.jsx` | Stats block | `row`, `cards` | `items[]` | SectionHeader, Card, Text | Public/Member/CMS |
+| sections | TeamSection | `src/components/sections/team/TeamSection.jsx` | Team block | `default` | `eyebrow?`, `title?`, `description?`, `columns`, `align`, `density`, `items[]`, `ctas[]?` | SectionHeader, Card, Badge, AppImage, Button, Icon | Public/Member/CMS |
+| sections | TestimonialsSection | `src/components/sections/testimonials/TestimonialsSection.jsx` | Testimonials | `grid`, `lead` | `eyebrow?`, `title?`, `description?`, `columns`, `align`, `density`, `items[]` | SectionHeader, Card, Badge, AppImage, Text | Public/Member/CMS |
+| sections | LegalDocumentSection | `src/components/sections/legal/LegalDocumentSection.jsx` | Legal content page | `default` | `content` (WYSIWYG) | SectionHeader, RichText renderer | Public/Member/CMS |
 | sections | SectionRenderFallback | `src/components/sections/fallback/SectionRenderFallback.jsx` | Unknown block fallback | `default` | `type` | ErrorState | Public/Member/CMS |
 
 ---

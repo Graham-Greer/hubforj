@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
   reactCompiler: true,
   images: {
     remotePatterns: [
@@ -8,6 +7,11 @@ const nextConfig = {
         protocol: "https",
         hostname: "firebasestorage.googleapis.com",
         pathname: "/v0/b/**",
+      },
+      {
+        protocol: "https",
+        hostname: "storage.googleapis.com",
+        pathname: "/community-app-c2f67.firebasestorage.app/**",
       },
     ],
   },

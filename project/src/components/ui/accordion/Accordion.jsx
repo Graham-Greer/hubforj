@@ -6,7 +6,15 @@ import styles from "./Accordion.module.css";
 
 export default function Accordion({ items = [], type = "single", defaultOpen = [], variant = "compact" }) {
   const baseId = useId();
-  const [openKeys, setOpenKeys] = useState(new Set(Array.isArray(defaultOpen) ? defaultOpen : [defaultOpen]));
+  const initialOpenKeys = (() => {
+    const normalized = Array.isArray(defaultOpen) ? defaultOpen : [defaultOpen];
+    const filtered = normalized.filter(Boolean);
+    if (type === "single") {
+      return new Set(filtered.slice(0, 1));
+    }
+    return new Set(filtered);
+  })();
+  const [openKeys, setOpenKeys] = useState(initialOpenKeys);
 
   const toggle = (key) => {
     setOpenKeys((prev) => {

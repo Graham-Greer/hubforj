@@ -8,6 +8,7 @@ import { getDataProvider } from "../shared/provider.js";
 import { getMediaByIds } from "../media/media-repository.js";
 import { normalizeFooterOverride, normalizeHeaderOverride } from "./layout-config.js";
 import { assertCompositionPublishReady } from "../../validation/pages.js";
+import { collectMediaIdsForBlock } from "./block-registry.js";
 
 const MAX_PAGE_TREE_DEPTH = 4;
 const STALE_DRAFT_ERROR_CODE = "STALE_DRAFT";
@@ -94,43 +95,20 @@ async function assertValidParentPageSelection(hubId, pageId, parentPageId) {
   }
 }
 
-function collectMediaIdsFromValue(value, ids) {
-  if (!value) return;
-
-  if (typeof value === "string") {
-    value
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean)
-      .forEach((item) => {
-        if (/^media_[a-z0-9_-]+$/i.test(item)) {
-          ids.add(item);
-        }
-      });
-    return;
-  }
-
-  if (Array.isArray(value)) {
-    value.forEach((item) => collectMediaIdsFromValue(item, ids));
-    return;
-  }
-
-  if (typeof value === "object") {
-    for (const nested of Object.values(value)) {
-      collectMediaIdsFromValue(nested, ids);
-    }
-  }
-}
-
 export function collectMediaIdsForPage(pageLike) {
   const ids = new Set();
 
   const draft = Array.isArray(pageLike?.draftComposition) ? pageLike.draftComposition : [];
   const published = Array.isArray(pageLike?.publishedComposition) ? pageLike.publishedComposition : [];
 
-  draft.forEach((block) => collectMediaIdsFromValue(block?.props, ids));
-  published.forEach((block) => collectMediaIdsFromValue(block?.props, ids));
-  collectMediaIdsFromValue(pageLike?.seo?.imageMediaId || "", ids);
+  draft.forEach((block) => {
+    collectMediaIdsForBlock(block).forEach((id) => ids.add(id));
+  });
+  published.forEach((block) => {
+    collectMediaIdsForBlock(block).forEach((id) => ids.add(id));
+  });
+  const seoImage = String(pageLike?.seo?.imageMediaId || "").trim();
+  if (seoImage) ids.add(seoImage);
 
   return Array.from(ids);
 }
@@ -197,12 +175,15 @@ async function syncPageMediaUsage(provider, page, previousMediaIds, nextMediaIds
 }
 
 async function assertPageSlugUnique(provider, hubId, slug, excludePageId = null) {
+  const normalizedSlug = String(slug || "").trim();
+  if (!normalizedSlug) return;
+
   if (provider.type === "firestore") {
     const snapshot = await provider.db
       .collection("hubs")
       .doc(hubId)
       .collection("pages")
-      .where("slug", "==", slug)
+      .where("slug", "==", normalizedSlug)
       .limit(2)
       .get();
 
@@ -214,7 +195,7 @@ async function assertPageSlugUnique(provider, hubId, slug, excludePageId = null)
   }
 
   const rows = provider.db.pages.get(hubId) || [];
-  const conflict = rows.find((row) => row.slug === slug && row.id !== excludePageId);
+  const conflict = rows.find((row) => row.slug === normalizedSlug && row.id !== excludePageId);
   if (conflict) {
     throw new Error("A page with this slug already exists for this hub.");
   }
@@ -232,8 +213,46 @@ async function assertReferencedMediaExists(hubId, mediaIds) {
   return media;
 }
 
-function assertReferencedMediaHasAlt(media) {
-  const missing = media.find((item) => !String(item.alt || "").trim());
+function collectUsageAltMediaIdsFromValue(value, ids) {
+  if (!value) return;
+
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectUsageAltMediaIdsFromValue(item, ids));
+    return;
+  }
+
+  if (typeof value !== "object") return;
+
+  const mediaId = String(value.mediaId || "").trim();
+  const alt = String(value.alt || "").trim();
+  if (mediaId && alt) {
+    ids.add(mediaId);
+  }
+
+  for (const nested of Object.values(value)) {
+    collectUsageAltMediaIdsFromValue(nested, ids);
+  }
+}
+
+function collectUsageAltMediaIdsForPage(pageLike) {
+  const ids = new Set();
+  const draft = Array.isArray(pageLike?.draftComposition) ? pageLike.draftComposition : [];
+  const published = Array.isArray(pageLike?.publishedComposition) ? pageLike.publishedComposition : [];
+
+  draft.forEach((block) => collectUsageAltMediaIdsFromValue(block?.props, ids));
+  published.forEach((block) => collectUsageAltMediaIdsFromValue(block?.props, ids));
+  return ids;
+}
+
+function assertReferencedMediaHasPublishAlt(media, pageLike) {
+  const usageAltMediaIds = collectUsageAltMediaIdsForPage(pageLike);
+  const missing = media.find((item) => {
+    const mediaId = String(item?.id || "").trim();
+    if (!mediaId) return false;
+    if (usageAltMediaIds.has(mediaId)) return false;
+    return !String(item.alt || "").trim();
+  });
+
   if (missing) {
     throw new Error("Cannot publish page: selected media is missing alt text.");
   }
@@ -357,7 +376,8 @@ export async function savePageDraft(hubId, pageId, patch, actorId = "system", op
     throw createStaleDraftError();
   }
 
-  await assertPageSlugUnique(provider, hubId, patch.slug, pageId);
+  const nextSlug = String(patch.slug || existing.slug || "").trim();
+  await assertPageSlugUnique(provider, hubId, nextSlug, pageId);
   await assertValidParentPageSelection(hubId, pageId, patch.parentPageId);
 
   const nextCandidate = {
@@ -368,8 +388,7 @@ export async function savePageDraft(hubId, pageId, patch, actorId = "system", op
 
   const previousMediaIds = collectMediaIdsForPage(existing);
   const nextMediaIds = collectMediaIdsForPage(nextCandidate);
-  const nextMedia = await assertReferencedMediaExists(hubId, nextMediaIds);
-  assertReferencedMediaHasAlt(nextMedia);
+  await assertReferencedMediaExists(hubId, nextMediaIds);
 
   const nextPatch = {
     ...patch,
@@ -414,7 +433,11 @@ export async function publishPage(hubId, pageId, actorId = "system", options = {
   });
 
   const media = await assertReferencedMediaExists(hubId, mediaIds);
-  assertReferencedMediaHasAlt(media);
+  assertReferencedMediaHasPublishAlt(media, {
+    draftComposition: existing.draftComposition,
+    publishedComposition: existing.draftComposition,
+    seo: existing.seo,
+  });
 
   const patch = {
     publishedComposition: existing.draftComposition,

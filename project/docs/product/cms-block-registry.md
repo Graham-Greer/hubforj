@@ -27,9 +27,19 @@ Example:
   "type": "HeroSection",
   "variant": "split",
   "props": {
-    "heading": "Welcome",
-    "subheading": "Join the community",
-    "imageMediaId": "media_abc",
+    "eyebrow": "Community programs",
+    "title": "Welcome",
+    "description": "Join the community",
+    "media": {
+      "mediaId": "media_abc",
+      "kind": "image",
+      "alt": "Members collaborating",
+      "posterMediaId": "",
+      "aspect": "16:9"
+    },
+    "mediaPosition": "right",
+    "splitRatio": "50-50",
+    "contentAlign": "left",
     "ctas": [
       { "label": "Become a member", "href": "/join" },
       { "label": "Contact us", "href": "https://example.org/contact" }
@@ -54,23 +64,99 @@ CTA contract (M3 foundation):
 ## Allowed blocks (MVP)
 All sections listed under “Sections (CMS Registry Blocks)” in `docs/component-registry.md` are valid CMS blocks, including:
 - HeroSection (centered|split)
+- FeatureSection (centered|split)
+- GridSection (default, layout=grid|lead)
+- StatsSection (cards|split)
 - RichTextSection
 - CTASection (centered|split)
-- FeatureGridSection (2col|3col|4col)
 - AccordionSection (default)
 - EventListSection (upcoming|featured|category)
 - ContactSection (card|split)
 - LogoMarqueeSection (marquee|grid)
-- PricingSection (3tier|enterprise)
-- StatsSection (row|cards)
-- TeamSection (grid|withLead)
-- TestimonialsSection (grid|spotlight)
+- PricingSection (tiers)
+- TeamSection (default)
+- TestimonialsSection (grid|lead)
 - LegalDocumentSection
 - SectionRenderFallback
 
 Variant metadata contract:
 - Registry definitions SHOULD include `variantDescriptions` for library cards.
 - Registry definitions SHOULD include per-variant preview mock props for live preview.
+- Section docs MAY require in-editor variant selection; where required by canonical section doc, variant selection in editor is allowed and schema-driven.
+
+FeatureSection contract (M3):
+- Uses fragment-composed schema (SectionHeader + CtaGroup + Media + SectionLayout).
+- `centeredMediaMode` controls centered rendering: `none|background|inline`.
+- Publish gating:
+  - `title` required.
+  - `split` requires mediaId + alt.
+  - `centered` requires mediaId + alt when `centeredMediaMode != "none"`.
+  - CTA contract validated when CTA rows are present.
+
+GridSection contract (M3):
+- Uses fragment-composed schema (SectionHeader + GridLayout + CardItem + Badge).
+- Publish gating:
+  - requires at least one item.
+  - each item requires `title`.
+  - if `item.media.imageMediaId` is set, `item.media.alt` is required.
+- Layout rules:
+  - `layout="grid"` uses columns 2/3/4.
+  - `layout="lead"` renders first item as lead and remaining items as grid cards.
+
+StatsSection contract (M3):
+- Uses fragment-composed schema (SectionHeader + GridLayout + StatsItem + IconRef + optional CtaGroup).
+- Variants:
+  - `cards`: section header above stats grid.
+  - `split`: two-column layout with header/actions on the left and grid on the right.
+- Publish gating:
+  - requires at least one stat item.
+  - each item requires `label` and `value`.
+  - if icon row is added on an item, `icon.name` is required.
+  - CTA contract validated when CTA rows are present.
+- Layout rules:
+  - supports `columns` (2/3/4), `align` (left/center), `density` (comfortable/compact).
+  - `lead` layout mode is intentionally not available for stats.
+
+TeamSection contract (M3):
+- Uses fragment-composed schema (SectionHeader + GridLayout + PersonItem + optional CtaGroup).
+- Variants:
+  - `default`: responsive team people grid.
+- Publish gating:
+  - requires at least one team member.
+  - each item requires `name`.
+  - if `avatar.imageMediaId` is set, `avatar.alt` is required.
+  - if social links are added, platform enum and `https://` URL are required.
+  - CTA contract validated when CTA rows are present.
+- Layout rules:
+  - supports `columns` (2/3/4), `align` (left/center), `density` (comfortable/compact).
+  - `lead` layout mode is intentionally not available for team.
+
+PricingSection contract (M3):
+- Uses fragment-composed schema (SectionHeader + GridLayout + PriceTier + Money + optional Badge/CTA per tier).
+- Variants:
+  - `tiers`: card-based pricing tiers (1..4).
+- Publish gating:
+  - requires at least one tier and at most four tiers.
+  - each tier requires `name`.
+  - if `isFree=false`, `price.amountMinor` (integer >= 0) and `price.currency` (`GBP|USD|EUR`) are required.
+  - if tier CTA exists, `label` and valid `href` are required.
+  - each tier requires at least one feature for publish.
+- Layout rules:
+  - supports `columns` (1/2/3/4), `align` (left/center), `density` (comfortable/compact).
+  - lead layout mode is intentionally not available for pricing.
+
+TestimonialsSection contract (M3):
+- Uses fragment-composed schema (SectionHeader + GridLayout + QuoteItem).
+- Variants:
+  - `grid`: testimonials render as a standard responsive card grid.
+  - `lead`: first testimonial is rendered as a lead horizontal card; remaining testimonials render as grid cards.
+- Publish gating:
+  - requires at least one testimonial item.
+  - each item requires `quote`.
+  - if `avatar.imageMediaId` is set, `avatar.alt` is required.
+- Layout rules:
+  - supports `columns` (2/3/4), `align` (left/center), `density` (comfortable/compact).
+  - no rating field in MVP.
 
 ## WYSIWYG fields (locked)
 WYSIWYG is allowed only for approved fields (no HTML/source mode):

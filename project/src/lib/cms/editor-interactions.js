@@ -33,15 +33,21 @@ export function removeItemById(items = [], itemId) {
 }
 
 export function getRepeatableItemStatus(item = {}) {
-  const requiredKeys = ["title", "description", "content", "body"].filter((key) => key in item);
+  const requiredKeys = ["title", "content", "body"].filter((key) => key in item);
   const keysToCheck = requiredKeys.length ? requiredKeys : ["title"].filter((key) => key in item);
   const missingCount = keysToCheck.reduce((count, key) => {
     const value = item[key];
     return String(value || "").trim() ? count : count + 1;
   }, 0);
 
-  if (missingCount > 0) {
-    return { label: `Fields required (${missingCount})`, tone: "danger" };
+  const media = item.media && typeof item.media === "object" ? item.media : null;
+  const imageMediaId = String(media?.imageMediaId || "").trim();
+  const mediaAlt = String(media?.alt || "").trim();
+  const mediaMissingCount = imageMediaId && !mediaAlt ? 1 : 0;
+  const totalMissing = missingCount + mediaMissingCount;
+
+  if (totalMissing > 0) {
+    return { label: `Fields required (${totalMissing})`, tone: "danger" };
   }
   return { label: "Ready", tone: "success" };
 }

@@ -22,6 +22,70 @@ Hard rules:
 
 ---
 
+## General Tweak prefix (paste at the top of every Codex request involving a tweak)
+
+Paste this block first in every task:
+
+```
+
+Apply `AGENTS.md` and `docs/codex-workflow.md` strictly.
+
+This task is a **GENERAL REPO TWEAK** (not a milestone slice unless explicitly stated).
+
+PRE-FLIGHT (required only if either is true):
+- Starting from a fresh repo clone, OR
+- Codex has not worked in this repo/session yet, OR
+- The change touches auth/session, firebase rules, routing/gating, theming, caching, or security.
+If PRE-FLIGHT is required:
+- Follow `docs/bootstrap/fresh-install-checklist.md` Step 0 (standards-first required reading + comprehension handshake).
+- Output the required Preflight format before QOS CHECK.
+
+Before any code:
+1) Run `QOS CHECK` per `docs/checklists/qos-check.md`.
+2) MUST read and provide an implementation plan aligned to:
+   - `AGENTS.md`
+   - `docs/standards/engineering-source-of-truth.md`
+   - `docs/standards/repo-structure-and-conventions.md`
+   - `docs/standards/nextjs-runtime-performance.md` (if routing/data/caching/rendering is touched)
+   - `docs/standards/theming-architecture.md` (if styling/theme tokens/template scope is touched)
+   - `docs/standards/loading-error-and-resilience.md` (if any route/data surface is touched)
+   - `docs/standards/ops-quality-and-security.md` (if auth/session/env/rate limits/logging/CSP is touched)
+   - `docs/standards/drag-and-drop.md` (if DnD or sortable UI is touched)
+   - `docs/component-registry.md` (if adding/updating components)
+   - `docs/component-build-order.md` (if adding new components/patterns/sections)
+   - `docs/checklists/definition-of-done.md`
+   - `docs/checklists/qos-check.md`
+   - `docs/checklists/qos-summary.md`
+   - Relevant product specs in `docs/product/*` (only those impacted)
+   - Relevant firebase specs in `docs/firebase/*` (only those impacted)
+   - Relevant roadmap docs in `docs/roadmap/*` (only those impacted)
+3) Ask for confirmation using exactly:
+   `Implementation plan aligned to standards. Confirm and I will proceed with code edits.`
+
+Do not output code until confirmation is given.
+
+Hard enforcement (non-negotiable):
+- Reuse-first.
+- Layering integrity: `tokens -> primitives -> ui -> patterns -> sections -> routes`. No reverse imports.
+- Token-only styling in colocated `.module.css`. No inline styles unless explicitly approved and logged.
+- No new components outside `docs/component-registry.md` without updating the registry first.
+- Do not violate build-order rules in `docs/component-build-order.md` when introducing new modules.
+- No broad rewrites: keep changes scoped to touched surfaces. If larger debt is found, log a follow-up task.
+
+Required output format in the plan:
+- Files/layers touched
+- Why this approach is standards-compliant
+- Any new/updated contracts (components/schemas)
+- Caching/auth/session impact check (explicitly state “none” if none)
+- Testing updates required
+
+Now perform the following task:
+[DESCRIBE THE TWEAK CLEARLY HERE]
+
+```
+
+---
+
 ## Global prefix (paste at the top of every Codex request)
 
 Paste this block first in every task:
@@ -64,6 +128,94 @@ Enforce:
 - Token-only styling in colocated `.module.css`
 - No new components outside `docs/component-registry.md` without updating it first
 - Obey build order in `docs/component-build-order.md`
+```
+
+---
+
+## CMS Section Migration prefix (paste at the top of every Codex request when migrating to new sections)
+
+
+```
+Apply `AGENTS.md` and `docs/codex-workflow.md` strictly.
+
+PRE-FLIGHT (required when starting a fresh repo OR starting a new milestone):
+- Follow `docs/bootstrap/fresh-install-checklist.md` Step 0 (standards-first required reading + comprehension handshake).
+- Output the required Preflight format before QOS CHECK.
+
+This task is a **SECTION MIGRATION SLICE**.
+Scope is intentionally narrow to avoid drift.
+
+Before any code:
+1) Run `QOS CHECK` per `docs/checklists/qos-check.md`.
+2) MUST read and provide an implementation plan aligned to:
+   - `AGENTS.md`
+   - `docs/standards/engineering-source-of-truth.md`
+   - `docs/standards/repo-structure-and-conventions.md`
+   - `docs/standards/nextjs-runtime-performance.md`
+   - `docs/standards/theming-architecture.md`
+   - `docs/standards/loading-error-and-resilience.md`
+   - `docs/standards/ops-quality-and-security.md`
+   - `docs/standards/drag-and-drop.md` (if repeatables/reorder)
+   - `docs/checklists/definition-of-done.md`
+   - `docs/checklists/qos-check.md`
+   - `docs/checklists/qos-summary.md`
+   - `docs/component-registry.md`
+   - `docs/component-build-order.md`
+   - `docs/roadmap/section-composition-policy.md`
+   - `docs/roadmap/cms-fragment-catalogue.md` (use fragments; no ad-hoc schemas)
+   - `docs/roadmap/implementation-roadmap.md`
+   - Relevant product specs in `docs/product/*` (especially CMS/editor specs and media rules)
+   - Relevant firebase specs in `docs/firebase/*` (only if touched)
+3) Ask for confirmation using exactly:
+   `Implementation plan aligned to standards. Confirm and I will proceed with code edits.`
+
+Do not output code until confirmation is given.
+
+Hard enforcement (non-negotiable):
+- Reuse-first.
+- Layering integrity: `tokens -> primitives -> ui -> patterns -> sections -> routes`.
+- Token-only styling in colocated `.module.css`. No inline styles.
+- No new components outside `docs/component-registry.md` without updating it first.
+- Obey build order in `docs/component-build-order.md`.
+- Follow `docs/roadmap/section-composition-policy.md`:
+  - semantic sections only; variants are layout-only; no god-section merges.
+- Follow `docs/roadmap/cms-fragment-catalogue.md`:
+  - section schemas MUST compose fragments; do not redefine fragment logic ad-hoc.
+- This slice MUST NOT modify or migrate unrelated sections.
+- This slice MUST NOT do “visual redesign” beyond what the section doc requires for correct rendering.
+- If a missing fragment is required, Codex MUST propose a doc update to `cms-fragment-catalogue.md` first and ask for approval before implementing it.
+
+Fragment enforcement (HARD):
+- The section MUST be implemented using fragment-composed schemas per `docs/roadmap/cms-fragment-catalogue.md`.
+- If any required fragment is missing in `src/lib/cms/**`, Codex MUST implement it in this slice exactly as specified in the fragment catalogue.
+- Codex MUST NOT invent new fragment shapes. If the catalogue lacks a needed fragment, Codex MUST propose a catalogue update and ask for approval before coding.
+
+Deliverables for every section migration (required):
+- Implement the section per the section doc:
+  - schema (single source of truth)
+  - editor groups + fields (schema-driven)
+  - renderer behavior
+  - readiness + publish gate rules
+  - media usageRefs extraction (if media fields exist)
+- Tests (minimum):
+  - schema validation and readiness/publish gate tests
+  - repeatable editor add/remove/reorder tests (if repeatables)
+- Docs updates in the same change:
+  - `docs/product/cms-block-registry.md` updated if block added/changed
+  - `docs/roadmap/cms-fragment-catalogue.md` updated if fragments changed
+  - any section list/registry docs updated if needed
+
+Precedence (HARD):
+- `docs/roadmap/cms-SECTIONNAME.md` is the source of truth for that section.
+- `docs/roadmap/cms-fragment-catalogue.md` provides fragment definitions and mapping guidance only.
+- If a mapping conflicts with the section doc, follow the section doc and update the mapping for consistency.
+
+Now perform the following task:
+
+[M3] Implement next CMS section from its canonical roadmap doc:
+- Section doc to implement: `docs/roadmap/cms-SECTIONNAME.md`
+- Only implement what this section doc specifies.
+
 ```
 
 ---

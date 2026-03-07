@@ -32,3 +32,4 @@
 .padding_4 { padding: var(--space-4); }
 .padding_5 { padding: var(--space-5); }
 .padding_6 { padding: var(--space-6); }
+.padding_0 { padding: 0; }

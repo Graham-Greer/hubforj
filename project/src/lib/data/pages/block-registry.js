@@ -5,6 +5,60 @@ import {
   evaluateAccordionReadiness,
   normalizeAccordionSectionProps,
 } from "./accordion-section.js";
+import {
+  extractHeroSectionMediaRefs,
+  evaluateHeroSectionReadiness,
+  HERO_SECTION_DEFAULT_PROPS,
+  HERO_SECTION_PREVIEW_PROPS_BY_VARIANT,
+  HERO_SECTION_SCHEMA,
+  normalizeHeroSectionProps,
+} from "../../cms/sections/hero-section.js";
+import {
+  extractFeatureSectionMediaRefs,
+  evaluateFeatureSectionReadiness,
+  FEATURE_SECTION_DEFAULT_PROPS,
+  FEATURE_SECTION_PREVIEW_PROPS_BY_VARIANT,
+  FEATURE_SECTION_SCHEMA,
+  normalizeFeatureSectionProps,
+} from "../../cms/sections/feature-section.js";
+import {
+  extractGridSectionMediaRefs,
+  evaluateGridSectionReadiness,
+  GRID_SECTION_DEFAULT_PROPS,
+  GRID_SECTION_PREVIEW_PROPS_BY_VARIANT,
+  GRID_SECTION_SCHEMA,
+  normalizeGridSectionProps,
+} from "../../cms/sections/grid-section.js";
+import {
+  evaluateStatsSectionReadiness,
+  normalizeStatsSectionProps,
+  STATS_SECTION_DEFAULT_PROPS,
+  STATS_SECTION_PREVIEW_PROPS_BY_VARIANT,
+  STATS_SECTION_SCHEMA,
+} from "../../cms/sections/stats-section.js";
+import {
+  extractTeamSectionMediaRefs,
+  evaluateTeamSectionReadiness,
+  normalizeTeamSectionProps,
+  TEAM_SECTION_DEFAULT_PROPS,
+  TEAM_SECTION_PREVIEW_PROPS_BY_VARIANT,
+  TEAM_SECTION_SCHEMA,
+} from "../../cms/sections/team-section.js";
+import {
+  evaluatePricingSectionReadiness,
+  normalizePricingSectionProps,
+  PRICING_SECTION_DEFAULT_PROPS,
+  PRICING_SECTION_PREVIEW_PROPS_BY_VARIANT,
+  PRICING_SECTION_SCHEMA,
+} from "../../cms/sections/pricing-section.js";
+import {
+  extractTestimonialsSectionMediaRefs,
+  evaluateTestimonialsSectionReadiness,
+  normalizeTestimonialsSectionProps,
+  TESTIMONIALS_SECTION_DEFAULT_PROPS,
+  TESTIMONIALS_SECTION_PREVIEW_PROPS_BY_VARIANT,
+  TESTIMONIALS_SECTION_SCHEMA,
+} from "../../cms/sections/testimonials-section.js";
 
 function normalizeText(value) {
   return String(value || "").trim();
@@ -81,79 +135,15 @@ const BLOCK_DEFINITIONS = [
     variants: ["centered", "split"],
     defaultVariant: "centered",
     variantDescriptions: {
-      centered: "Centered headline and CTA with optional supporting image.",
-      split: "Two-column hero with copy beside media.",
+      centered: "Centered headline and CTA with optional background media.",
+      split: "Two-column hero with copy beside featured media.",
     },
-    defaultProps: {
-      heading: "New hero heading",
-      subheading: "Add supporting copy for this section.",
-      ctas: [{ label: "Learn more", href: "/join" }],
-      imageMediaId: "",
-    },
-    previewPropsByVariant: {
-      centered: {
-        heading: "Build your strongest season",
-        subheading: "Weekly events, coaching, and resources tailored for your community.",
-        ctas: [{ label: "Explore programs", href: "/programs" }],
-        imageMediaId: "media_preview_hero",
-      },
-      split: {
-        heading: "Grow together with your hub",
-        subheading: "Pair storytelling with a visual to highlight your next campaign.",
-        ctas: [{ label: "Join now", href: "/join" }],
-        imageMediaId: "media_preview_feature",
-      },
-    },
-    schema: [
-      {
-        key: "core",
-        type: "group",
-        label: "Core",
-        defaultOpen: true,
-        fields: [
-          { key: "heading", label: "Heading", type: "text" },
-          { key: "subheading", label: "Subheading", type: "textarea" },
-        ],
-      },
-      {
-        key: "actions",
-        type: "group",
-        label: "Actions",
-        defaultOpen: false,
-        fields: [
-          { key: "ctas", label: "Calls to action", type: "ctas" },
-        ],
-      },
-      {
-        key: "media",
-        type: "group",
-        label: "Media",
-        defaultOpen: false,
-        fields: [
-          { key: "imageMediaId", label: "Image media ID", type: "media" },
-        ],
-      },
-    ],
-    normalizeProps: (props) => {
-      const value = props && typeof props === "object" && !Array.isArray(props) ? props : {};
-      const normalizedCtaList = normalizeCtas(value.ctas, { label: value.ctaText, href: value.ctaHref });
-      assertValidCtaContract(normalizedCtaList, "HeroSection.ctas");
-      return {
-        heading: normalizeText(value.heading),
-        subheading: normalizeText(value.subheading),
-        ctas: normalizedCtaList,
-        imageMediaId: normalizeText(value.imageMediaId),
-      };
-    },
-    evaluateReadiness: (props) => {
-      const missing = evaluateCtaReadiness(props?.ctas);
-      return {
-        readyForDraft: missing.length === 0,
-        readyForPublish: missing.length === 0,
-        missingRequiredFields: missing,
-        missingCount: missing.length,
-      };
-    },
+    defaultProps: HERO_SECTION_DEFAULT_PROPS,
+    previewPropsByVariant: HERO_SECTION_PREVIEW_PROPS_BY_VARIANT,
+    schema: HERO_SECTION_SCHEMA,
+    normalizeProps: (props, variant) => normalizeHeroSectionProps(props, variant),
+    evaluateReadiness: (props, variant) => evaluateHeroSectionReadiness(props, variant),
+    extractMediaRefs: (props) => extractHeroSectionMediaRefs(props),
   },
   {
     type: "RichTextSection",
@@ -173,6 +163,37 @@ const BLOCK_DEFINITIONS = [
       },
     },
     schema: [{ key: "content", label: "Content", type: "wysiwyg" }],
+  },
+  {
+    type: "FeatureSection",
+    label: "Feature",
+    variants: ["centered", "split"],
+    defaultVariant: "centered",
+    variantDescriptions: {
+      centered: "Mid-page highlight with optional media mode.",
+      split: "Two-column feature content beside required media.",
+    },
+    defaultProps: FEATURE_SECTION_DEFAULT_PROPS,
+    previewPropsByVariant: FEATURE_SECTION_PREVIEW_PROPS_BY_VARIANT,
+    schema: FEATURE_SECTION_SCHEMA,
+    normalizeProps: (props, variant) => normalizeFeatureSectionProps(props, variant),
+    evaluateReadiness: (props, variant) => evaluateFeatureSectionReadiness(props, variant),
+    extractMediaRefs: (props, variant) => extractFeatureSectionMediaRefs(props, variant),
+  },
+  {
+    type: "GridSection",
+    label: "Grid",
+    variants: ["default"],
+    defaultVariant: "default",
+    variantDescriptions: {
+      default: "Flexible card grid with optional lead layout.",
+    },
+    defaultProps: GRID_SECTION_DEFAULT_PROPS,
+    previewPropsByVariant: GRID_SECTION_PREVIEW_PROPS_BY_VARIANT,
+    schema: GRID_SECTION_SCHEMA,
+    normalizeProps: (props) => normalizeGridSectionProps(props),
+    evaluateReadiness: (props) => evaluateGridSectionReadiness(props),
+    extractMediaRefs: (props) => extractGridSectionMediaRefs(props),
   },
   {
     type: "CTASection",
@@ -256,42 +277,6 @@ const BLOCK_DEFINITIONS = [
         missingCount: missing.length,
       };
     },
-  },
-  {
-    type: "FeatureGridSection",
-    label: "Feature grid",
-    variants: ["2col", "3col", "4col"],
-    defaultVariant: "3col",
-    variantDescriptions: {
-      "2col": "Two-column feature cards for larger copy blocks.",
-      "3col": "Balanced three-column grid for most landing pages.",
-      "4col": "Compact four-column grid for short feature highlights.",
-    },
-    defaultProps: {
-      title: "Features",
-      itemsText: "Feature one|Description\nFeature two|Description",
-    },
-    previewPropsByVariant: {
-      "2col": {
-        title: "Why members stay",
-        itemsText:
-          "Expert coaches|Experienced staff and volunteer mentors\nWeekly sessions|Consistent programming for all levels\nMember support|Resources and guidance beyond events\nCommunity impact|Opportunities to give back locally",
-      },
-      "3col": {
-        title: "Everything in one place",
-        itemsText:
-          "Programs|Track upcoming workshops and meetups\nRegistrations|Manage signups and waitlists clearly\nMemberships|Handle plans and renewals\nCommunications|Share announcements quickly\nMedia|Keep your visuals organized\nAnalytics|Measure what matters",
-      },
-      "4col": {
-        title: "Built for speed",
-        itemsText:
-          "Fast setup|Launch pages quickly\nReusable blocks|Keep design consistent\nClear workflows|Draft, preview, publish\nSafe defaults|Guarded permissions",
-      },
-    },
-    schema: [
-      { key: "title", label: "Title", type: "text" },
-      { key: "itemsText", label: "Items (title|description per line)", type: "textarea" },
-    ],
   },
   {
     type: "AccordionSection",
@@ -408,114 +393,62 @@ const BLOCK_DEFINITIONS = [
   {
     type: "PricingSection",
     label: "Pricing",
-    variants: ["3tier", "enterprise"],
-    defaultVariant: "3tier",
+    variants: ["tiers"],
+    defaultVariant: "tiers",
     variantDescriptions: {
-      "3tier": "Three pricing tiers for self-serve offerings.",
-      enterprise: "Enterprise-focused presentation with premium emphasis.",
+      tiers: "Pricing tiers rendered as cards with structured features and CTA.",
     },
-    defaultProps: {
-      title: "Membership plans",
-      tiersText: "Starter|$19|Great for getting started",
-    },
-    previewPropsByVariant: {
-      "3tier": {
-        title: "Membership plans",
-        tiersText:
-          "Starter|$19/mo|Core access and weekly sessions\nGrowth|$39/mo|Expanded programs and workshops\nLeadership|$79/mo|Priority support and advanced tracks",
-      },
-      enterprise: {
-        title: "Organization plans",
-        tiersText:
-          "Community|$199/mo|Support for one local chapter\nRegional|$499/mo|Multi-site tools and reporting\nEnterprise|Contact us|Custom onboarding and governance",
-      },
-    },
-    schema: [
-      { key: "title", label: "Title", type: "text" },
-      { key: "tiersText", label: "Tiers (name|price|description per line)", type: "textarea" },
-    ],
+    defaultProps: PRICING_SECTION_DEFAULT_PROPS,
+    previewPropsByVariant: PRICING_SECTION_PREVIEW_PROPS_BY_VARIANT,
+    schema: PRICING_SECTION_SCHEMA,
+    normalizeProps: (props, variant) => normalizePricingSectionProps(props, variant),
+    evaluateReadiness: (props, variant) => evaluatePricingSectionReadiness(props, variant),
   },
   {
     type: "StatsSection",
     label: "Stats",
-    variants: ["row", "cards"],
-    defaultVariant: "row",
+    variants: ["cards", "split"],
+    defaultVariant: "cards",
     variantDescriptions: {
-      row: "Inline metrics row for quick impact statements.",
-      cards: "Card-based metrics for stronger visual separation.",
+      cards: "Card-based stats grid with optional icons and badges.",
+      split: "Two-column stats section with header and actions alongside metrics.",
     },
-    defaultProps: {
-      itemsText: "250+|Members\n35|Events",
-    },
-    previewPropsByVariant: {
-      row: {
-        itemsText: "2.4k|Active members\n148|Annual events\n96%|Retention rate",
-      },
-      cards: {
-        itemsText: "18|Programs live\n42|Partner organizations\n12|Cities served",
-      },
-    },
-    schema: [{ key: "itemsText", label: "Stats (value|label per line)", type: "textarea" }],
+    defaultProps: STATS_SECTION_DEFAULT_PROPS,
+    previewPropsByVariant: STATS_SECTION_PREVIEW_PROPS_BY_VARIANT,
+    schema: STATS_SECTION_SCHEMA,
+    normalizeProps: (props, variant) => normalizeStatsSectionProps(props, variant),
+    evaluateReadiness: (props, variant) => evaluateStatsSectionReadiness(props, variant),
   },
   {
     type: "TeamSection",
     label: "Team",
-    variants: ["grid", "withLead"],
-    defaultVariant: "grid",
+    variants: ["default"],
+    defaultVariant: "default",
     variantDescriptions: {
-      grid: "Balanced team grid for staff and volunteers.",
-      withLead: "Lead-highlight layout with supporting team cards.",
+      default: "Responsive team people grid with optional avatars, badges, and social links.",
     },
-    defaultProps: {
-      title: "Meet the team",
-      membersText: "Name|Role|Bio",
-    },
-    previewPropsByVariant: {
-      grid: {
-        title: "Meet our team",
-        membersText:
-          "Jordan Lee|Program Director|Leads strategy and community partnerships\nAvery Kim|Operations Lead|Keeps events and volunteers coordinated\nMorgan Diaz|Member Success|Supports onboarding and engagement",
-      },
-      withLead: {
-        title: "Leadership team",
-        membersText:
-          "Casey Morgan|Executive Director|Oversees mission and long-term growth\nRiley Chen|Programs Manager|Designs curriculum and seasonal tracks\nTaylor Brooks|Community Lead|Builds local partnerships and outreach",
-      },
-    },
-    schema: [
-      { key: "title", label: "Title", type: "text" },
-      { key: "membersText", label: "Members (name|role|bio per line)", type: "textarea" },
-    ],
+    defaultProps: TEAM_SECTION_DEFAULT_PROPS,
+    previewPropsByVariant: TEAM_SECTION_PREVIEW_PROPS_BY_VARIANT,
+    schema: TEAM_SECTION_SCHEMA,
+    normalizeProps: (props) => normalizeTeamSectionProps(props),
+    evaluateReadiness: (props) => evaluateTeamSectionReadiness(props),
+    extractMediaRefs: (props) => extractTeamSectionMediaRefs(props),
   },
   {
     type: "TestimonialsSection",
     label: "Testimonials",
-    variants: ["grid", "spotlight"],
+    variants: ["grid", "lead"],
     defaultVariant: "grid",
     variantDescriptions: {
       grid: "Multiple testimonials shown with equal weight.",
-      spotlight: "Lead quote emphasis with supporting endorsements.",
+      lead: "Lead testimonial followed by supporting testimonials.",
     },
-    defaultProps: {
-      title: "What people say",
-      itemsText: '"Great community"|Alex',
-    },
-    previewPropsByVariant: {
-      grid: {
-        title: "What members say",
-        itemsText:
-          '"This hub helped me build real momentum."|Alex\n"Programs are clear and easy to join."|Sam\n"I found mentors and collaborators quickly."|Jordan',
-      },
-      spotlight: {
-        title: "Member spotlight",
-        itemsText:
-          '"The structure here changed how our team delivers programs."|Casey\n"Support has been excellent from day one."|Taylor',
-      },
-    },
-    schema: [
-      { key: "title", label: "Title", type: "text" },
-      { key: "itemsText", label: "Items (quote|name per line)", type: "textarea" },
-    ],
+    defaultProps: TESTIMONIALS_SECTION_DEFAULT_PROPS,
+    previewPropsByVariant: TESTIMONIALS_SECTION_PREVIEW_PROPS_BY_VARIANT,
+    schema: TESTIMONIALS_SECTION_SCHEMA,
+    normalizeProps: (props, variant) => normalizeTestimonialsSectionProps(props, variant),
+    evaluateReadiness: (props, variant) => evaluateTestimonialsSectionReadiness(props, variant),
+    extractMediaRefs: (props, variant) => extractTestimonialsSectionMediaRefs(props, variant),
   },
   {
     type: "LegalDocumentSection",
@@ -613,14 +546,37 @@ export function getVariantDescription(type, variant) {
 
 export function getBlockEditorSchema(type) {
   const definition = getCmsBlockDefinition(type);
-  return definition?.schema ? cloneValue(definition.schema) : [];
+  if (!definition?.schema) return [];
+  const schema = cloneValue(definition.schema);
+  return schema.map((group) => ({
+    ...group,
+    fields: (group.fields || []).map((field) => {
+      if (field.type !== "variant-select" || Array.isArray(field.options)) return field;
+      return {
+        ...field,
+        options: definition.variants.map((variant) => ({
+          value: variant,
+          label: variant,
+        })),
+      };
+    }),
+  }));
 }
 
-export function normalizeBlockProps(type, props) {
+export function normalizeBlockProps(type, props, variant) {
   const definition = getCmsBlockDefinition(type);
   if (!definition) return {};
   if (typeof definition.normalizeProps === "function") {
-    return definition.normalizeProps(props);
+    return definition.normalizeProps(props, normalizeVariant(type, variant));
+  }
+  return props && typeof props === "object" && !Array.isArray(props) ? props : {};
+}
+
+function normalizePropsWithVariant(type, variant, props) {
+  const definition = getCmsBlockDefinition(type);
+  if (!definition) return {};
+  if (typeof definition.normalizeProps === "function") {
+    return definition.normalizeProps(props, normalizeVariant(type, variant));
   }
   return props && typeof props === "object" && !Array.isArray(props) ? props : {};
 }
@@ -637,7 +593,10 @@ export function evaluateBlockReadiness(block) {
   }
 
   if (typeof definition.evaluateReadiness === "function") {
-    return definition.evaluateReadiness(block?.props || {});
+    return definition.evaluateReadiness(
+      normalizePropsWithVariant(block?.type, block?.variant, block?.props || {}),
+      normalizeVariant(block?.type, block?.variant)
+    );
   }
 
   return {
@@ -650,4 +609,51 @@ export function evaluateBlockReadiness(block) {
 
 export function isSupportedBlockType(type) {
   return Boolean(getCmsBlockDefinition(type));
+}
+
+function collectMediaIdsFromValue(value, ids) {
+  if (!value) return;
+
+  if (typeof value === "string") {
+    value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .forEach((item) => {
+        if (/^media_[a-z0-9_-]+$/i.test(item)) {
+          ids.add(item);
+        }
+      });
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectMediaIdsFromValue(item, ids));
+    return;
+  }
+
+  if (typeof value === "object") {
+    for (const nested of Object.values(value)) {
+      collectMediaIdsFromValue(nested, ids);
+    }
+  }
+}
+
+export function collectMediaIdsForBlock(block) {
+  const ids = new Set();
+  const definition = getCmsBlockDefinition(block?.type);
+  const variant = normalizeVariant(block?.type, block?.variant);
+  const normalizedProps = normalizePropsWithVariant(block?.type, variant, block?.props || {});
+
+  if (typeof definition?.extractMediaRefs === "function") {
+    const refs = definition.extractMediaRefs(normalizedProps, variant) || [];
+    refs
+      .map((value) => String(value || "").trim())
+      .filter(Boolean)
+      .forEach((value) => ids.add(value));
+    return Array.from(ids);
+  }
+
+  collectMediaIdsFromValue(normalizedProps, ids);
+  return Array.from(ids);
 }

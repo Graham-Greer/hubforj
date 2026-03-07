@@ -3,9 +3,10 @@
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 import HeroSection from "@/components/sections/hero/HeroSection";
+import FeatureSection from "@/components/sections/feature/FeatureSection";
+import GridSection from "@/components/sections/grid/GridSection";
 import RichTextSection from "@/components/sections/rich-text/RichTextSection";
 import CTASection from "@/components/sections/cta/CTASection";
-import FeatureGridSection from "@/components/sections/feature-grid/FeatureGridSection";
 import AccordionSection from "@/components/sections/accordion/AccordionSection";
 import EventListSection from "@/components/sections/event-list/EventListSection";
 import ContactSection from "@/components/sections/contact/ContactSection";
@@ -50,9 +51,10 @@ const MediaLibrary = dynamic(
 
 const SECTION_COMPONENTS = {
   HeroSection,
+  FeatureSection,
+  GridSection,
   RichTextSection,
   CTASection,
-  FeatureGridSection,
   AccordionSection,
   EventListSection,
   ContactSection,
@@ -99,6 +101,45 @@ const PREVIEW_MEDIA_BY_ID = new Map(PREVIEW_MEDIA.map((item) => [item.id, item])
 
 function nextBlockId() {
   return `blk_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function setNestedValue(source, path, nextValue) {
+  const keys = String(path || "")
+    .split(".")
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+
+  if (!keys.length) return source;
+
+  const rootIsArray = Array.isArray(source);
+  const next = rootIsArray
+    ? [...source]
+    : { ...(source && typeof source === "object" ? source : {}) };
+  let cursor = next;
+
+  for (let index = 0; index < keys.length - 1; index += 1) {
+    const rawKey = keys[index];
+    const isArrayCursor = Array.isArray(cursor);
+    const key = isArrayCursor ? Number(rawKey) : rawKey;
+    const nextRawKey = keys[index + 1];
+    const nextIsArray = Number.isInteger(Number(nextRawKey));
+    const currentValue = cursor[key];
+
+    if (Array.isArray(currentValue)) {
+      cursor[key] = [...currentValue];
+    } else if (currentValue && typeof currentValue === "object") {
+      cursor[key] = { ...currentValue };
+    } else {
+      cursor[key] = nextIsArray ? [] : {};
+    }
+
+    cursor = cursor[key];
+  }
+
+  const lastRawKey = keys[keys.length - 1];
+  const lastKey = Array.isArray(cursor) ? Number(lastRawKey) : lastRawKey;
+  cursor[lastKey] = nextValue;
+  return next;
 }
 
 export default function CmsPageEditorClient({
@@ -212,6 +253,16 @@ export default function CmsPageEditorClient({
     );
   }, [settings, blocks, initialDraftSnapshot]);
   const hasAnyUnsavedChanges = hasUnsavedSectionChanges || hasUnsavedPageDraftChanges;
+  const isPagePublished = settings.status === "published" || initialPage.status === "published";
+  const hasPendingPublishUpdates = useMemo(
+    () =>
+      JSON.stringify(blocks || []) !==
+      JSON.stringify(initialPage.publishedComposition || []),
+    [blocks, initialPage.publishedComposition]
+  );
+  const publishButtonLabel = isPagePublished
+    ? (hasPendingPublishUpdates ? "Publish updates" : "Published")
+    : "Publish page";
 
   useEffect(() => {
     const onBeforeUnload = (event) => {
@@ -421,7 +472,7 @@ export default function CmsPageEditorClient({
       return;
     }
 
-    setBlocks((prev) => prev.map((block) => {
+    const applyMediaSelection = (block) => {
       if (block.id !== mediaTarget.blockId) return block;
 
       if (mediaTarget.multiple) {
@@ -437,6 +488,13 @@ export default function CmsPageEditorClient({
         };
       }
 
+      if (mediaTarget.fieldPath) {
+        return {
+          ...block,
+          props: setNestedValue(block.props, mediaTarget.fieldPath, item.id),
+        };
+      }
+
       return {
         ...block,
         props: {
@@ -444,7 +502,16 @@ export default function CmsPageEditorClient({
           [mediaTarget.fieldKey]: item.id,
         },
       };
-    }));
+    };
+
+    if (editingBlockDraft && editingBlockDraft.id === mediaTarget.blockId) {
+      setEditingBlockDraft((prev) => {
+        if (!prev) return prev;
+        return applyMediaSelection(prev);
+      });
+    } else {
+      setBlocks((prev) => prev.map((block) => applyMediaSelection(block)));
+    }
 
     setMediaTarget(null);
   }
@@ -573,7 +640,10 @@ export default function CmsPageEditorClient({
                 attemptSectionTransition(() => {
                   handleBlockRemove(blockId);
                 })}
-              onSelect={setSelectedBlockId}
+              onSelect={(blockId) =>
+                attemptSectionTransition(() => {
+                  openSectionEditor(blockId);
+                })}
               onEdit={(blockId) =>
                 attemptSectionTransition(() => {
                   openSectionEditor(blockId);
@@ -698,6 +768,7 @@ export default function CmsPageEditorClient({
             <Button
               type="button"
               intent="brand"
+              disabled={isPagePublished && !hasPendingPublishUpdates}
               onClick={() => {
                 if (hasUnsavedPageDraftChanges) {
                   setPublishError("Save page draft before publishing.");
@@ -719,7 +790,7 @@ export default function CmsPageEditorClient({
                 });
               }}
             >
-              Publish page
+              {publishButtonLabel}
             </Button>
           </div>
           {initialErrorCode === "STALE_DRAFT" ? (

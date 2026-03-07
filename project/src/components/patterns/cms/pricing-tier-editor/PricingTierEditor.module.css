@@ -1,0 +1,145 @@
+.root {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+}
+
+.masterPane,
+.detailPane {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.masterPane {
+  align-content: start;
+  grid-auto-rows: max-content;
+}
+
+.paneHeader {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
+  justify-content: space-between;
+}
+
+.tierList,
+.featuresList {
+  display: grid;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tierRow {
+  align-items: start;
+  background: var(--surface-default);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: var(--space-2);
+  transition:
+    transform 180ms var(--ease-standard),
+    border-color 160ms var(--ease-standard),
+    box-shadow 160ms var(--ease-standard);
+}
+
+.tierRowSelected {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-subtle);
+}
+
+.dragging {
+  filter: drop-shadow(0 10px 16px rgba(17, 24, 39, 0.16));
+  z-index: var(--z-dropdown);
+}
+
+.over {
+  transform: scale(1.01);
+}
+
+.selectButton {
+  align-items: flex-start;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.selectTitle {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+.selectMeta {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.statusBadge {
+  border-radius: var(--radius-md);
+}
+
+.rowActions {
+  align-items: center;
+  display: flex;
+  gap: var(--space-1);
+}
+
+.dragHandle {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.detailFields {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.counter {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  margin: var(--space-1) 0 0;
+}
+
+.inlineActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.featuresHeader {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.featureRow {
+  align-items: center;
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: 1fr auto;
+}
+
+.empty {
+  color: var(--text-muted);
+  margin: 0;
+}
+
+@media (max-width: 960px) {
+  .root {
+    grid-template-columns: 1fr;
+  }
+}

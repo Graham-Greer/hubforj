@@ -91,3 +91,37 @@ test("deleteMediaAsset blocks deletion when usageCount > 0", async () => {
     }
   );
 });
+
+test("listMediaByHub normalizes legacy storage.googleapis.com URLs", async () => {
+  const hubId = `hub_test_${Date.now()}_d`;
+  seedHub(hubId);
+
+  const db = getMemoryDb();
+  db.media.set(hubId, [
+    {
+      id: "media_legacy_url",
+      hubId,
+      filename: "legacy.jpg",
+      type: "image",
+      contentType: "image/jpeg",
+      sizeBytes: 123,
+      storagePath: "hubs/test-hub/media/media_legacy_url/legacy.jpg",
+      publicUrl:
+        "https://storage.googleapis.com/community-app-c2f67.firebasestorage.app/hubs/test-hub/media/media_legacy_url/legacy.jpg",
+      folderId: SYSTEM_FOLDER_ID,
+      alt: "",
+      usageRefs: [],
+      usageCount: 0,
+      status: "active",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdByUserId: "tester",
+    },
+  ]);
+
+  const media = await listMediaByHub(hubId);
+  assert.equal(
+    media[0].publicUrl,
+    "https://firebasestorage.googleapis.com/v0/b/community-app-c2f67.firebasestorage.app/o/hubs%2Ftest-hub%2Fmedia%2Fmedia_legacy_url%2Flegacy.jpg?alt=media"
+  );
+});

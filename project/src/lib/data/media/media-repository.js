@@ -58,13 +58,95 @@ function ensureSystemFolder(folders, hubId) {
   ];
 }
 
+function normalizeBucketName(value) {
+  return String(value || "")
+    .trim()
+    .replace(/^gs:\/\//, "")
+    .replace(/\/+$/, "");
+}
+
+function buildFirebasePublicUrl(bucketName, storagePath) {
+  const normalizedBucket = normalizeBucketName(bucketName);
+  const normalizedPath = String(storagePath || "").trim();
+  if (!normalizedBucket || !normalizedPath) {
+    return "";
+  }
+
+  const encodedBucket = encodeURIComponent(normalizedBucket);
+  const encodedPath = encodeURIComponent(normalizedPath);
+  return `https://firebasestorage.googleapis.com/v0/b/${encodedBucket}/o/${encodedPath}?alt=media`;
+}
+
+function parseStorageGoogleUrl(value) {
+  try {
+    const url = new URL(String(value || ""));
+    if (url.hostname !== "storage.googleapis.com") {
+      return null;
+    }
+
+    const trimmedPath = url.pathname.replace(/^\/+/, "");
+    if (!trimmedPath) {
+      return null;
+    }
+
+    const [rawBucket, ...rest] = trimmedPath.split("/");
+    if (!rawBucket || !rest.length) {
+      return null;
+    }
+
+    const bucketName = decodeURIComponent(rawBucket);
+    const storagePath = decodeURIComponent(rest.join("/"));
+    if (!bucketName || !storagePath) {
+      return null;
+    }
+
+    return { bucketName, storagePath };
+  } catch {
+    return null;
+  }
+}
+
+function resolveMediaPublicUrl(media, fallbackBucketName) {
+  const explicitUrl = String(media?.publicUrl || media?.url || "").trim();
+  if (!explicitUrl) {
+    return buildFirebasePublicUrl(fallbackBucketName, media?.storagePath) || "";
+  }
+
+  let parsedExplicit;
+  try {
+    parsedExplicit = new URL(explicitUrl);
+  } catch {
+    return explicitUrl;
+  }
+
+  if (parsedExplicit.hostname === "firebasestorage.googleapis.com") {
+    return explicitUrl;
+  }
+
+  if (parsedExplicit.hostname === "storage.googleapis.com") {
+    const parsedLegacy = parseStorageGoogleUrl(explicitUrl);
+    if (parsedLegacy) {
+      return buildFirebasePublicUrl(parsedLegacy.bucketName, parsedLegacy.storagePath) || explicitUrl;
+    }
+  }
+
+  if (!parsedExplicit.protocol || !parsedExplicit.hostname) {
+    return explicitUrl;
+  }
+
+  return explicitUrl;
+}
+
 function mediaToViewModel(media) {
+  const bucketName = normalizeBucketName(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
+  const publicUrl = resolveMediaPublicUrl(media, bucketName);
+
   return {
     id: media.id,
     hubId: media.hubId,
     filename: media.filename,
     type: media.type,
-    publicUrl: media.publicUrl || media.url || "",
+    publicUrl,
     contentType: media.contentType || "",
     sizeBytes: Number(media.sizeBytes || 0),
     width: media.width ? Number(media.width) : null,
@@ -114,10 +196,6 @@ async function normalizeUploadItem(item, index) {
     type,
     bytes,
   };
-}
-
-function toPublicUrl(bucketName, storagePath) {
-  return `https://storage.googleapis.com/${bucketName}/${encodeURI(storagePath)}`;
 }
 
 async function ensureSystemFolderExists(provider, hubId) {
@@ -447,7 +525,7 @@ export async function uploadMediaAssets(hubId, files = [], options = {}, actorId
         contentType: item.contentType,
         sizeBytes: item.sizeBytes,
         storagePath,
-        publicUrl: toPublicUrl(bucketName, storagePath),
+        publicUrl: buildFirebasePublicUrl(bucketName, storagePath),
         folderId,
         alt: "",
         usageRefs: [],

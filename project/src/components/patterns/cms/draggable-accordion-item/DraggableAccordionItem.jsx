@@ -12,6 +12,8 @@ export default function DraggableAccordionItem({
   statusLabel = "",
   statusTone = "success",
   defaultOpen = false,
+  open,
+  onOpenChange,
   dragHandleLabel = "Drag item",
   dragAttributes,
   dragListeners,
@@ -20,8 +22,16 @@ export default function DraggableAccordionItem({
   children,
 }) {
   const panelId = useId();
-  const [open, setOpen] = useState(defaultOpen);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
+  const isControlled = typeof open === "boolean";
+  const isOpen = isControlled ? open : uncontrolledOpen;
   const handleProps = dragDisabled ? {} : { ...dragAttributes, ...dragListeners };
+  const setOpen = (nextOpen) => {
+    if (!isControlled) {
+      setUncontrolledOpen(nextOpen);
+    }
+    onOpenChange?.(nextOpen);
+  };
 
   return (
     <section className={styles.root}>
@@ -39,9 +49,9 @@ export default function DraggableAccordionItem({
         <button
           type="button"
           className={styles.trigger}
-          aria-expanded={open}
+          aria-expanded={isOpen}
           aria-controls={panelId}
-          onClick={() => setOpen((prev) => !prev)}
+          onClick={() => setOpen(!isOpen)}
         >
           <span className={styles.titleWrap}>
             <span className={styles.title}>{title}</span>
@@ -74,14 +84,14 @@ export default function DraggableAccordionItem({
             type="button"
             size="sm"
             variant="tertiary"
-            icon={open ? "expand_less" : "expand_more"}
-            ariaLabel={open ? "Collapse item" : "Expand item"}
-            onClick={() => setOpen((prev) => !prev)}
+            icon={isOpen ? "expand_less" : "expand_more"}
+            ariaLabel={isOpen ? "Collapse item" : "Expand item"}
+            onClick={() => setOpen(!isOpen)}
           />
         </div>
       </div>
 
-      {open ? (
+      {isOpen ? (
         <div id={panelId} className={styles.panel}>
           {children}
         </div>

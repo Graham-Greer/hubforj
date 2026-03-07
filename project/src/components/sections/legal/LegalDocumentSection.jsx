@@ -1,12 +1,13 @@
-import Heading from "@/components/primitives/heading/Heading";
 import Text from "@/components/primitives/text/Text";
+import SectionHeader from "@/components/patterns/section-header/SectionHeader";
+import Section from "@/components/patterns/section/Section";
 import styles from "./LegalDocumentSection.module.css";
 
 export default function LegalDocumentSection({ content }) {
   return (
-    <section className={styles.root}>
-      <Heading as="h2" size="md">Legal</Heading>
+    <Section className={styles.root}>
+      <SectionHeader title="Legal" />
       <Text>{content || "Add legal document content."}</Text>
-    </section>
+    </Section>
   );
 }

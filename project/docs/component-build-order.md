@@ -233,17 +233,17 @@ Core blocks:
 3) `sections/hero/HeroSection` (variants: centered|split)
 4) `sections/rich-text/RichTextSection`
 5) `sections/cta/CTASection` (variants: centered|split)
-6) `sections/feature-grid/FeatureGridSection` (variants: 2col|3col|4col)
+6) `sections/grid/GridSection` (variant: default with `layout=grid|lead`)
 7) `sections/accordion/AccordionSection` (variant: default)
 8) `sections/event-list/EventListSection` (variants: upcoming|featured|category)
 9) `sections/contact/ContactSection` (variants: card|split)
 10) `sections/logo-marquee/LogoMarqueeSection` (variants: marquee|grid)
 
 Optional sections (now MVP per decision):
-11) `sections/pricing/PricingSection` (variants: 3tier|enterprise)
+11) `sections/pricing/PricingSection` (variant: tiers)
 12) `sections/stats/StatsSection` (variants: row|cards)
-13) `sections/team/TeamSection` (variants: grid|withLead)
-14) `sections/testimonials/TestimonialsSection` (variants: grid|spotlight)
+13) `sections/team/TeamSection` (variant: default)
+14) `sections/testimonials/TestimonialsSection` (variants: grid|lead)
 15) `sections/legal/LegalDocumentSection`
 16) `sections/fallback/SectionRenderFallback`
 

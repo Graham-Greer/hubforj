@@ -33,7 +33,17 @@ function restrictToVerticalAxis({ transform }) {
   return { ...transform, x: 0 };
 }
 
-function SortableRow({ item, index, totalItems, onChange, onRequestRemove, renderItemFields }) {
+function SortableRow({
+  item,
+  index,
+  onChange,
+  onRequestRemove,
+  renderItemFields,
+  getItemTitle,
+  getItemStatus,
+  openItemId,
+  onOpenItemChange,
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging, isOver } = useSortable({
     id: item.id,
   });
@@ -43,7 +53,9 @@ function SortableRow({ item, index, totalItems, onChange, onRequestRemove, rende
     transition,
   };
 
-  const status = getRepeatableItemStatus(item);
+  const status = typeof getItemStatus === "function"
+    ? getItemStatus(item, index)
+    : getRepeatableItemStatus(item);
 
   return (
     <li
@@ -52,11 +64,12 @@ function SortableRow({ item, index, totalItems, onChange, onRequestRemove, rende
       className={[styles.item, isDragging ? styles.dragging : "", isOver ? styles.over : ""].join(" ")}
     >
       <DraggableAccordionItem
-        title={item.title?.trim() || `Item ${index + 1}`}
+        title={typeof getItemTitle === "function" ? getItemTitle(item, index) : item.title?.trim() || `Item ${index + 1}`}
         subtitle={item.subtitle || ""}
         statusLabel={status.label}
         statusTone={status.tone}
-        defaultOpen={index === totalItems - 1}
+        open={item.id === openItemId}
+        onOpenChange={(nextOpen) => onOpenItemChange?.(item.id, nextOpen)}
         dragHandleLabel={`Drag item ${index + 1}`}
         dragAttributes={attributes}
         dragListeners={listeners}
@@ -70,27 +83,42 @@ function SortableRow({ item, index, totalItems, onChange, onRequestRemove, rende
           },
         ]}
       >
-        {renderItemFields?.({
-          item,
-          index,
-          onChange: (next) => onChange?.(index, next),
-        })}
+        <div className={styles.itemFields}>
+          {renderItemFields?.({
+            item,
+            index,
+            onChange: (next) => onChange?.(index, next),
+          })}
+        </div>
       </DraggableAccordionItem>
     </li>
   );
 }
 
-function StaticRow({ item, index, totalItems, onChange, onRequestRemove, renderItemFields }) {
-  const status = getRepeatableItemStatus(item);
+function StaticRow({
+  item,
+  index,
+  onChange,
+  onRequestRemove,
+  renderItemFields,
+  getItemTitle,
+  getItemStatus,
+  openItemId,
+  onOpenItemChange,
+}) {
+  const status = typeof getItemStatus === "function"
+    ? getItemStatus(item, index)
+    : getRepeatableItemStatus(item);
 
   return (
     <li className={styles.item}>
       <DraggableAccordionItem
-        title={item.title?.trim() || `Item ${index + 1}`}
+        title={typeof getItemTitle === "function" ? getItemTitle(item, index) : item.title?.trim() || `Item ${index + 1}`}
         subtitle={item.subtitle || ""}
         statusLabel={status.label}
         statusTone={status.tone}
-        defaultOpen={index === totalItems - 1}
+        open={item.id === openItemId}
+        onOpenChange={(nextOpen) => onOpenItemChange?.(item.id, nextOpen)}
         dragHandleLabel={`Drag item ${index + 1}`}
         dragDisabled
         actionItems={[
@@ -103,11 +131,13 @@ function StaticRow({ item, index, totalItems, onChange, onRequestRemove, renderI
           },
         ]}
       >
-        {renderItemFields?.({
-          item,
-          index,
-          onChange: (next) => onChange?.(index, next),
-        })}
+        <div className={styles.itemFields}>
+          {renderItemFields?.({
+            item,
+            index,
+            onChange: (next) => onChange?.(index, next),
+          })}
+        </div>
       </DraggableAccordionItem>
     </li>
   );
@@ -122,9 +152,27 @@ export default function RepeatableListEditor({
   addLabel = "Add item",
   removeTitle = "Remove item?",
   removeMessage = "This action cannot be undone.",
+  getItemTitle,
+  getItemStatus,
 }) {
   const [pendingRemoveId, setPendingRemoveId] = useState("");
+  const [openItemId, setOpenItemId] = useState("");
   const isHydrated = useHydrated();
+
+  const resolvedOpenItemId = useMemo(() => {
+    if (!items.length) {
+      return "";
+    }
+    if (!openItemId) {
+      // Preserve an explicit "all collapsed" state instead of auto-opening an item.
+      return "";
+    }
+    const exists = items.some((item) => item.id === openItemId);
+    if (!exists) {
+      return items[items.length - 1]?.id || "";
+    }
+    return openItemId;
+  }, [items, openItemId]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -141,7 +189,9 @@ export default function RepeatableListEditor({
   }
 
   function handleAddItem() {
-    onChange?.(appendCreatedItem(items, onCreateItem));
+    const nextItems = appendCreatedItem(items, onCreateItem);
+    onChange?.(nextItems);
+    setOpenItemId(nextItems[nextItems.length - 1]?.id || "");
   }
 
   function handleDragEnd(event) {
@@ -157,6 +207,10 @@ export default function RepeatableListEditor({
     if (!pendingItem) return;
     onChange?.(removeItemById(items, pendingItem.id));
     setPendingRemoveId("");
+  }
+
+  function handleOpenItemChange(itemId, nextOpen) {
+    setOpenItemId(nextOpen ? itemId : "");
   }
 
   return (
@@ -183,10 +237,13 @@ export default function RepeatableListEditor({
                     key={item.id}
                     item={item}
                     index={index}
-                    totalItems={items.length}
                     onChange={handleItemChange}
                     onRequestRemove={setPendingRemoveId}
                     renderItemFields={renderItemFields}
+                    getItemTitle={getItemTitle}
+                    getItemStatus={getItemStatus}
+                    openItemId={resolvedOpenItemId}
+                    onOpenItemChange={handleOpenItemChange}
                   />
                 ))}
               </ul>
@@ -199,10 +256,13 @@ export default function RepeatableListEditor({
                 key={item.id}
                 item={item}
                 index={index}
-                totalItems={items.length}
                 onChange={handleItemChange}
                 onRequestRemove={setPendingRemoveId}
                 renderItemFields={renderItemFields}
+                getItemTitle={getItemTitle}
+                getItemStatus={getItemStatus}
+                openItemId={resolvedOpenItemId}
+                onOpenItemChange={handleOpenItemChange}
               />
             ))}
           </ul>

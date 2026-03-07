@@ -1,4 +1,5 @@
 import AppImage from "@/components/ui/image/AppImage";
+import Section from "@/components/patterns/section/Section";
 import styles from "./LogoMarqueeSection.module.css";
 
 function parseIds(value) {
@@ -12,7 +13,7 @@ export default function LogoMarqueeSection({ variant = "grid", logosMediaIds, me
   const ids = parseIds(logosMediaIds);
 
   return (
-    <section className={[styles.root, styles[`variant_${variant}`] || ""].join(" ")}>
+    <Section className={[styles.root, styles[`variant_${variant}`] || ""].join(" ")}>
       {ids.map((id) => {
         const media = mediaById?.get(id);
         if (!media?.publicUrl) return null;
@@ -23,6 +24,6 @@ export default function LogoMarqueeSection({ variant = "grid", logosMediaIds, me
           </div>
         );
       })}
-    </section>
+    </Section>
   );
 }

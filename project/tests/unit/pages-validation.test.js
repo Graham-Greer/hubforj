@@ -93,37 +93,195 @@ test("assertCompositionPublishReady blocks incomplete AccordionSection blocks", 
 });
 
 test("validateCompositionInput enforces CTA href scheme rules", () => {
+  const [block] = validateCompositionInput([
+    {
+      id: "blk_hero_1",
+      type: "HeroSection",
+      variant: "centered",
+      props: {
+        heading: "Welcome",
+        ctas: [{ label: "Join", href: "javascript:alert(1)" }],
+      },
+    },
+  ]);
+
+  assert.equal(block.type, "HeroSection");
   assert.throws(
-    () =>
-      validateCompositionInput([
-        {
-          id: "blk_hero_1",
-          type: "HeroSection",
-          variant: "centered",
-          props: {
-            heading: "Welcome",
-            ctas: [{ label: "Join", href: "javascript:alert(1)" }],
-          },
-        },
-      ]),
-    /href must be internal/
+    () => assertCompositionPublishReady([block]),
+    /Cannot publish page/
   );
 });
 
 test("validateCompositionInput rejects empty CTA rows once added", () => {
+  const [block] = validateCompositionInput([
+    {
+      id: "blk_hero_2",
+      type: "HeroSection",
+      variant: "centered",
+      props: {
+        heading: "Welcome",
+        ctas: [{ label: "", href: "" }],
+      },
+    },
+  ]);
+
+  assert.equal(block.type, "HeroSection");
   assert.throws(
-    () =>
-      validateCompositionInput([
-        {
-          id: "blk_hero_2",
-          type: "HeroSection",
-          variant: "centered",
-          props: {
-            heading: "Welcome",
-            ctas: [{ label: "", href: "" }],
-          },
+    () => assertCompositionPublishReady([block]),
+    /Cannot publish page/
+  );
+});
+
+test("assertCompositionPublishReady blocks FeatureSection when centered media mode requires alt", () => {
+  const [block] = validateCompositionInput([
+    {
+      id: "blk_feature_1",
+      type: "FeatureSection",
+      variant: "centered",
+      props: {
+        title: "Feature",
+        centeredMediaMode: "background",
+        media: {
+          mediaId: "media_feature",
+          kind: "image",
+          alt: "",
         },
-      ]),
-    /label is required when CTA is added/
+      },
+    },
+  ]);
+
+  assert.equal(block.type, "FeatureSection");
+  assert.throws(
+    () => assertCompositionPublishReady([block]),
+    /Cannot publish page/
+  );
+});
+
+test("assertCompositionPublishReady blocks GridSection when card image alt is missing", () => {
+  const [block] = validateCompositionInput([
+    {
+      id: "blk_grid_1",
+      type: "GridSection",
+      variant: "default",
+      props: {
+        items: [
+          {
+            id: "card_1",
+            title: "Card title",
+            media: {
+              imageMediaId: "media_grid_1",
+              alt: "",
+            },
+          },
+        ],
+      },
+    },
+  ]);
+
+  assert.equal(block.type, "GridSection");
+  assert.throws(
+    () => assertCompositionPublishReady([block]),
+    /Cannot publish page/
+  );
+});
+
+test("assertCompositionPublishReady blocks StatsSection when icon is added without icon name", () => {
+  const [block] = validateCompositionInput([
+    {
+      id: "blk_stats_1",
+      type: "StatsSection",
+      variant: "cards",
+      props: {
+        items: [
+          {
+            id: "stat_1",
+            label: "Members",
+            value: "2.4k",
+            icon: { name: "", tone: "neutral" },
+          },
+        ],
+      },
+    },
+  ]);
+
+  assert.equal(block.type, "StatsSection");
+  assert.throws(
+    () => assertCompositionPublishReady([block]),
+    /Cannot publish page/
+  );
+});
+
+test("assertCompositionPublishReady blocks StatsSection with invalid CTA href", () => {
+  const [block] = validateCompositionInput([
+    {
+      id: "blk_stats_2",
+      type: "StatsSection",
+      variant: "split",
+      props: {
+        items: [{ id: "stat_1", label: "Programs", value: "18" }],
+        ctas: [{ label: "Read report", href: "javascript:alert(1)" }],
+      },
+    },
+  ]);
+
+  assert.equal(block.type, "StatsSection");
+  assert.throws(
+    () => assertCompositionPublishReady([block]),
+    /Cannot publish page/
+  );
+});
+
+test("assertCompositionPublishReady blocks TeamSection when avatar alt is missing", () => {
+  const [block] = validateCompositionInput([
+    {
+      id: "blk_team_1",
+      type: "TeamSection",
+      variant: "default",
+      props: {
+        items: [
+          {
+            id: "person_1",
+            name: "Jordan Lee",
+            avatar: {
+              imageMediaId: "media_team_1",
+              alt: "",
+            },
+          },
+        ],
+      },
+    },
+  ]);
+
+  assert.equal(block.type, "TeamSection");
+  assert.throws(
+    () => assertCompositionPublishReady([block]),
+    /Cannot publish page/
+  );
+});
+
+test("assertCompositionPublishReady blocks TeamSection when social URL is not https", () => {
+  const [block] = validateCompositionInput([
+    {
+      id: "blk_team_2",
+      type: "TeamSection",
+      variant: "default",
+      props: {
+        items: [
+          {
+            id: "person_1",
+            name: "Jordan Lee",
+            socialLinks: [
+              { id: "social_1", platform: "linkedin", href: "http://linkedin.com/in/jordan" },
+            ],
+          },
+        ],
+      },
+    },
+  ]);
+
+  assert.equal(block.type, "TeamSection");
+  assert.throws(
+    () => assertCompositionPublishReady([block]),
+    /Cannot publish page/
   );
 });

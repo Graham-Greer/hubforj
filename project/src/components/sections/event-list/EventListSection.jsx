@@ -1,5 +1,7 @@
 import Heading from "@/components/primitives/heading/Heading";
 import Text from "@/components/primitives/text/Text";
+import SectionHeader from "@/components/patterns/section-header/SectionHeader";
+import Section from "@/components/patterns/section/Section";
 import Badge from "@/components/ui/badge/Badge";
 import Card from "@/components/ui/card/Card";
 import styles from "./EventListSection.module.css";
@@ -12,8 +14,8 @@ export default function EventListSection({ title, events = [], limit = "6", cate
     .slice(0, max);
 
   return (
-    <section className={styles.root}>
-      {title ? <Heading as="h2" size="md">{title}</Heading> : null}
+    <Section className={styles.root}>
+      <SectionHeader title={title} />
       <div className={styles.grid}>
         {rows.length ? rows.map((event) => (
           <Card key={event.id} className={styles.card}>
@@ -25,6 +27,6 @@ export default function EventListSection({ title, events = [], limit = "6", cate
           </Card>
         )) : <Text tone="secondary">No events available yet.</Text>}
       </div>
-    </section>
+    </Section>
   );
 }
