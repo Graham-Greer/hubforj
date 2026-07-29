@@ -1,0 +1,21 @@
+.root {
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: var(--site-frame-gutter);
+}
+
+.widthFull {
+  max-width: none;
+}
+
+.widthWide {
+  max-width: var(--site-frame-max-width-wide);
+}
+
+.widthDefault {
+  max-width: var(--site-frame-max-width);
+}
+
+.widthNarrow {
+  max-width: var(--site-frame-max-width-narrow);
+}

@@ -1,0 +1,42 @@
+.root {
+  display: grid;
+  gap: var(--section-rich-text-gap);
+  color: var(--text-secondary);
+  font: var(--font-body-lg);
+  line-height: var(--line-height-relaxed);
+}
+
+.paragraph,
+.list,
+.heading {
+  margin: 0;
+}
+
+.list {
+  display: grid;
+  gap: var(--section-rich-text-list-gap);
+  padding-inline-start: var(--section-rich-text-list-indent);
+}
+
+.listItem {
+  color: inherit;
+}
+
+.root strong {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.root em {
+  font-style: italic;
+}
+
+.heading {
+  color: var(--text-primary);
+  font: var(--font-heading-sm);
+}
+
+.link {
+  color: var(--accent-primary);
+  text-decoration: underline;
+}

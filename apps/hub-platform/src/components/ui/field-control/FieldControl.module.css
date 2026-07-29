@@ -1,0 +1,80 @@
+.root {
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+}
+
+.label {
+  margin: 0;
+  color: var(--color-text-primary);
+  font: var(--font-label-md);
+}
+
+.labelWrap {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.requiredMark {
+  color: var(--accent-danger);
+  font: var(--font-body-sm-strong);
+}
+
+.control {
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--field-pad-y) var(--field-pad-x);
+  border: var(--space-px) solid var(--field-border);
+  border-radius: var(--field-radius);
+  background: var(--field-bg);
+  color: var(--color-text-primary);
+  font: var(--font-body-md);
+  line-height: var(--line-height-normal);
+  transition:
+    border-color var(--motion-base) var(--ease-standard),
+    box-shadow var(--motion-base) var(--ease-standard),
+    background-color var(--motion-base) var(--ease-standard);
+}
+
+.control::placeholder {
+  color: var(--field-placeholder);
+}
+
+.control:hover {
+  border-color: var(--border-strong);
+}
+
+.control:focus-visible {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
+  outline: none;
+}
+
+.hint {
+  margin: 0;
+  color: var(--text-muted);
+  font: var(--font-body-sm);
+}
+
+.hintDanger {
+  color: var(--accent-danger);
+}
+
+.compactControl {
+  padding: var(--field-compact-pad-y) var(--field-compact-pad-x);
+  font: var(--font-body-sm);
+}
+
+.visuallyHidden {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

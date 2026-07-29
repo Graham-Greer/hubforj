@@ -1,0 +1,131 @@
+.root {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  position: relative;
+  min-inline-size: 0;
+}
+
+.rail {
+  position: absolute;
+  inset-block-start: calc((var(--form-step-progress-marker-size) / 2) - (var(--form-step-progress-rail-thickness) / 2));
+  block-size: var(--form-step-progress-rail-thickness);
+  background: var(--form-step-progress-rail-bg);
+  z-index: 0;
+}
+
+.railForward {
+  inset-inline-start: calc(var(--form-step-progress-marker-size) + var(--space-2));
+  inline-size: calc(100% - var(--form-step-progress-marker-size) - var(--space-2) + (var(--space-3) / 2));
+}
+
+.railComplete {
+  background: var(--form-step-progress-rail-bg-complete);
+}
+
+.trigger,
+.staticStep {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: var(--space-2);
+  align-items: start;
+  justify-items: start;
+  min-inline-size: 0;
+}
+
+.trigger {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.trigger:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-md);
+}
+
+.marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: var(--form-step-progress-marker-size);
+  min-block-size: var(--form-step-progress-marker-size);
+  padding: 0 var(--space-2);
+  border: var(--space-px) solid var(--form-step-progress-marker-border);
+  border-radius: var(--form-step-progress-marker-radius);
+  background: var(--form-step-progress-marker-bg);
+  color: var(--form-step-progress-marker-text);
+  font: var(--font-label-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.markerComplete {
+  border-color: var(--form-step-progress-marker-border-complete);
+  background: var(--form-step-progress-marker-bg-complete);
+  color: var(--form-step-progress-marker-text-complete);
+}
+
+.markerCurrent {
+  border-color: var(--form-step-progress-marker-border-current);
+  background: var(--form-step-progress-marker-bg-current);
+  color: var(--form-step-progress-marker-text-current);
+}
+
+.copy {
+  display: grid;
+  gap: var(--space-1);
+  min-inline-size: 0;
+}
+
+.label {
+  color: var(--text-secondary);
+  font: var(--font-label-md);
+}
+
+.labelCurrent {
+  color: var(--text-primary);
+}
+
+.description {
+  color: var(--text-muted);
+  font: var(--font-body-sm);
+}
+
+.summary {
+  margin: 0;
+  color: var(--text-muted);
+  font: var(--font-label-sm);
+}
+
+@media (max-width: 52rem) {
+  .list {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .rail {
+    display: none;
+  }
+}
+
+@media (max-width: 36rem) {
+  .list {
+    grid-template-columns: 1fr;
+  }
+}

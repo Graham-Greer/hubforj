@@ -1,0 +1,39 @@
+.root {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.summary,
+.controls,
+.nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.summaryText,
+.pageText {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font: var(--font-body-sm);
+}
+
+.pageSizeMenu {
+  min-inline-size: 9.5rem;
+}
+
+@media (max-width: 48rem) {
+  .root,
+  .controls,
+  .nav {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pageSizeMenu {
+    min-inline-size: 100%;
+  }
+}

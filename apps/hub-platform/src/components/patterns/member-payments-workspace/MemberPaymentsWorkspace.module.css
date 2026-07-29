@@ -1,0 +1,110 @@
+.root {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.stats {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.toolbar {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.searchFilters {
+  flex: 1 1 20rem;
+  min-inline-size: 0;
+}
+
+.resultsCount {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font: var(--font-body-sm);
+}
+
+.emptySurface {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.list {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.card {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.itemHeader {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+.itemCopy,
+.emptyBlock {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.itemTitle,
+.emptyTitle {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.itemTitle {
+  font: var(--font-heading-xs);
+}
+
+.itemMeta,
+.emptyDescription {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font: var(--font-body-sm);
+}
+
+.itemHeaderBadges,
+.itemActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.itemHeaderBadges {
+  justify-content: flex-end;
+}
+
+@media (max-width: 56rem) {
+  .stats {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .searchFilters {
+    flex: none;
+    inline-size: 100%;
+  }
+
+  .itemHeader {
+    flex-direction: column;
+  }
+
+  .itemHeaderBadges {
+    justify-content: flex-start;
+  }
+}

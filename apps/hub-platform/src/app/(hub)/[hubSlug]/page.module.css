@@ -1,0 +1,30 @@
+.root {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: var(--space-10);
+}
+
+.hero {
+  width: min(100%, 56rem);
+}
+
+.lead {
+  margin: 0;
+  max-width: var(--layout-reading-width);
+  color: var(--text-secondary);
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-relaxed);
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+@media (max-width: 56rem) {
+  .metrics {
+    grid-template-columns: 1fr;
+  }
+}

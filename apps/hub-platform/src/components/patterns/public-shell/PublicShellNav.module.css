@@ -1,0 +1,47 @@
+.root {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--public-nav-item-gap);
+  min-width: 0;
+  width: 100%;
+}
+
+.alignStart {
+  justify-content: flex-start;
+}
+
+.alignCenter {
+  justify-content: center;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--public-nav-item-pad-y) var(--public-nav-item-pad-x);
+  border-style: solid;
+  border-width: var(--public-nav-item-border-width, var(--space-px));
+  border-color: var(--public-nav-item-border);
+  border-radius: var(--public-nav-item-radius);
+  background: var(--public-nav-item-bg);
+  color: var(--public-nav-item-text);
+  text-decoration: none;
+  font: var(--font-body-sm-strong);
+  transition:
+    color var(--motion-fast) var(--ease-standard),
+    background-color var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard);
+}
+
+.link:hover,
+.link:focus-visible {
+  color: var(--public-nav-item-text-hover);
+  background: var(--public-nav-item-bg-hover);
+  border-color: var(--public-nav-item-border-hover);
+  outline: none;
+}
+
+.active {
+  color: var(--public-nav-item-text-active);
+  background: var(--public-nav-item-bg-active);
+  border-color: var(--public-nav-item-border-active);
+}

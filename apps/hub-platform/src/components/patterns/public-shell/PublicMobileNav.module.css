@@ -1,0 +1,170 @@
+.overlay {
+  position: fixed;
+  inset: var(--public-header-height) 0 0 0;
+  z-index: 24;
+  background: var(--public-mobile-nav-overlay-bg);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity var(--motion-slow) var(--ease-standard);
+}
+
+.overlayOpen {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.panel {
+  position: fixed;
+  top: var(--public-header-height);
+  bottom: 0;
+  right: 0;
+  z-index: 25;
+  inline-size: var(--public-mobile-nav-width-mobile);
+  max-inline-size: 100vw;
+  border-left: var(--space-px) solid var(--public-mobile-nav-border);
+  background: var(--public-mobile-nav-surface);
+  box-shadow: var(--public-mobile-nav-shadow);
+  transform: translateX(100%);
+  pointer-events: none;
+  will-change: transform;
+  transition: transform var(--motion-slow) var(--ease-standard);
+  overflow: hidden;
+}
+
+.surfaceIntegrated {
+  border-left-color: var(--public-mobile-nav-border-integrated);
+  background: var(--public-mobile-nav-surface-integrated);
+  box-shadow: var(--public-mobile-nav-shadow-integrated);
+}
+
+.surfacePanel {
+  border-left-color: var(--public-mobile-nav-border-panel);
+  background: var(--public-mobile-nav-surface-panel);
+  box-shadow: var(--public-mobile-nav-shadow-panel);
+}
+
+.panelOpen {
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.panelInner {
+  display: grid;
+  align-content: start;
+  gap: var(--public-mobile-nav-inner-gap);
+  min-block-size: 100%;
+  padding:
+    var(--public-mobile-nav-padding-block-start)
+    var(--public-mobile-nav-padding-inline)
+    var(--public-mobile-nav-padding-block-end);
+  overflow-y: auto;
+}
+
+.nav,
+.utilityList {
+  display: grid;
+  gap: var(--public-mobile-nav-item-gap);
+}
+
+.ctaSection {
+  display: grid;
+}
+
+.ctaButton {
+  --button-radius: var(--public-header-cta-radius);
+  --button-pad-x: var(--public-header-cta-padding-inline);
+  --button-pad-y: var(--public-nav-item-pad-y);
+  --button-lg-min-height: var(--public-header-cta-min-height);
+  --button-primary-bg: var(--public-header-cta-surface);
+  --button-primary-bg-hover: var(--public-header-cta-surface-hover);
+  --button-primary-text: var(--public-header-cta-text);
+
+  width: 100%;
+  min-height: var(--public-header-cta-min-height);
+  justify-content: center;
+  border-color: var(--public-header-cta-border-color);
+  box-shadow: var(--public-header-cta-shadow);
+}
+
+.ctaButton:hover,
+.ctaButton:focus-visible {
+  transform: none;
+  border-color: var(--public-header-cta-border-color-hover);
+  color: var(--public-header-cta-text-hover);
+}
+
+.link,
+.utilityLink,
+.utilityButton {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  min-block-size: 0;
+  line-height: var(--line-height-snug);
+  padding: var(--public-mobile-nav-item-pad-y) var(--public-mobile-nav-item-pad-x);
+  border: var(--space-px) solid var(--public-mobile-nav-item-border);
+  border-radius: var(--public-mobile-nav-item-radius);
+  background: var(--public-mobile-nav-item-bg);
+  color: var(--public-mobile-nav-item-text);
+  font: var(--font-body-sm-strong);
+  text-decoration: none;
+  text-align: left;
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard);
+}
+
+.utilityButton {
+  width: 100%;
+}
+
+.link:hover,
+.link:focus-visible,
+.utilityLink:hover,
+.utilityLink:focus-visible,
+.utilityButton:hover,
+.utilityButton:focus-visible {
+  outline: none;
+  background: var(--public-mobile-nav-item-bg-hover);
+  border-color: var(--public-mobile-nav-item-border-hover);
+  color: var(--public-mobile-nav-item-text-hover);
+}
+
+.linkActive {
+  background: var(--public-mobile-nav-item-bg-active);
+  border-color: var(--public-mobile-nav-item-border-active);
+  color: var(--public-mobile-nav-item-text-active);
+}
+
+.utilitySection {
+  display: grid;
+  gap: var(--public-mobile-nav-section-gap);
+  padding-top: var(--public-mobile-nav-section-padding-top);
+  border-top: var(--space-px) solid var(--public-mobile-nav-divider);
+}
+
+.utilityLabel {
+  color: var(--text-secondary);
+  font: var(--font-label-sm);
+}
+
+.message {
+  max-width: 100%;
+}
+
+@media (min-width: 48rem) and (max-width: 64rem) {
+  .panel {
+    inline-size: var(--public-mobile-nav-width-tablet);
+  }
+}
+
+@media (min-width: 64.001rem) {
+  .overlay,
+  .panel {
+    display: none;
+  }
+}

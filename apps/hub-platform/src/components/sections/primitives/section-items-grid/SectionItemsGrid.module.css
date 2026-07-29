@@ -1,0 +1,66 @@
+.root {
+  display: grid;
+  gap: var(--public-section-grid-gap);
+  align-items: stretch;
+}
+
+.maxColumns2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.maxColumns3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.itemCount1 {
+  grid-template-columns: 1fr;
+}
+
+.itemCount2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.itemCount4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.maxColumns2.singleItemCompact.itemCount1 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.maxColumns3.singleItemCompact.itemCount1 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 64rem) {
+  .maxColumns2.singleItemCompact.itemCount1,
+  .maxColumns3.singleItemCompact.itemCount1 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 64rem) {
+  .root {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .itemCount1 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 48rem) {
+  .root,
+  .itemCount1,
+  .itemCount2,
+  .itemCount4,
+  .maxColumns2,
+  .maxColumns3 {
+    grid-template-columns: 1fr;
+  }
+
+  .maxColumns2.singleItemCompact.itemCount1,
+  .maxColumns3.singleItemCompact.itemCount1 {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,24 @@
+.grid {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.lead {
+  margin: 0;
+  max-width: var(--layout-reading-width);
+  color: var(--text-secondary);
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-relaxed);
+}
+
+@media (max-width: 56rem) {
+  .stats {
+    grid-template-columns: 1fr;
+  }
+}

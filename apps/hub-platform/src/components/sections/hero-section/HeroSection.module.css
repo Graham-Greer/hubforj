@@ -1,0 +1,208 @@
+.root {
+  isolation: isolate;
+  overflow: clip;
+}
+
+.shellContent {
+  position: relative;
+}
+
+.heightContent {
+  min-height: auto;
+}
+
+.heightScreen {
+  min-height: calc(100svh - var(--public-header-height, 0rem));
+}
+
+.heightScreen .shellContent {
+  min-height: inherit;
+  display: grid;
+  align-items: center;
+}
+
+.variantSplit .shellContent {
+  display: grid;
+  align-items: center;
+}
+
+.inner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: var(--section-layout-gap-xl);
+  min-width: 0;
+}
+
+.variantCentered .inner {
+  width: 100%;
+  justify-items: center;
+  padding-block: clamp(var(--space-8), 8vw, var(--space-20));
+}
+
+.variantNarrative .inner {
+  width: 100%;
+  max-inline-size: var(--layout-max-width);
+  margin-inline: auto;
+  justify-items: start;
+  padding-block: clamp(var(--space-10), 10vw, var(--space-20));
+}
+
+.variantSplit .inner {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: clamp(var(--space-6), 4vw, var(--space-12));
+  align-items: start;
+}
+
+.panelFrame {
+  position: relative;
+  display: grid;
+  gap: clamp(var(--space-5), 2vw, var(--space-8));
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  align-items: center;
+  padding: clamp(var(--space-5), 4vw, var(--space-10));
+  border: var(--space-px) solid color-mix(in srgb, var(--accent-primary) 20%, var(--border-subtle));
+  border-radius: calc(var(--section-media-radius-xl) + var(--space-2));
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--accent-primary) 14%, transparent), transparent 36%),
+    var(--surface-primary);
+  box-shadow: var(--shadow-lg);
+}
+
+.panelCopy {
+  display: grid;
+  gap: var(--section-layout-gap-lg);
+  min-width: 0;
+}
+
+.panelMedia {
+  min-width: 0;
+  width: 100%;
+}
+
+.panelAccent {
+  min-height: clamp(18rem, 45vw, 30rem);
+  border-radius: var(--section-media-radius-xl);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent-primary) 24%, transparent), transparent 60%),
+    linear-gradient(180deg, var(--surface-secondary), var(--surface-primary));
+  border: var(--space-px) solid color-mix(in srgb, var(--accent-primary) 18%, var(--border-subtle));
+}
+
+.copy {
+  display: grid;
+  gap: var(--section-layout-gap-lg);
+  min-width: 0;
+}
+
+.variantNarrative .copy,
+.variantSplit .copy {
+  max-inline-size: 44rem;
+}
+
+.variantNarrative .copy::before,
+.variantSplit .copy::before {
+  content: "";
+  inline-size: clamp(4rem, 9vw, 7rem);
+  block-size: var(--space-px);
+  background: color-mix(in srgb, var(--accent-primary) 44%, var(--border-subtle));
+}
+
+.variantNarrative .copy {
+  gap: clamp(var(--space-5), 3vw, var(--space-8));
+}
+
+.variantSplit .copy {
+  gap: clamp(var(--space-5), 3vw, var(--space-8));
+  padding-block-start: clamp(var(--space-2), 1vw, var(--space-4));
+}
+
+.alignStart {
+  justify-items: start;
+}
+
+.alignCenter {
+  justify-items: center;
+}
+
+.actions {
+  width: 100%;
+}
+
+.backgroundMedia {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.backgroundMedia::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgb(15 23 42 / 0.3), rgb(15 23 42 / 0.55));
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgb(10 14 20 / 0.28) 0%, rgb(10 14 20 / 0.56) 100%);
+  z-index: 0;
+}
+
+.inverseTitle,
+.inverseDescription {
+  color: var(--section-hero-overlay-title);
+}
+
+.inverseEyebrow {
+  color: var(--section-hero-overlay-eyebrow);
+}
+
+.inverseDescription {
+  color: var(--section-hero-overlay-description);
+}
+
+.inlineMedia {
+  width: 100%;
+  align-self: start;
+  min-width: 0;
+}
+
+.variantSplit .inlineMedia {
+  max-inline-size: min(100%, 31rem);
+  justify-self: end;
+}
+
+@media (max-width: 64rem) {
+  .variantSplit .inner {
+    grid-template-columns: 1fr;
+  }
+
+  .panelFrame {
+    grid-template-columns: 1fr;
+  }
+
+  .variantSplit .inlineMedia {
+    max-inline-size: 100%;
+    justify-self: stretch;
+  }
+}
+
+@media (max-width: 48rem) {
+  .copy {
+    gap: var(--section-layout-gap-md);
+  }
+
+  .variantCentered .inner {
+    padding-block: var(--space-12);
+  }
+
+  .panelFrame {
+    gap: var(--section-layout-gap-md);
+    padding: var(--space-5);
+  }
+
+  .panelAccent {
+    min-height: clamp(14rem, 55vw, 20rem);
+  }
+}

@@ -1,0 +1,4 @@
+.secondary {
+  color: var(--text-muted);
+  font: var(--font-body-sm);
+}

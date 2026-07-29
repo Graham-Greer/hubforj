@@ -1,0 +1,421 @@
+.root {
+  display: grid;
+  gap: var(--section-event-details-media-gap);
+}
+
+.breadcrumbs {
+  margin-bottom: calc(var(--section-event-details-media-gap) * -0.35);
+}
+
+.articleLayout {
+  align-items: start;
+}
+
+.mediaLead {
+  width: 100%;
+}
+
+.mediaLeadPlaceholder {
+  display: grid;
+  place-items: end start;
+  min-height: var(--section-event-details-placeholder-min-height);
+  padding: var(--space-6);
+  border: var(--space-px) solid var(--section-events-placeholder-border);
+  border-radius: var(--section-media-radius-xl);
+  background: var(--section-events-placeholder-bg);
+  box-shadow: var(--section-media-elevation-lg);
+}
+
+.mediaLeadPlaceholderText {
+  color: var(--section-events-placeholder-text);
+  font: var(--font-label-md);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.main {
+  display: grid;
+  gap: var(--section-event-details-gap);
+}
+
+.headerBlock {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.badgeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.kickerRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.kicker,
+.kickerSecondary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.875rem;
+  padding-inline: var(--space-3);
+  border-radius: var(--radius-full);
+  font: var(--font-label-sm);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.kicker {
+  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+  color: var(--accent-primary);
+  border: var(--space-px) solid color-mix(in srgb, var(--accent-primary) 24%, transparent);
+}
+
+.kickerSecondary {
+  background: var(--surface-secondary);
+  color: var(--text-secondary);
+  border: var(--space-px) solid var(--border-subtle);
+}
+
+.title,
+.summary,
+.bookingTitle,
+.bookingText,
+.metaLabel,
+.metaValue {
+  margin: 0;
+}
+
+.title {
+  color: var(--text-primary);
+  font-size: clamp(2rem, 1.5rem + 1.6vw, 3.25rem);
+  font-weight: var(--font-weight-heading);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.summary {
+  color: var(--text-secondary);
+  font: var(--font-body-lg);
+  line-height: var(--line-height-relaxed);
+  max-width: 58ch;
+}
+
+.historyAccessNote {
+  margin: 0;
+  color: var(--text-secondary);
+  font: var(--font-body-sm);
+  line-height: var(--line-height-relaxed);
+}
+
+.metaGroup {
+  display: grid;
+  gap: var(--section-event-details-meta-gap);
+}
+
+.metaItem {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.metaValue {
+  color: var(--text-primary);
+  font: var(--font-body-md);
+  line-height: var(--line-height-relaxed);
+}
+
+.description {
+  color: var(--text-primary);
+}
+
+.bookingCard {
+  display: grid;
+  gap: var(--section-event-details-booking-gap);
+}
+
+.variantEditorial .mediaLead {
+  max-inline-size: min(100%, 62rem);
+}
+
+.variantEditorial .articleLayout {
+  grid-template-columns: minmax(0, 1.12fr) minmax(16rem, 0.88fr);
+  gap: clamp(var(--space-6), 4vw, var(--space-10));
+}
+
+.variantEditorial .headerBlock {
+  padding-block-start: clamp(var(--space-2), 1vw, var(--space-4));
+  border-top: var(--space-px) solid color-mix(in srgb, var(--accent-primary) 22%, var(--border-subtle));
+}
+
+.variantEditorial .summary {
+  max-width: 64ch;
+}
+
+.variantEditorial .bookingCard {
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.variantStudio .root {
+  gap: clamp(var(--space-6), 3vw, var(--space-10));
+}
+
+.variantStudio .mediaLead,
+.variantStudio .bookingCard {
+  box-shadow: var(--shadow-lg);
+}
+
+.variantStudio .mediaLead {
+  border-radius: calc(var(--section-media-radius-xl) + var(--space-1));
+}
+
+.variantStudio .main {
+  padding: clamp(var(--space-5), 2vw, var(--space-8));
+  border: var(--space-px) solid color-mix(in srgb, var(--accent-primary) 18%, var(--border-subtle));
+  border-radius: calc(var(--section-card-radius) + var(--space-2));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent-primary) 7%, transparent), transparent 38%),
+    var(--surface-primary);
+}
+
+.variantStudio .bookingCard {
+  border-radius: calc(var(--section-card-radius) + var(--space-2));
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--accent-primary) 14%, transparent), transparent 40%),
+    var(--section-card-surface);
+}
+
+.bookingHeader {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.bookingTitle {
+  color: var(--text-primary);
+  font: var(--font-heading-xs);
+}
+
+.bookingText {
+  color: var(--text-secondary);
+  font: var(--font-body-md);
+  line-height: var(--line-height-relaxed);
+}
+
+.bookingActionRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-4);
+  align-items: center;
+}
+
+.bookingActionRowStack {
+  grid-template-columns: 1fr;
+  align-items: stretch;
+}
+
+.bookingSummary {
+  display: grid;
+  gap: var(--section-event-details-booking-summary-gap);
+}
+
+.bookingSummaryItem {
+  display: block;
+}
+
+.bookingSummaryValue {
+  color: var(--text-primary);
+  font: var(--font-body-md-strong);
+}
+
+.bookingForm {
+  display: contents;
+}
+
+.bookingFormStack {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.bookingModalForm {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.bookingModalHeader {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.bookingModalTitle,
+.bookingModalMeta,
+.bookingModalSummaryLabel,
+.bookingModalSummaryValue {
+  margin: 0;
+}
+
+.bookingModalTitle {
+  color: var(--text-primary);
+  font: var(--font-heading-xs);
+}
+
+.bookingModalMeta {
+  color: var(--text-secondary);
+  font: var(--font-body-md);
+  line-height: var(--line-height-relaxed);
+}
+
+.bookingFields {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.bookingCheckboxRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-4);
+  border: var(--space-px) solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-primary);
+}
+
+.bookingCheckboxRow input {
+  inline-size: 1rem;
+  block-size: 1rem;
+  margin: 0;
+}
+
+.bookingCheckboxLabel {
+  color: var(--text-primary);
+  font: var(--font-body-md-strong);
+}
+
+.guestFieldset {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.guestFieldsetTitle {
+  margin: 0;
+  color: var(--text-primary);
+  font: var(--font-body-md-strong);
+}
+
+.guestGrid {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.guestGridRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.guestGridRowSingle {
+  display: grid;
+}
+
+.guestCard {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: var(--space-px) solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface-secondary) 55%, var(--surface-primary));
+}
+
+
+.bookingModalSummary {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: var(--space-px) solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-secondary);
+}
+
+.bookingModalSummaryRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.bookingModalSummaryLabel {
+  color: var(--text-secondary);
+  font: var(--font-body-sm);
+}
+
+.bookingModalSummaryValue {
+  color: var(--text-primary);
+  font: var(--font-body-md-strong);
+}
+
+.bookingError {
+  margin: 0;
+  color: var(--color-danger-700);
+  font: var(--font-body-sm);
+}
+
+.bookingModalActions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.bookingButton {
+  min-inline-size: 10rem;
+}
+
+@media (max-width: 64rem) {
+  .variantEditorial .articleLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .root {
+    gap: var(--public-section-cluster-gap);
+  }
+
+  .bookingActionRow {
+    grid-template-columns: 1fr;
+  }
+
+  .bookingButton {
+    inline-size: 100%;
+  }
+
+  .bookingModalActions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .bookingModalActions > *:first-child {
+    order: 1;
+  }
+
+  .bookingModalActions > *:last-child {
+    order: 2;
+  }
+
+  .guestGridRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 48rem) {
+  .title {
+    font-size: clamp(1.75rem, 1.4rem + 1.2vw, 2.35rem);
+  }
+
+  .variantStudio .main {
+    padding: var(--space-5);
+  }
+}

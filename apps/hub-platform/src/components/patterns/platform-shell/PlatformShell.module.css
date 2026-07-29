@@ -1,0 +1,24 @@
+.root {
+  display: grid;
+  min-height: 100vh;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.frame {
+  display: grid;
+  gap: var(--space-6);
+  padding: var(--space-6) var(--content-gutter);
+  align-content: start;
+}
+
+.content {
+  min-width: 0;
+  width: min(100%, var(--shell-content-max-width));
+  margin-inline: auto;
+}
+
+@media (max-width: 64rem) {
+  .root {
+    grid-template-columns: 1fr;
+  }
+}

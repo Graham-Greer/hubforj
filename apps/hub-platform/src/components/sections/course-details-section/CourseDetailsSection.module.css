@@ -1,0 +1,289 @@
+.root {
+  display: grid;
+  gap: var(--section-course-details-media-gap);
+}
+
+.articleLayout {
+  align-items: start;
+}
+
+.mediaLead {
+  width: 100%;
+}
+
+.mediaLeadPlaceholder {
+  display: grid;
+  place-items: end start;
+  min-height: var(--section-course-details-placeholder-min-height);
+  padding: var(--space-6);
+  border: var(--space-px) solid var(--section-courses-placeholder-border);
+  border-radius: var(--section-media-radius-xl);
+  background: var(--section-courses-placeholder-bg);
+  box-shadow: var(--section-media-elevation-lg);
+}
+
+.mediaLeadPlaceholderText {
+  color: var(--section-courses-placeholder-text);
+  font: var(--font-label-md);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.main {
+  display: grid;
+  gap: var(--section-course-details-gap);
+}
+
+.headerBlock {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.kickerRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.kicker,
+.kickerSecondary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.875rem;
+  padding-inline: var(--space-3);
+  border-radius: var(--radius-full);
+  font: var(--font-label-sm);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.kicker {
+  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+  color: var(--accent-primary);
+  border: var(--space-px) solid color-mix(in srgb, var(--accent-primary) 24%, transparent);
+}
+
+.kickerSecondary {
+  background: var(--surface-secondary);
+  color: var(--text-secondary);
+  border: var(--space-px) solid var(--border-subtle);
+}
+
+.identityCluster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.identityPill,
+.identityPillSecondary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.75rem;
+  padding-inline: var(--space-3);
+  border-radius: var(--radius-full);
+  font: var(--font-label-sm);
+}
+
+.identityPill {
+  border: var(--space-px) solid var(--section-courses-identity-border);
+  background: var(--section-courses-identity-bg);
+  color: var(--section-courses-identity-text);
+}
+
+.identityPillSecondary {
+  border: var(--space-px) solid var(--section-courses-identity-border-secondary);
+  background: var(--surface-secondary);
+  color: var(--text-secondary);
+}
+
+.title,
+.summary,
+.enrolmentTitle,
+.enrolmentText,
+.metaValue,
+.instructionsTitle {
+  margin: 0;
+}
+
+.title {
+  color: var(--text-primary);
+  font-size: clamp(2rem, 1.5rem + 1.6vw, 3.25rem);
+  font-weight: var(--font-weight-heading);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.summary {
+  color: var(--text-secondary);
+  font: var(--font-body-lg);
+  line-height: var(--line-height-relaxed);
+  max-width: 58ch;
+}
+
+.metaGroup {
+  display: grid;
+  gap: var(--section-course-details-meta-gap);
+}
+
+.metaItem {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.metaValue {
+  color: var(--text-primary);
+  font: var(--font-body-md);
+  line-height: var(--line-height-relaxed);
+}
+
+.description {
+  color: var(--text-primary);
+}
+
+.instructionsBlock {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.instructionsTitle {
+  color: var(--text-primary);
+  font: var(--font-heading-sm);
+}
+
+.instructionsText {
+  color: var(--text-primary);
+}
+
+.enrolmentCard {
+  display: grid;
+  gap: var(--section-course-details-enrolment-gap);
+}
+
+.variantEditorial .mediaLead {
+  max-inline-size: min(100%, 62rem);
+}
+
+.variantEditorial .articleLayout {
+  grid-template-columns: minmax(0, 1.12fr) minmax(16rem, 0.88fr);
+  gap: clamp(var(--space-6), 4vw, var(--space-10));
+}
+
+.variantEditorial .headerBlock {
+  padding-block-start: clamp(var(--space-2), 1vw, var(--space-4));
+  border-top: var(--space-px) solid color-mix(in srgb, var(--accent-primary) 22%, var(--border-subtle));
+}
+
+.variantEditorial .summary {
+  max-width: 64ch;
+}
+
+.variantEditorial .enrolmentCard {
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.variantStudio .root {
+  gap: clamp(var(--space-6), 3vw, var(--space-10));
+}
+
+.variantStudio .mediaLead,
+.variantStudio .enrolmentCard {
+  box-shadow: var(--shadow-lg);
+}
+
+.variantStudio .mediaLead {
+  border-radius: calc(var(--section-media-radius-xl) + var(--space-1));
+}
+
+.variantStudio .main {
+  padding: clamp(var(--space-5), 2vw, var(--space-8));
+  border: var(--space-px) solid color-mix(in srgb, var(--accent-primary) 18%, var(--border-subtle));
+  border-radius: calc(var(--section-card-radius) + var(--space-2));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent-primary) 7%, transparent), transparent 38%),
+    var(--surface-primary);
+}
+
+.variantStudio .enrolmentCard {
+  border-radius: calc(var(--section-card-radius) + var(--space-2));
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--accent-primary) 14%, transparent), transparent 40%),
+    var(--section-card-surface);
+}
+
+.enrolmentHeader {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.enrolmentTitle {
+  color: var(--text-primary);
+  font: var(--font-heading-xs);
+}
+
+.enrolmentText {
+  color: var(--text-secondary);
+  font: var(--font-body-md);
+  line-height: var(--line-height-relaxed);
+}
+
+.enrolmentActionRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-4);
+  align-items: center;
+}
+
+.enrolmentSummary {
+  display: grid;
+  gap: var(--section-course-details-enrolment-summary-gap);
+}
+
+.enrolmentSummaryItem {
+  display: block;
+}
+
+.enrolmentSummaryValue {
+  color: var(--text-primary);
+  font: var(--font-body-md-strong);
+}
+
+.enrolmentForm {
+  display: contents;
+}
+
+.enrolmentButton {
+  min-inline-size: 10rem;
+}
+
+@media (max-width: 64rem) {
+  .variantEditorial .articleLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .root {
+    gap: var(--public-section-cluster-gap);
+  }
+
+  .enrolmentActionRow {
+    grid-template-columns: 1fr;
+  }
+
+  .enrolmentButton {
+    inline-size: 100%;
+  }
+}
+
+@media (max-width: 48rem) {
+  .title {
+    font-size: clamp(1.75rem, 1.4rem + 1.2vw, 2.35rem);
+  }
+
+  .variantStudio .main {
+    padding: var(--space-5);
+  }
+}

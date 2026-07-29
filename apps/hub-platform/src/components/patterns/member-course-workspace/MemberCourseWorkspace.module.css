@@ -1,0 +1,71 @@
+.root {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.headerActions,
+.cardFooter,
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.section {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.sectionHeader {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.sectionTitle,
+.sectionDescription,
+.cardTitle,
+.cardMeta,
+.empty {
+  margin: 0;
+}
+
+.sectionTitle,
+.cardTitle {
+  color: var(--color-text-primary);
+}
+
+.sectionDescription,
+.cardMeta,
+.empty {
+  color: var(--color-text-secondary);
+}
+
+.list {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.card {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+.cardFooter {
+  justify-content: space-between;
+  align-items: center;
+}
+
+@media (max-width: 56rem) {
+  .cardHeader,
+  .cardFooter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

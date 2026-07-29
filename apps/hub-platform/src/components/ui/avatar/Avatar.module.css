@@ -1,0 +1,60 @@
+.root {
+  --avatar-size-current: var(--avatar-size-md);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--avatar-size-current);
+  block-size: var(--avatar-size-current);
+  padding: var(--avatar-padding);
+  border: var(--space-px) solid var(--avatar-border);
+  border-radius: var(--avatar-radius);
+  background: var(--avatar-bg);
+  color: var(--avatar-color);
+  box-shadow: var(--avatar-shadow);
+  overflow: hidden;
+}
+
+.hasImage {
+  padding: 0;
+}
+
+.sizeSm {
+  --avatar-size-current: var(--avatar-size-sm);
+}
+
+.sizeLg {
+  --avatar-size-current: var(--avatar-size-lg);
+}
+
+.sizeXl {
+  --avatar-size-current: var(--avatar-size-xl);
+}
+
+.shapeRounded {
+  border-radius: var(--radius-md);
+}
+
+.shapePill,
+.shapeCircle {
+  border-radius: var(--radius-full);
+}
+
+.toneAccent {
+  background: var(--avatar-bg-accent);
+  color: var(--avatar-color-accent);
+  border-color: var(--avatar-border-accent);
+}
+
+.image {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.initials {
+  font: var(--font-label-sm);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}

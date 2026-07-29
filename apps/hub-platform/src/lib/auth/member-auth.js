@@ -1,0 +1,79 @@
+try {
+  await import("server-only");
+} catch {
+  // Plain Node compatibility for future unit tests.
+}
+
+import { getFirebaseAdminAuth, getFirebaseAdminDb } from "@/lib/firebase/admin";
+import { getHubBySlug } from "@/lib/data/hubs";
+import { getUserByAuthUid } from "@/lib/data/users";
+import { createSignedSessionValue, sessionDurationSeconds } from "@/lib/auth/session";
+import { getServerEnv } from "@/lib/config/env";
+import { canAccessHubAdmin } from "@/lib/domain/users";
+
+function normalizeString(value) {
+  return String(value || "").trim();
+}
+
+export async function createHubUserSessionFromIdToken(hubSlug, idToken) {
+  const normalizedHubSlug = normalizeString(hubSlug);
+  const normalizedIdToken = normalizeString(idToken);
+
+  if (!normalizedHubSlug) {
+    throw new Error("Hub slug is required.");
+  }
+
+  if (!normalizedIdToken) {
+    throw new Error("Sign-in token is required.");
+  }
+
+  const hub = await getHubBySlug(normalizedHubSlug);
+  if (!hub) {
+    throw new Error("Hub not found.");
+  }
+
+  const decodedToken = await getFirebaseAdminAuth().verifyIdToken(normalizedIdToken, true);
+  const user = await getUserByAuthUid(hub.id, decodedToken.uid);
+
+  if (!user || (user.role !== "member" && !canAccessHubAdmin(user.role))) {
+    throw new Error("No hub account exists for this sign-in.");
+  }
+
+  if (user.status !== "active") {
+    throw new Error("This hub account is not currently active.");
+  }
+
+  await getFirebaseAdminDb().collection("users").doc(user.id).update({
+    lastSignedInAt: new Date().toISOString(),
+  });
+
+  const expiresAt = Math.floor(Date.now() / 1000) + sessionDurationSeconds;
+  const sessionValue = createSignedSessionValue(
+    {
+      userId: user.id,
+      hubId: hub.id,
+      role: user.role,
+      email: user.email,
+      name: user.name,
+      expiresAt,
+    },
+    getServerEnv().sessionHmacSecret
+  );
+
+  return {
+    hub,
+    user,
+    expiresAt,
+    sessionValue,
+  };
+}
+
+export async function createMemberSessionFromIdToken(hubSlug, idToken) {
+  const session = await createHubUserSessionFromIdToken(hubSlug, idToken);
+
+  if (session.user.role !== "member") {
+    throw new Error("No member account exists for this hub.");
+  }
+
+  return session;
+}

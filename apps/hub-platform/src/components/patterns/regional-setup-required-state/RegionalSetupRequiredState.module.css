@@ -1,0 +1,35 @@
+.root {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.copy {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.eyebrow {
+  margin: 0;
+  font: var(--font-label-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-secondary);
+}
+
+.title {
+  margin: 0;
+  font: var(--font-heading-md);
+  color: var(--color-text-primary);
+}
+
+.description {
+  margin: 0;
+  font: var(--font-body-md);
+  color: var(--color-text-secondary);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}

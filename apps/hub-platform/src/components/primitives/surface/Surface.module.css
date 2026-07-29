@@ -1,0 +1,44 @@
+.root {
+  border: var(--space-px) solid var(--surface-border);
+  border-radius: var(--panel-radius);
+  background: var(--surface-fill);
+  box-shadow: var(--surface-shadow);
+}
+
+.toneDefault {
+  --surface-fill: var(--admin-surface-default-fill, var(--panel-bg));
+  --surface-border: var(--admin-surface-default-border, var(--panel-border));
+  --surface-shadow: var(--admin-surface-default-shadow, var(--shadow-sm));
+}
+
+.toneAccent {
+  --surface-fill: var(--admin-surface-accent-fill, var(--template-accent-band));
+  --surface-border: var(--admin-surface-accent-border, var(--accent-primary));
+  --surface-shadow: var(--admin-surface-accent-shadow, var(--shadow-md));
+}
+
+.toneMuted {
+  --surface-fill: var(--admin-surface-muted-fill, var(--surface-secondary));
+  --surface-border: var(--admin-surface-muted-border, var(--border-subtle));
+  --surface-shadow: var(--admin-surface-muted-shadow, none);
+}
+
+.paddingNone {
+  padding: 0;
+}
+
+.paddingSm {
+  padding: var(--space-2) var(--space-5);
+}
+
+.paddingMd {
+  padding: var(--space-3);
+}
+
+.paddingLg {
+  padding: var(--panel-pad);
+}
+
+.paddingXl {
+  padding: var(--space-8);
+}

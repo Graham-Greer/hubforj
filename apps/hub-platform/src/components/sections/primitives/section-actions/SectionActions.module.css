@@ -1,0 +1,32 @@
+.root {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--section-actions-gap);
+}
+
+.alignStart {
+  justify-content: flex-start;
+}
+
+.alignCenter {
+  justify-content: center;
+}
+
+.alignEnd {
+  justify-content: flex-end;
+}
+
+.action {
+  min-width: 0;
+}
+
+@media (max-width: 32rem) {
+  .root {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .root > * {
+    width: 100%;
+  }
+}

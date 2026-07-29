@@ -1,0 +1,84 @@
+.root {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.card {
+  display: grid;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cardCopy {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+
+.cardDescription {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.details {
+  display: grid;
+  gap: 0.875rem;
+  margin: 0;
+}
+
+.detailRow {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.detailLabel {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.detailValue {
+  margin: 0;
+  font-weight: 600;
+}
+
+.instructions {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .card {
+    padding: 1.2rem;
+  }
+
+  .actions {
+    display: grid;
+  }
+}

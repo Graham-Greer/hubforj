@@ -1,0 +1,69 @@
+.viewport {
+  width: 100%;
+}
+
+.root {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--space-2);
+  width: max-content;
+  min-width: 100%;
+  padding: var(--space-2);
+  border: var(--space-px) solid var(--form-section-tabs-border);
+  border-radius: var(--form-section-tabs-radius);
+  background: var(--form-section-tabs-surface);
+}
+
+.tab {
+  display: grid;
+  gap: var(--space-1);
+  flex: 0 0 auto;
+  min-inline-size: 0;
+  padding: var(--space-3) var(--space-4);
+  border: var(--space-px) solid transparent;
+  border-radius: var(--form-section-tabs-tab-radius);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    color var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease;
+}
+
+.tab:hover {
+  background: var(--form-section-tabs-tab-bg-hover);
+}
+
+.tab:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.tabActive {
+  border-color: var(--form-section-tabs-tab-border-active);
+  background: var(--form-section-tabs-tab-bg-active);
+  box-shadow: var(--shadow-sm);
+}
+
+.label {
+  color: var(--text-primary);
+  font: var(--font-label-md);
+}
+
+.description {
+  color: var(--text-muted);
+  font: var(--font-body-sm);
+}
+
+@media (max-width: 40rem) {
+  .root {
+    padding: var(--space-1);
+  }
+
+  .tab {
+    min-inline-size: min(16rem, calc(100vw - (var(--site-frame-gutter) * 4)));
+  }
+}

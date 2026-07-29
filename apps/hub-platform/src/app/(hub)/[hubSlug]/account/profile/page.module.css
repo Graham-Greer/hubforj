@@ -1,0 +1,53 @@
+.form {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.avatarEditor {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.avatarEditorRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.avatarEditorPreview {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.avatarEditorActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  .avatarEditorRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

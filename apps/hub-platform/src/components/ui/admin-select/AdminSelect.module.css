@@ -1,0 +1,124 @@
+.root {
+  min-width: 0;
+}
+
+.controlWrap {
+  position: relative;
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  padding-right: calc(var(--field-pad-x) + var(--space-6));
+  text-align: left;
+  cursor: pointer;
+}
+
+.triggerSm {
+  padding-right: calc(var(--field-compact-pad-x) + var(--space-5));
+}
+
+.triggerOpen {
+  border-color: var(--accent-primary);
+}
+
+.value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.placeholder {
+  color: var(--field-placeholder);
+}
+
+.icon {
+  position: absolute;
+  top: 50%;
+  right: var(--field-pad-x);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.triggerSm + .icon {
+  right: var(--field-compact-pad-x);
+}
+
+.menu {
+  position: absolute;
+  z-index: 40;
+  inset-inline: 0;
+  max-block-size: min(18rem, 40vh);
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--admin-select-scrollbar-thumb, currentcolor) var(--admin-select-scrollbar-track, transparent);
+  padding: var(--space-2);
+  border: var(--space-px) solid var(--admin-surface-default-border, var(--panel-border));
+  border-radius: var(--radius-md);
+  background: var(--admin-surface-default-fill, var(--surface-primary));
+  box-shadow: var(--admin-surface-default-shadow, var(--shadow-lg));
+}
+
+.menu::-webkit-scrollbar {
+  width: 0.5rem;
+}
+
+.menu::-webkit-scrollbar-track {
+  background: var(--admin-select-scrollbar-track, transparent);
+}
+
+.menu::-webkit-scrollbar-thumb {
+  background: var(--admin-select-scrollbar-thumb, currentcolor);
+  border-radius: 999px;
+}
+
+.menu::-webkit-scrollbar-thumb:hover {
+  background: var(--admin-select-scrollbar-thumb-hover, var(--admin-select-scrollbar-thumb, currentcolor));
+}
+
+.openDown {
+  top: calc(100% + var(--space-2));
+}
+
+.openUp {
+  bottom: calc(100% + var(--space-2));
+}
+
+.list {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-primary);
+  font: var(--font-body-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.option:hover,
+.optionActive {
+  background: var(--admin-surface-muted-fill, var(--color-surface-muted));
+}
+
+.optionSelected {
+  background: color-mix(in srgb, var(--admin-surface-accent-fill, var(--surface-primary)) 84%, transparent);
+}
+
+.option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

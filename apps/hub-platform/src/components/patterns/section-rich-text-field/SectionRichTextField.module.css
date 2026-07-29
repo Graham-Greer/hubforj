@@ -1,0 +1,116 @@
+.root {
+  min-width: 0;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding-block-end: var(--space-2);
+}
+
+.toolButton {
+  flex: 0 0 auto;
+}
+
+.textIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 1ch;
+  font: var(--font-body-sm-strong);
+  line-height: 1;
+}
+
+.boldIcon {
+  font-weight: var(--font-weight-bold);
+}
+
+.italicIcon {
+  font-style: italic;
+}
+
+.editor {
+  min-height: 12rem;
+  color: var(--color-text-primary);
+  font: var(--font-body-md);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-base);
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.editor strong,
+.editor b {
+  font-weight: var(--font-weight-semibold);
+}
+
+.editor em,
+.editor i {
+  font-style: italic;
+}
+
+.editor a {
+  color: var(--accent-primary);
+  text-decoration: underline;
+}
+
+.editor:empty::before {
+  content: "Write a short introduction or supporting explanation.";
+  color: var(--field-placeholder);
+}
+
+.editor p,
+.editor ul,
+.editor ol,
+.editor h2,
+.editor h3 {
+  display: block;
+  margin: 0;
+}
+
+.editor ul,
+.editor ol {
+  padding-inline-start: var(--space-5);
+}
+
+.editor h2,
+.editor h3 {
+  color: var(--color-text-primary);
+}
+
+.editor h2 {
+  font: var(--font-heading-sm);
+}
+
+.editor h3 {
+  font: var(--font-heading-xs);
+}
+
+.editor p + p,
+.editor p + ul,
+.editor p + ol,
+.editor p + h2,
+.editor p + h3,
+.editor ul + p,
+.editor ul + ul,
+.editor ul + ol,
+.editor ul + h2,
+.editor ul + h3,
+.editor ol + p,
+.editor ol + ul,
+.editor ol + ol,
+.editor ol + h2,
+.editor ol + h3,
+.editor h2 + p,
+.editor h2 + ul,
+.editor h2 + ol,
+.editor h2 + h3,
+.editor h2 + h2,
+.editor h3 + p,
+.editor h3 + ul,
+.editor h3 + ol,
+.editor h3 + h2,
+.editor h3 + h3 {
+  margin-top: var(--space-4);
+}

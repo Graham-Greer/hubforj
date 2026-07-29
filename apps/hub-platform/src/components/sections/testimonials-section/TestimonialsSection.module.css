@@ -1,0 +1,128 @@
+.root {
+  position: relative;
+}
+
+.inner {
+  display: grid;
+  gap: var(--section-layout-gap-lg);
+}
+
+.spotlightLayout {
+  display: grid;
+  gap: var(--public-section-cluster-gap);
+  align-items: start;
+}
+
+.showcaseLayout {
+  display: grid;
+  gap: var(--public-section-cluster-gap);
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  align-items: stretch;
+}
+
+.card {
+  display: grid;
+  gap: var(--section-layout-gap-md);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  align-content: stretch;
+  min-height: 100%;
+}
+
+.cardSpotlight {
+  min-height: 100%;
+}
+
+.variantShowcase .card {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent-primary) 10%, transparent), transparent 40%),
+    var(--section-card-surface);
+}
+
+.variantShowcase .card:first-child {
+  min-height: 100%;
+}
+
+.quoteMark {
+  display: inline-flex;
+  justify-self: start;
+  color: var(--accent-primary);
+  transform: rotate(180deg);
+  transform-origin: center;
+}
+
+.quote {
+  margin: 0;
+  color: var(--text-primary);
+  font: var(--font-heading-xs);
+  line-height: var(--line-height-relaxed);
+}
+
+.quoteSpotlight {
+  font: var(--font-heading-sm);
+  line-height: var(--line-height-relaxed);
+}
+
+.attribution {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: center;
+}
+
+.avatarWrap {
+  position: relative;
+  inline-size: 3.5rem;
+  block-size: 3.5rem;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--surface-secondary);
+}
+
+.avatar {
+  object-fit: cover;
+}
+
+.identity {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.authorName,
+.authorMeta {
+  margin: 0;
+}
+
+.authorName {
+  color: var(--text-primary);
+  font: var(--font-body-md-strong);
+}
+
+.authorMeta {
+  color: var(--text-secondary);
+  font: var(--font-body-sm);
+}
+
+.variantSpotlight .spotlightLayout {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: clamp(var(--space-6), 4vw, var(--space-10));
+}
+
+.variantSpotlight .card {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.variantSpotlight .cardSpotlight {
+  background: transparent;
+}
+
+@media (max-width: 64rem) {
+  .showcaseLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .variantSpotlight .spotlightLayout {
+    grid-template-columns: 1fr;
+  }
+}

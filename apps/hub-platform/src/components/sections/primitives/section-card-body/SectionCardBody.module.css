@@ -1,0 +1,19 @@
+.root {
+  min-width: 0;
+}
+
+.paddingDefault {
+  padding: var(--section-card-body-padding);
+}
+
+.paddingCompact {
+  padding: var(--section-card-body-padding-compact);
+}
+
+.paddingRoomy {
+  padding: var(--section-card-body-padding-roomy);
+}
+
+.paddingNone {
+  padding: 0;
+}

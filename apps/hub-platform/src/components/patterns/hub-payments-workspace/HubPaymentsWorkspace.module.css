@@ -1,0 +1,453 @@
+.root {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.setupRoot,
+.setupHeroPanel,
+.setupGuidancePanel,
+.setupGuidanceStack,
+.setupHeroCopy,
+.setupActions,
+.setupActionForm,
+.setupEmbedPanel,
+.setupEmbedContainer {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.setupHeaderActions,
+.setupStatusRow,
+.setupActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.setupHeroHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.setupFactsGrid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.setupDetailRow {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-md);
+  background: var(--surface-primary);
+}
+
+.setupDetailLabel {
+  color: var(--color-text-secondary);
+  font: var(--font-label-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.setupDetailValue {
+  color: var(--color-text-primary);
+  font: var(--font-body-sm-strong);
+}
+
+.setupList {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--color-text-secondary);
+  font: var(--font-body-sm);
+}
+
+.setupActionForm {
+  justify-items: start;
+}
+
+.setupEmbedPanel {
+  overflow: hidden;
+}
+
+.setupEmbedContainer {
+  min-block-size: 16rem;
+  padding: var(--space-3);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-md);
+  background: var(--surface-primary);
+}
+
+.stats {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.statsTwo {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 900px) {
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+.toolbar {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.dateFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.dateField {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-inline-size: 12rem;
+}
+
+.dateField :global(.FieldControl_label) {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.toolbarControls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.listSection {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.search {
+  flex: 1 1 16rem;
+  inline-size: min(100%, 28rem);
+}
+
+.toolbarMenus {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-inline-start: auto;
+}
+
+.tableWrap {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.paginationControls {
+  padding-bottom: var(--space-2);
+}
+
+.tableHeader,
+.tableRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.4fr) minmax(0, 0.8fr) minmax(0, 0.8fr) minmax(0, 0.9fr) minmax(0, 1fr) 3.5rem;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.tableHeader {
+  color: var(--color-text-secondary);
+  font: var(--font-label-sm);
+  letter-spacing: 0.04em;
+  padding: 0 var(--admin-record-header-pad-inline);
+  text-transform: uppercase;
+}
+
+.tableBody {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.tableRow {
+  padding: var(--admin-record-pad-block) var(--admin-record-pad-inline);
+}
+
+.memberCell {
+  display: grid;
+  min-width: 0;
+}
+
+.memberLink {
+  color: var(--color-text-primary);
+  font: var(--font-body-sm-strong);
+  text-decoration: none;
+}
+
+.memberLink:hover {
+  text-decoration: underline;
+}
+
+.memberLink:focus-visible {
+  outline: none;
+  text-decoration: underline;
+}
+
+.primaryValue,
+.secondaryValue {
+  margin: 0;
+}
+
+.primaryValue {
+  color: var(--color-text-primary);
+  font: var(--font-body-sm-strong);
+}
+
+.secondaryValue {
+  color: var(--color-text-secondary);
+  font: var(--font-body-sm);
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.tableActionHeader {
+  text-align: center;
+}
+
+.viewCell {
+  display: flex;
+  justify-content: center;
+}
+
+.planSection {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.planList {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.planAccordionItem {
+  overflow: clip;
+}
+
+.planAccordionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  width: 100%;
+  padding: var(--space-4) var(--space-5);
+  border: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  text-align: left;
+}
+
+.planAccordionHeader:hover {
+  background: var(--admin-surface-muted-fill, var(--surface-secondary));
+}
+
+.planAccordionHeader:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
+}
+
+.planAccordionTitleWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.planAccordionTitle {
+  color: var(--color-text-primary);
+  font: var(--font-heading-xs);
+}
+
+.planAccordionIcons {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+}
+
+.planAccordionContent {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-5);
+  border-top: 1px solid var(--surface-border);
+}
+
+.planIntroStack {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.planUpgradePanel {
+  padding: var(--space-4);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-primary);
+}
+
+.planFormSection {
+  display: grid;
+  gap: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--surface-border);
+}
+
+.planForm {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.planGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.planDescription {
+  grid-column: 1 / -1;
+}
+
+.planMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.planSecondaryAction {
+  display: flex;
+  align-items: center;
+}
+
+.planSummaryStack {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.upgradeRequestCard {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.upgradeRequestHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.planActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-inline-start: auto;
+}
+
+.deletePlanButton {
+  color: var(--color-text-danger);
+}
+
+.deletePlanButton:hover {
+  color: var(--color-text-danger);
+  background: var(--surface-secondary);
+}
+
+.detail {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font: var(--font-body-sm);
+}
+
+.deleteModalBody,
+.deleteForm {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.deleteWarning {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--surface-secondary);
+  color: var(--color-text-primary);
+  font: var(--font-body-sm-strong);
+}
+
+@media (max-width: 72rem) {
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tableHeader {
+    display: none;
+  }
+
+  .tableRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .viewCell {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 56rem) {
+  .stats {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbarControls {
+    align-items: stretch;
+  }
+
+  .toolbarMenus {
+    justify-content: flex-start;
+  }
+
+  .planMeta,
+  .planActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .planSecondaryAction {
+    justify-content: flex-start;
+  }
+
+  .setupFactsGrid,
+  .planGrid,
+  .tableRow {
+    grid-template-columns: 1fr;
+  }
+
+  .planAccordionHeader,
+  .planAccordionTitleWrap {
+    align-items: flex-start;
+  }
+}

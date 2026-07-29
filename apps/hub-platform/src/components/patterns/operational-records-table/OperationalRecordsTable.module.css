@@ -1,0 +1,140 @@
+.root {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.toolbar {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.toolbarControls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.search {
+  inline-size: 100%;
+  max-inline-size: 22rem;
+}
+
+.filterMenus {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.resultsText {
+  margin: 0;
+  color: var(--text-secondary);
+  font: var(--font-body-sm);
+}
+
+.tableWrap {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.tableHeader,
+.tableRow {
+  display: grid;
+  grid-template-columns: var(--records-grid-columns, repeat(4, minmax(0, 1fr)));
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.tableHeader {
+  padding: 0 var(--admin-record-header-pad-inline);
+  color: var(--color-text-secondary);
+  font: var(--font-label-sm);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tableBody {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.tableBody > .tableRow {
+  padding: var(--admin-record-pad-block) var(--admin-record-pad-inline);
+}
+
+.cell {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+  align-content: center;
+}
+
+.mobileLabel {
+  display: none;
+  color: var(--color-text-secondary);
+  font: var(--font-label-sm);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.primaryValue,
+.secondaryValue {
+  margin: 0;
+}
+
+.primaryValue {
+  color: var(--color-text-primary);
+  font: var(--font-body-sm-strong);
+}
+
+.secondaryValue {
+  color: var(--color-text-secondary);
+  font: var(--font-body-sm);
+}
+
+.actionsCell {
+  justify-items: end;
+}
+
+.cellAlignEnd {
+  justify-items: end;
+}
+
+.cellAlignStart {
+  justify-items: start;
+}
+
+@media (max-width: 72rem) {
+  .toolbarControls {
+    grid-template-columns: 1fr;
+  }
+
+  .search {
+    max-inline-size: none;
+  }
+}
+
+@media (max-width: 64rem) {
+  .tableHeader {
+    display: none;
+  }
+
+  .tableRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .mobileLabel {
+    display: block;
+  }
+
+  .actionsCell {
+    justify-items: stretch;
+  }
+}
+
+@media (max-width: 40rem) {
+  .tableRow {
+    grid-template-columns: 1fr;
+  }
+}

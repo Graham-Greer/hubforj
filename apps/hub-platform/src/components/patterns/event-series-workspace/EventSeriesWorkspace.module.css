@@ -1,0 +1,153 @@
+.root {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.occurrencesSection {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.sectionHeader {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.sectionCopy {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.sectionTitle {
+  margin: 0;
+  color: var(--text-primary);
+  font: var(--font-heading-sm);
+}
+
+.sectionDescription {
+  margin: 0;
+  color: var(--text-secondary);
+  font: var(--font-body-md);
+  line-height: var(--line-height-relaxed);
+}
+
+.toolbar {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.toolbarControls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.dateFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: end;
+}
+
+.dateField {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.dateField :global(.label) {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.headerActions {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.occurrenceList {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.occurrenceRow {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.occurrenceHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+.occurrenceTitleWrap {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.occurrenceTitle {
+  margin: 0;
+  font: var(--font-heading-4);
+  color: var(--text-primary);
+}
+
+.occurrenceMeta {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.occurrenceControls {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.occurrenceBadges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.occurrenceBody {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.occurrenceSummary {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.occurrenceHint {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.emptyText {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+@media (max-width: 56rem) {
+  .toolbarControls {
+    grid-template-columns: 1fr;
+  }
+
+  .occurrenceHeader {
+    grid-template-columns: 1fr;
+  }
+
+  .occurrenceControls {
+    justify-content: space-between;
+  }
+
+  .occurrenceBadges {
+    justify-content: flex-start;
+  }
+}

@@ -1,0 +1,86 @@
+.root {
+  display: grid;
+  gap: var(--accordion-gap);
+}
+
+.item {
+  overflow: clip;
+  border: var(--space-px) solid var(--accordion-item-border);
+  border-radius: var(--accordion-item-radius);
+  background: var(--accordion-item-surface);
+  box-shadow: var(--accordion-item-shadow);
+}
+
+.heading {
+  margin: 0;
+}
+
+.trigger {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-4);
+  align-items: start;
+  width: 100%;
+  margin: 0;
+  padding-block: var(--accordion-trigger-pad-y);
+  padding-inline: var(--accordion-trigger-pad-x);
+  border: 0;
+  background: transparent;
+  color: var(--accordion-title-color);
+  text-align: left;
+  cursor: pointer;
+}
+
+.trigger:hover {
+  background: var(--accordion-item-surface-hover);
+}
+
+.trigger:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: calc(var(--focus-ring-offset) * -1);
+}
+
+.title {
+  font: var(--accordion-title-font);
+  line-height: var(--line-height-tight);
+  text-wrap: pretty;
+}
+
+.iconWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accordion-icon-color);
+  transform: rotate(0deg);
+  transition: transform var(--accordion-transition-duration) var(--ease-standard);
+}
+
+.iconWrapOpen {
+  transform: rotate(180deg);
+}
+
+.icon {
+  font-size: var(--accordion-icon-size);
+}
+
+.panel {
+  border-top: var(--space-px) solid var(--accordion-item-border);
+}
+
+.panelInner {
+  padding-top: var(--accordion-body-pad-top);
+  padding-inline: var(--accordion-body-pad-x);
+  padding-bottom: var(--accordion-body-pad-bottom);
+  color: var(--accordion-body-color);
+  font: var(--accordion-body-font);
+}
+
+@media (max-width: 48rem) {
+  .trigger {
+    padding-inline: var(--space-4);
+  }
+
+  .panelInner {
+    padding-inline: var(--space-4);
+  }
+}

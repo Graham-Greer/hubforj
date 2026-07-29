@@ -1,0 +1,165 @@
+.root {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.toolbar {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.viewToggle {
+  max-inline-size: 20rem;
+  flex: 0 0 auto;
+}
+
+.searchFilters {
+  flex: 1 1 20rem;
+  min-inline-size: 0;
+}
+
+.emptySurface {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.resultsCount {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font: var(--font-body-sm);
+}
+
+.itemTitle,
+.emptyTitle {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+.itemMeta,
+.emptyDescription,
+.modalCopy {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.list {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.itemCard {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.itemHeader {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.itemLead {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  min-width: 0;
+  flex: 1 1 24rem;
+}
+
+.itemImageWrap {
+  position: relative;
+  inline-size: 5.5rem;
+  block-size: 5.5rem;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--color-surface-muted);
+  flex: 0 0 auto;
+}
+
+.itemImage {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.itemCopy {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.itemTitle {
+  font: var(--font-heading-xs);
+}
+
+.itemMeta {
+  font: var(--font-body-sm);
+}
+
+.itemHeaderBadges,
+.itemActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.itemHeaderBadges {
+  justify-content: flex-end;
+}
+
+.itemActions {
+  align-items: center;
+}
+
+.statusHelpText {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font: var(--font-body-sm);
+}
+
+.emptyBlock,
+.modalBody {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.emptyActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.emptyTitle {
+  font: var(--font-heading-xs);
+}
+
+@media (max-width: 48rem) {
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .viewToggle {
+    flex: none;
+    max-inline-size: none;
+    inline-size: 100%;
+  }
+
+  .searchFilters {
+    flex: none;
+    inline-size: 100%;
+  }
+
+  .itemLead {
+    inline-size: 100%;
+  }
+
+  .itemHeaderBadges {
+    justify-content: flex-start;
+  }
+}

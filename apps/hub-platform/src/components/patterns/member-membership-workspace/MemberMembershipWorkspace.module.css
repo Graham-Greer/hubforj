@@ -1,0 +1,170 @@
+.root {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.card {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.sectionHeader {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.sectionCopy {
+  display: grid;
+  gap: var(--space-2);
+  max-width: 42rem;
+}
+
+.sectionTitle {
+  margin: 0;
+  color: var(--color-text-primary);
+  font: var(--font-heading-sm);
+}
+
+.sectionDescription {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font: var(--font-body-md);
+}
+
+.sectionActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.details {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.currentMembershipDetails {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.detailRow {
+  display: grid;
+  gap: var(--space-1);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.currentMembershipDetails .detailRow {
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-subtle);
+}
+
+.detailLabel {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font: var(--font-label-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.detailValue {
+  margin: 0;
+  color: var(--color-text-primary);
+  font: var(--font-body-md);
+}
+
+.notes {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font: var(--font-body-sm);
+}
+
+.membershipActionsPanel {
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.modalContent {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.upgradeGrid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.upgradeCard {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-subtle);
+}
+
+.upgradeHeader {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.upgradeCopy {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.upgradeTitle {
+  margin: 0;
+  color: var(--color-text-primary);
+  font: var(--font-heading-xs);
+}
+
+.upgradeMeta {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font: var(--font-body-sm);
+}
+
+.upgradeDescription,
+.upgradeSupport {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font: var(--font-body-sm);
+}
+
+.upgradeActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+@media (max-width: 48rem) {
+  .sectionHeader {
+    flex-direction: column;
+  }
+
+  .currentMembershipDetails {
+    grid-template-columns: 1fr;
+  }
+
+  .upgradeHeader {
+    flex-direction: column;
+  }
+}

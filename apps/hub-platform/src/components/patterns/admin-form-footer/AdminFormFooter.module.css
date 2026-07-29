@@ -1,0 +1,16 @@
+.root {
+  display: grid;
+  gap: var(--space-4);
+  scroll-margin-block: var(--space-6);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.actions > :last-child {
+  margin-inline-start: auto;
+}

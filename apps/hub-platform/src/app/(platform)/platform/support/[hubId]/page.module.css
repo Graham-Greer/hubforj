@@ -1,0 +1,43 @@
+.layout {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.actions form {
+  display: contents;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.metaItem {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.bannerPreview {
+  margin: 0;
+  padding: var(--space-4);
+  border: var(--space-px) solid color-mix(in srgb, var(--accent-warning) 28%, var(--border-subtle));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent-warning) 8%, var(--surface-primary));
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.replacementNotice {
+  margin: 0;
+  color: var(--text-secondary);
+  font: var(--font-body-sm);
+  line-height: var(--line-height-relaxed);
+}

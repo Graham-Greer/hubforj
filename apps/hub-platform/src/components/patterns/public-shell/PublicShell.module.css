@@ -1,0 +1,16 @@
+.root {
+  display: grid;
+  min-height: 100vh;
+  grid-template-rows: auto 1fr auto;
+  --public-header-height: 5.625rem;
+}
+
+.content {
+  min-width: 0;
+}
+
+@media (max-width: 64rem) {
+  .root {
+    --public-header-height: 5.25rem;
+  }
+}

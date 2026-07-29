@@ -1,0 +1,125 @@
+import crypto from "node:crypto";
+import { NextResponse } from "next/server";
+import { buildHubAuthHref } from "@/lib/auth/hub-auth-redirects";
+import {
+  getInternalAutomationAuthorizationState,
+  normalizeProvisionOwnerAdminAutomationRequestBody,
+} from "@/lib/domain/internal-automation";
+import { getHubById } from "@/lib/data/hubs";
+import { normalizeUserRecord } from "@/lib/data/user-shared";
+import { getFirebaseAdminDb } from "@/lib/firebase/admin";
+
+function normalizeString(value) {
+  return String(value || "").trim();
+}
+
+async function getExistingHubUser(hubId, authUid, ownerEmail) {
+  const db = getFirebaseAdminDb();
+  const [byUidSnapshot, byEmailSnapshot] = await Promise.all([
+    db.collection("users").doc(authUid).get(),
+    db.collection("users").where("hubId", "==", hubId).where("email", "==", ownerEmail).limit(1).get(),
+  ]);
+
+  const byUid = byUidSnapshot.exists ? normalizeUserRecord({ id: byUidSnapshot.id, ...byUidSnapshot.data() }) : null;
+  const byEmail = byEmailSnapshot.empty
+    ? null
+    : normalizeUserRecord({ id: byEmailSnapshot.docs[0].id, ...byEmailSnapshot.docs[0].data() });
+
+  if (byUid?.hubId === hubId) {
+    return byUid;
+  }
+
+  return byEmail;
+}
+
+function buildAdminSignInHref(hubSlug, ownerEmail) {
+  const nextPath = `/${hubSlug}/admin`;
+  const signInHref = buildHubAuthHref(hubSlug, "sign-in", nextPath);
+  const separator = signInHref.includes("?") ? "&" : "?";
+
+  return `${signInHref}${separator}email=${encodeURIComponent(ownerEmail)}&activated=1`;
+}
+
+export async function POST(request) {
+  const auth = getInternalAutomationAuthorizationState(request);
+
+  if (!auth.authorized) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
+  let body = {};
+
+  try {
+    body = await request.json();
+  } catch {
+    body = {};
+  }
+
+  try {
+    const payload = normalizeProvisionOwnerAdminAutomationRequestBody(body);
+    const hub = await getHubById(payload.hubId);
+
+    if (!hub) {
+      throw new Error("Hub not found.");
+    }
+
+    if (payload.hubSlug && hub.slug !== payload.hubSlug) {
+      throw new Error("Hub slug does not match the requested hub.");
+    }
+
+    const existingUser = await getExistingHubUser(hub.id, payload.authUid, payload.ownerEmail);
+
+    if (existingUser) {
+      if (existingUser.role !== "owner") {
+        throw new Error("A hub user already exists for this owner email, but it is not the owner account.");
+      }
+
+      if (existingUser.status !== "active") {
+        throw new Error("The existing admin account is not active.");
+      }
+
+      return NextResponse.json({
+        status: "existing",
+        hubId: hub.id,
+        hubSlug: hub.slug,
+        signInPath: buildAdminSignInHref(hub.slug, payload.ownerEmail),
+      });
+    }
+
+    const existingByUid = await getFirebaseAdminDb().collection("users").doc(payload.authUid).get();
+
+    if (existingByUid.exists) {
+      throw new Error("This authenticated owner is already linked to another hub user record.");
+    }
+
+    const now = new Date().toISOString();
+    const userRecord = {
+      uid: payload.authUid,
+      hubId: hub.id,
+      role: "owner",
+      status: "active",
+      email: payload.ownerEmail,
+      name: payload.ownerFullName,
+      createdAt: now,
+      updatedAt: now,
+      authProvider: "password",
+      profileRevision: crypto.randomUUID().slice(0, 12),
+    };
+
+    await getFirebaseAdminDb().collection("users").doc(payload.authUid).create(userRecord);
+
+    return NextResponse.json({
+      status: "provisioned",
+      hubId: hub.id,
+      hubSlug: hub.slug,
+      signInPath: buildAdminSignInHref(hub.slug, payload.ownerEmail),
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: String(error?.message || "Unable to provision the owner admin account."),
+      },
+      { status: 400 }
+    );
+  }
+}

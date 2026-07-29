@@ -1,0 +1,47 @@
+:where(:root, [data-template])[data-template="editorial"] {
+  --template-display-font: var(--font-display-sora), "Segoe UI", sans-serif;
+  --template-shell-bg: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg-subtle) 84%, var(--surface-secondary)) 0%,
+    var(--bg-canvas) 100%
+  );
+  --template-accent-band: color-mix(in srgb, var(--surface-secondary) 88%, var(--bg-canvas));
+  --section-layout-gap-xl: clamp(var(--space-8), 5vw, var(--space-16));
+  --section-layout-gap-lg: clamp(var(--space-5), 3vw, var(--space-8));
+  --section-media-radius-xl: var(--radius-sm);
+  --section-media-radius-lg: var(--radius-sm);
+  --section-card-radius: var(--radius-sm);
+  --section-card-shadow: none;
+  --section-card-surface: transparent;
+  --section-card-border: color-mix(in srgb, var(--border-subtle) 84%, var(--accent-primary) 10%);
+  --section-card-body-padding: clamp(var(--space-4), 2vw, var(--space-6));
+  --section-card-body-padding-roomy: clamp(var(--space-5), 2.5vw, var(--space-8));
+  --badge-radius: var(--radius-sm);
+  --public-section-grid-gap: var(--space-4);
+  --public-section-cluster-gap: clamp(var(--space-5), 2.5vw, var(--space-8));
+  --site-frame-max-width: var(--layout-max-width);
+  --section-header-width-default: 44rem;
+  --section-header-width-wide: 54rem;
+  --public-header-surface: color-mix(in srgb, var(--surface-primary) 92%, var(--bg-canvas));
+  --public-header-shadow: none;
+  --public-header-border: color-mix(in srgb, var(--border-subtle) 86%, var(--accent-primary) 8%);
+  --public-header-brand-radius: 0;
+  --public-header-brand-bg: transparent;
+  --public-header-brand-color: var(--text-primary);
+  --public-header-cta-radius: var(--radius-full);
+  --public-header-cta-padding-inline: var(--space-5);
+  --public-header-cta-shadow: none;
+  --public-header-cta-surface: color-mix(in srgb, var(--accent-primary) 94%, black 0%);
+  --public-header-cta-surface-hover: color-mix(in srgb, var(--accent-primary) 82%, black 18%);
+  --public-nav-item-bg-active: var(--surface-secondary);
+  --public-nav-item-border-active: var(--accent-primary);
+  --public-nav-item-text-active: var(--text-primary);
+  --public-mobile-nav-item-bg-active: var(--surface-secondary);
+  --public-mobile-nav-item-border-active: var(--accent-primary);
+  --public-mobile-nav-item-text-active: var(--text-primary);
+  --footer-title-font: var(--font-body-lg-strong);
+  --footer-social-radius: 0;
+  --footer-social-size: 2.375rem;
+  --footer-social-icon-size: 1.25rem;
+  --section-events-featured-media-width: 20rem;
+}

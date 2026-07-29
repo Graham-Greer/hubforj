@@ -1,0 +1,81 @@
+.root {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--nav-item-gap);
+  padding: var(--nav-item-pad-y) var(--nav-item-pad-x);
+  color: var(--admin-sidebar-text-muted);
+  transition:
+    opacity var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard);
+}
+
+.root::before {
+  content: "";
+  position: absolute;
+  top: var(--space-1);
+  bottom: var(--space-1);
+  left: 0;
+  width: 2px;
+  border-radius: var(--radius-full);
+  background: transparent;
+  transition: background-color var(--motion-fast) var(--ease-standard);
+}
+
+.locked {
+  color: var(--admin-sidebar-text-muted);
+}
+
+.root:hover {
+  color: var(--admin-sidebar-text);
+}
+
+.root:focus-visible {
+  outline: none;
+  color: var(--admin-sidebar-text);
+  box-shadow: 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
+}
+
+.root:hover::before,
+.root:focus-visible::before {
+  background: var(--admin-nav-item-indicator);
+}
+
+.active {
+  color: var(--admin-sidebar-text);
+}
+
+.active::before {
+  background: var(--admin-nav-item-indicator);
+}
+
+.badge {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-full);
+  color: var(--admin-accent-surface);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.06em;
+}
+
+.identity {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nav-item-gap);
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.label {
+  font-weight: var(--font-weight-semibold);
+  min-width: 0;
+}
+
+.lockIcon {
+  display: inline-flex;
+  margin-left: auto;
+  color: var(--admin-sidebar-text-muted);
+}

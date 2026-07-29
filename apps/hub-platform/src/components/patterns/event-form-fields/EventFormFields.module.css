@@ -1,0 +1,93 @@
+.root {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.panel {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.panelHidden {
+  display: none;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.sectionRichText {
+  min-block-size: 16rem;
+}
+
+.recurrenceCard {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--surface-secondary);
+}
+
+.recurrenceHeader {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.recurrenceHeader span {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.weekdayGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.weekdayButton {
+  min-inline-size: 3rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--surface-primary);
+  color: var(--text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.weekdayButtonActive {
+  border-color: var(--brand-primary);
+  background: color-mix(in srgb, var(--brand-primary) 12%, var(--surface-primary));
+  color: var(--brand-primary-strong, var(--brand-primary));
+}
+
+.previewSummary {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.previewList {
+  margin: 0;
+  padding-inline-start: 1.25rem;
+  color: var(--text-muted);
+  display: grid;
+  gap: 0.35rem;
+}
+
+@media (max-width: 56rem) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fullWidth {
+    grid-column: auto;
+  }
+}

@@ -1,0 +1,85 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6);
+  background: rgb(15 23 42 / 0.48);
+  backdrop-filter: blur(0.5rem);
+}
+
+.dialog {
+  width: min(100%, 44rem);
+  max-height: min(90vh, 52rem);
+  overflow: auto;
+  border: var(--space-px) solid var(--panel-border);
+  border-radius: var(--panel-radius);
+  background: var(--panel-bg);
+  box-shadow: var(--shadow-lg);
+}
+
+.width_md {
+  width: min(100%, 44rem);
+}
+
+.width_lg {
+  width: min(100%, 56rem);
+}
+
+.width_xl {
+  width: min(100%, 72rem);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-6) var(--space-4);
+}
+
+.closeButton {
+  flex-shrink: 0;
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text-primary);
+  font: var(--font-heading-sm);
+}
+
+.content {
+  padding: 0 var(--space-6) var(--space-6);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: 0 var(--space-6) var(--space-6);
+}
+
+@media (max-width: 40rem) {
+  .backdrop {
+    padding: var(--space-4);
+  }
+
+  .variantSheetOnMobile {
+    place-items: end stretch;
+    padding: 0;
+  }
+
+  .variantSheetOnMobile .dialog {
+    width: 100%;
+    max-height: min(92vh, 56rem);
+    border-radius: var(--space-6) var(--space-6) 0 0;
+    border-inline: none;
+    border-block-end: none;
+  }
+
+  .actions {
+    justify-content: stretch;
+  }
+}

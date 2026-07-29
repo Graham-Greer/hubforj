@@ -1,0 +1,123 @@
+.root {
+  inset: 0;
+  position: fixed;
+  z-index: 130;
+}
+
+.blocker {
+  inset: 0;
+  pointer-events: auto;
+  position: absolute;
+}
+
+.overlay {
+  block-size: 100%;
+  inset: 0;
+  inline-size: 100%;
+  pointer-events: none;
+  position: absolute;
+}
+
+.overlayPath {
+  fill: rgba(11, 18, 32, 0.44);
+}
+
+.overlay[data-theme-mode="dark"] .overlayPath {
+  fill: rgba(3, 8, 20, 0.6);
+}
+
+.highlight {
+  border: 2px solid var(--accent-primary);
+  border-radius: calc(var(--radius-lg) + 0.25rem);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent-primary) 42%, white 58%),
+    0 0 0 0.35rem color-mix(in srgb, var(--accent-primary) 18%, transparent 82%),
+    0 1rem 2rem rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+  position: fixed;
+}
+
+.panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: calc(var(--radius-lg) + 0.25rem);
+  box-shadow: var(--shadow-xl, 0 24px 60px rgba(0, 0, 0, 0.22));
+  display: grid;
+  gap: var(--space-2);
+  inline-size: min(26rem, calc(100vw - 2rem));
+  left: 50%;
+  max-block-size: calc(100vh - 2rem);
+  overflow: auto;
+  padding: var(--space-3);
+  pointer-events: auto;
+  position: fixed;
+  top: 50%;
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+  transform: translate(-50%, -50%);
+}
+
+.panel[data-reduced-motion="true"] {
+  transition: none;
+}
+
+.panel[data-ready="false"] {
+  opacity: 0;
+}
+
+.header {
+  align-items: center;
+  display: flex;
+  gap: var(--space-3);
+  justify-content: space-between;
+}
+
+.eyebrow {
+  color: var(--text-muted);
+  font: var(--font-body-sm);
+  margin: 0;
+}
+
+.closeButton {
+  flex-shrink: 0;
+}
+
+.content {
+  display: grid;
+  gap: var(--space-1);
+  margin-bottom: var(--space-4);
+}
+
+.title {
+  color: var(--color-text-primary);
+  font: var(--font-body-md-strong);
+  margin: 0;
+}
+
+.body {
+  color: var(--color-text-secondary);
+  font: var(--font-body-sm);
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: space-between;
+}
+
+@media (max-width: 60rem) {
+  .highlight {
+    display: none;
+  }
+
+  .panel {
+    inset-block-end: 1rem;
+    inset-inline: 1rem;
+    inline-size: auto;
+    left: auto;
+    top: auto;
+    transform: none;
+  }
+}

@@ -1,0 +1,61 @@
+.root {
+  min-width: 0;
+}
+
+.header {
+  min-width: 0;
+}
+
+.controlRow {
+  display: flex;
+  align-items: center;
+}
+
+.control {
+  position: relative;
+  inline-size: var(--switch-width);
+  block-size: var(--switch-height);
+  padding: var(--switch-padding);
+  border: var(--space-px) solid var(--switch-track-border);
+  border-radius: calc(var(--switch-height) / 2);
+  background: var(--switch-track-bg);
+  cursor: pointer;
+  transition:
+    background-color var(--motion-base) var(--ease-standard),
+    border-color var(--motion-base) var(--ease-standard),
+    box-shadow var(--motion-base) var(--ease-standard);
+}
+
+.control:hover {
+  border-color: var(--border-strong);
+}
+
+.control:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
+}
+
+.controlActive {
+  border-color: var(--switch-track-border-active);
+  background: var(--switch-track-bg-active);
+}
+
+.thumb {
+  display: block;
+  inline-size: var(--switch-thumb-size);
+  block-size: var(--switch-thumb-size);
+  border-radius: 50%;
+  background: var(--switch-thumb-bg);
+  box-shadow: var(--switch-thumb-shadow);
+  transition: transform var(--motion-base) var(--ease-standard);
+}
+
+.thumbActive {
+  transform: translateX(calc(var(--switch-width) - var(--switch-thumb-size) - (var(--switch-padding) * 2)));
+}
+
+.copy {
+  display: grid;
+  gap: 0;
+  min-width: 0;
+}

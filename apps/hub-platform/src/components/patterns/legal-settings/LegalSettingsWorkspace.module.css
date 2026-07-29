@@ -1,0 +1,170 @@
+.root {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.tabPanel {
+  display: grid;
+}
+
+.contentGrid {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.statusList,
+.summaryList,
+.documentMeta,
+.changeList,
+.topicList {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.statusBar {
+  display: grid;
+}
+
+.statusBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.statusCard,
+.summaryCard,
+.documentCard {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.statusTitle,
+.summaryTitle,
+.documentTitle,
+.subheading {
+  margin: 0;
+  color: var(--color-text-primary);
+  font: var(--font-heading-xs);
+}
+
+.statusBody,
+.summaryBody,
+.documentBody,
+.mutedBody,
+.inlineMeta,
+.changeDescription {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.statusMetaRow,
+.documentHeader,
+.summaryHeader {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.metaGrid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.metaItem {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.metaLabel {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font: var(--font-label-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.metaValue {
+  margin: 0;
+  color: var(--color-text-primary);
+  font: var(--font-body-md);
+}
+
+.summarySection {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.summaryFields {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.summaryField {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.bulletList {
+  margin: 0;
+  padding-inline-start: var(--space-5);
+  display: grid;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+}
+
+.roleNotice {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.documentForm,
+.modalBody,
+.modalPanel {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.documentForm {
+  padding-top: var(--space-2);
+}
+
+.checkboxField {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-3);
+  align-items: start;
+  color: var(--color-text-primary);
+}
+
+.checkboxField input {
+  margin-top: 0.2rem;
+}
+
+.previewEmpty {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+@media (max-width: 56rem) {
+  .metaGrid,
+  .summaryFields {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 72rem) {
+  .contentGrid {
+    grid-template-columns: minmax(0, 1.45fr) minmax(20rem, 0.95fr);
+    align-items: start;
+  }
+
+  .guidancePanel {
+    position: sticky;
+    top: var(--space-6);
+  }
+}

@@ -1,0 +1,58 @@
+import Button from "@/components/ui/button/Button";
+import WorkflowGuidance from "@/components/patterns/workflow-guidance/WorkflowGuidance";
+import WorkspaceSection from "@/components/patterns/workspace-section/WorkspaceSection";
+import { requireHubBySlug } from "@/lib/data/hubs";
+import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
+import { listMediaAssetsByHubId, listMediaFoldersByHubId } from "@/lib/data/media";
+import { getHubPaymentSetupState } from "@/lib/domain/hub-payment-configuration";
+import CreateCourseForm from "./CreateCourseForm";
+import styles from "./page.module.css";
+
+export default async function CreateCoursePage({ params }) {
+  const { hubSlug } = await params;
+  const hub = await requireHubBySlug(hubSlug);
+  const [mediaAssets, mediaFolders, paymentConfiguration] = await Promise.all([
+    listMediaAssetsByHubId(hub.id),
+    listMediaFoldersByHubId(hub.id),
+    getHubPaymentConfigurationByHubId(hub.id),
+  ]);
+  const paymentSetupState = getHubPaymentSetupState(hub, paymentConfiguration);
+
+  return (
+    <div className={styles.layout}>
+      <WorkspaceSection
+        eyebrow="Courses"
+        title="Create course"
+        description="Set the structure, commitment, pricing, and enrolment rules before opening the course to members."
+        actions={
+          <Button href={`/${hub.slug}/admin/courses`} variant="secondary">
+            Back to courses
+          </Button>
+        }
+      >
+        <CreateCourseForm hub={hub} mediaAssets={mediaAssets} mediaFolders={mediaFolders} paymentSetupState={paymentSetupState} />
+      </WorkspaceSection>
+      <WorkflowGuidance
+        eyebrow="Publishing guidance"
+        title="What admins should resolve before enrolment opens"
+        items={[
+          {
+            title: "Set the commitment clearly",
+            body: "Timing, session count, delivery format, and capacity are part of the promise you are making to members.",
+            icon: "school",
+          },
+          {
+            title: "Treat pricing as operational",
+            body: "Paid vs free changes the payment path, reminders, and what members expect at enrolment time.",
+            icon: "payments",
+          },
+          {
+            title: "Use draft to reduce mistakes",
+            body: "Course detail tends to be denser than event detail. Keep it in draft until the offer is genuinely ready to be seen.",
+            icon: "fact_check",
+          },
+        ]}
+      />
+    </div>
+  );
+}

@@ -1,0 +1,27 @@
+.statusCell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.statusValue {
+  margin: 0;
+  color: var(--color-text-primary);
+  font: var(--font-body-sm-strong);
+}
+
+.message {
+  inline-size: 100%;
+  margin-top: var(--space-1);
+}
+
+.modalBody {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.modalCopy {
+  margin: 0;
+}

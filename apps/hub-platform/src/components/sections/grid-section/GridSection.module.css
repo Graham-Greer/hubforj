@@ -1,0 +1,130 @@
+.root {
+  position: relative;
+}
+
+.inner {
+  display: grid;
+  gap: var(--section-layout-gap-lg);
+}
+
+.card {
+  position: relative;
+  display: grid;
+  gap: var(--section-layout-gap-md);
+  align-content: start;
+  min-height: 100%;
+}
+
+.cardDefault::before {
+  content: "";
+  position: absolute;
+  inset-block: var(--section-card-padding);
+  inset-inline-start: var(--section-card-padding);
+  inline-size: var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--section-grid-card-accent-border);
+  pointer-events: none;
+}
+
+.cardStep {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+}
+
+.cardShowcase {
+  padding-block: clamp(var(--space-5), 2vw, var(--space-7));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent-primary) 6%, transparent), transparent 50%),
+    var(--section-card-surface);
+}
+
+.defaultMarker {
+  display: none;
+}
+
+.stepMarker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 3rem;
+  min-block-size: 3rem;
+  padding-inline: var(--space-2);
+  border: var(--space-px) solid var(--section-grid-step-marker-border);
+  border-radius: var(--radius-full);
+  background: var(--section-grid-step-marker-bg);
+  color: var(--section-grid-step-marker-text);
+  font: var(--font-label-md);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.showcaseMarker {
+  display: inline-flex;
+  justify-self: start;
+  align-items: center;
+  justify-content: center;
+  inline-size: 3.25rem;
+  block-size: 3.25rem;
+  border-radius: var(--radius-lg);
+  background: var(--accent-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.showcaseMarkerInner {
+  color: var(--text-inverse);
+  font: var(--font-label-md);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cardCopy {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  align-content: start;
+}
+
+.cardDefault .cardCopy {
+  padding-inline-start: calc(var(--space-4) + var(--space-1));
+}
+
+.cardTitle,
+.cardDescription {
+  margin: 0;
+}
+
+.cardTitle {
+  color: var(--text-primary);
+  font: var(--font-heading-xs);
+}
+
+.cardDescription {
+  color: var(--text-secondary);
+  font: var(--font-body-md);
+  line-height: var(--line-height-relaxed);
+}
+
+.variantStep .grid {
+  gap: clamp(var(--space-4), 2vw, var(--space-6));
+}
+
+.variantStep .cardStep {
+  grid-template-columns: 1fr;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.variantStep .stepMarker {
+  display: none;
+}
+
+.variantShowcase .grid {
+  gap: clamp(var(--space-4), 2vw, var(--space-6));
+}
+
+@media (max-width: 48rem) {
+  .cardStep {
+    grid-template-columns: 1fr;
+  }
+}

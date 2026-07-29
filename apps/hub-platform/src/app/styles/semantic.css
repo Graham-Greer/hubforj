@@ -1,0 +1,134 @@
+:root {
+  /* Semantic - shared contracts deriving from mode roots */
+  --color-surface-muted: var(--surface-secondary);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+  --border-ui-subtle: var(--border-subtle);
+  --border-ui-strong: var(--border-strong);
+  --border-interactive-hover: var(--border-strong);
+  --border-interactive-active: var(--accent-primary);
+
+  --accent-success: var(--color-emerald-500);
+  --accent-info: var(--color-sky-500);
+  --accent-warning: var(--color-amber-500);
+  --accent-danger: var(--color-crimson-500);
+  --color-text-accent: var(--accent-primary);
+  --color-text-success: var(--accent-success);
+  --color-text-danger: var(--accent-danger);
+  --duration-fast: var(--motion-fast);
+
+  --focus-ring-color: var(--accent-primary);
+  --focus-ring-width: 0.125rem;
+  --focus-ring-offset: 0.125rem;
+
+  /* Component contracts */
+  --button-radius: var(--field-radius);
+  --button-gap: var(--space-2);
+  --button-pad-y: var(--space-2);
+  --button-pad-x: var(--space-3);
+  --button-lg-min-height: 3rem;
+  --button-lg-pad-y: var(--space-3);
+  --button-lg-pad-x: var(--space-5);
+  --button-lg-gap: var(--space-2);
+  --button-compact-min-height: 2.25rem;
+  --button-compact-pad-y: var(--space-2);
+  --button-compact-pad-x: var(--space-3);
+  --button-compact-gap: var(--space-1);
+  --button-compact-square-size: var(--button-compact-min-height);
+  --button-lg-square-size: var(--button-lg-min-height);
+
+  --field-radius: var(--radius-md);
+  --field-pad-y: var(--space-3);
+  --field-pad-x: var(--space-4);
+  --field-bg: var(--surface-primary);
+  --field-border: var(--border-subtle);
+  --field-placeholder: var(--text-muted);
+  --field-compact-pad-y: var(--space-3);
+  --field-compact-pad-x: var(--space-3);
+
+  --segmented-toggle-pad-y: var(--space-2);
+  --segmented-toggle-pad-x: var(--space-3);
+
+  --switch-width: 3rem;
+  --switch-height: 1.875rem;
+  --switch-padding: var(--space-1);
+  --switch-thumb-size: calc(var(--switch-height) - (var(--switch-padding) * 2));
+  --switch-track-bg: var(--surface-secondary);
+  --switch-track-border: var(--field-border);
+  --switch-track-bg-active: var(--accent-primary);
+  --switch-track-border-active: var(--accent-primary);
+  --switch-thumb-bg: var(--surface-primary);
+  --switch-thumb-shadow: var(--shadow-sm);
+
+  --badge-radius: var(--radius-sm);
+  --badge-pad-y: var(--space-1);
+  --badge-pad-x: var(--space-3);
+  --badge-compact-min-height: 1.5rem;
+  --badge-compact-pad-y: calc(var(--space-1) * 0.75);
+  --badge-compact-pad-x: var(--space-2);
+  --badge-neutral-bg: var(--surface-secondary);
+  --badge-neutral-border: color-mix(in srgb, var(--border-strong) 72%, transparent);
+  --badge-neutral-text: var(--text-secondary);
+  --badge-accent-bg: color-mix(in srgb, var(--accent-primary) 14%, var(--surface-primary));
+  --badge-accent-border: color-mix(in srgb, var(--accent-primary) 32%, var(--border-subtle));
+  --badge-accent-text: var(--accent-primary);
+  --badge-info-bg: color-mix(in srgb, var(--accent-info) 14%, var(--surface-primary));
+  --badge-info-border: color-mix(in srgb, var(--accent-info) 32%, var(--border-subtle));
+  --badge-info-text: var(--accent-info);
+  --badge-success-bg: color-mix(in srgb, var(--accent-success) 14%, var(--surface-primary));
+  --badge-success-border: color-mix(in srgb, var(--accent-success) 32%, var(--border-subtle));
+  --badge-success-text: var(--accent-success);
+  --badge-warning-bg: color-mix(in srgb, var(--accent-warning) 14%, var(--surface-primary));
+  --badge-warning-border: color-mix(in srgb, var(--accent-warning) 32%, var(--border-subtle));
+  --badge-warning-text: var(--accent-warning);
+  --badge-danger-bg: color-mix(in srgb, var(--accent-danger) 14%, var(--surface-primary));
+  --badge-danger-border: color-mix(in srgb, var(--accent-danger) 32%, var(--border-subtle));
+  --badge-danger-text: var(--accent-danger);
+
+  --panel-radius: var(--radius-md);
+  --panel-pad: var(--space-6);
+  --panel-border: var(--border-subtle);
+  --panel-bg: var(--surface-primary);
+  --admin-record-pad-block: var(--space-2);
+  --admin-record-pad-inline: var(--space-4);
+  --admin-record-header-pad-inline: var(--space-4);
+
+  --icon-size-sm: var(--font-size-base);
+  --icon-size-md: var(--font-size-xl);
+  --icon-size-lg: var(--font-size-2xl);
+  --icon-size-xl: var(--font-size-4xl);
+
+  --type-heading-1-size: clamp(var(--font-size-4xl), 7vw, var(--section-title-size-hero-max));
+  --type-heading-1-font: var(--font-weight-bold) var(--type-heading-1-size) / 0.95 var(--template-display-font);
+  --type-heading-2-size: clamp(var(--font-size-3xl), 5vw, var(--font-size-5xl));
+  --type-heading-2-font: var(--font-weight-bold) var(--type-heading-2-size) / var(--line-height-tight) var(--template-display-font);
+  --type-heading-3-size: clamp(var(--font-size-2xl), 4vw, var(--font-size-4xl));
+  --type-heading-3-font: var(--font-weight-bold) var(--type-heading-3-size) / var(--line-height-tight) var(--template-display-font);
+
+  --search-field-pad-inline-start: var(--space-4);
+  --search-field-pad-inline-end: var(--space-12);
+  --search-field-icon-offset: var(--space-4);
+  --search-field-compact-pad-inline-start: var(--space-3);
+  --search-field-compact-pad-inline-end: var(--space-10);
+  --search-field-compact-icon-offset: var(--space-3);
+
+  --control-width-compact: 12rem;
+  --card-media-width-md: 12rem;
+  --card-media-width-sm: 8.75rem;
+  --nav-item-radius: var(--radius-md);
+  --nav-item-gap: var(--space-1);
+  --nav-item-pad-y: calc(var(--space-1) * 0.75);
+  --nav-item-pad-x: var(--space-3);
+  --admin-nav-group-gap: var(--space-2);
+  --admin-nav-items-gap: var(--space-1);
+  --admin-sidebar-nav-gap: var(--space-4);
+
+  /* Template defaults */
+  --template-display-font: var(--font-family-display);
+  --template-shell-bg: linear-gradient(180deg, var(--bg-subtle) 0%, var(--bg-canvas) 100%);
+  --template-accent-band: var(--surface-secondary);
+}
