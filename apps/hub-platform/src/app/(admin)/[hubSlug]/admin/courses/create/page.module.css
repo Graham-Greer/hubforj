@@ -1,0 +1,57 @@
+.layout {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.form {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.error {
+  margin: 0;
+  padding: var(--space-4);
+  border: var(--space-px) solid color-mix(in srgb, var(--accent-danger) 28%, var(--border-subtle));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent-danger) 8%, var(--surface-primary));
+  color: var(--accent-danger);
+  font-weight: var(--font-weight-semibold);
+}
+
+.success {
+  margin: 0;
+  padding: var(--space-4);
+  border: var(--space-px) solid color-mix(in srgb, var(--accent-success) 28%, var(--border-subtle));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent-success) 8%, var(--surface-primary));
+  color: var(--accent-success);
+  font-weight: var(--font-weight-semibold);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.deleteModalBody {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.deleteModalText {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+@media (max-width: 56rem) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,169 @@
+.root {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.toolbar {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.toolbarControls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.search {
+  min-width: 0;
+  inline-size: 100%;
+  max-inline-size: 22rem;
+}
+
+.dateFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: end;
+}
+
+.dateField {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 9rem;
+}
+
+.toolbarMenus {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.listSection {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.list {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.row {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.rowHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.rowHeaderActions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.rowTitleWrap {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.rowTitle {
+  margin: 0;
+  color: var(--text-primary);
+  font: var(--font-heading-xs);
+}
+
+.rowBadges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.bodyLayout {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.mediaFrame {
+  position: relative;
+  overflow: hidden;
+  width: var(--card-media-width-md);
+  aspect-ratio: 4 / 3;
+  border: var(--space-px) solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--surface-secondary);
+}
+
+.mediaImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.content {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.schedule {
+  margin: 0;
+  color: var(--text-primary);
+  font: var(--font-body-md);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  color: var(--text-secondary);
+  font: var(--font-body-sm);
+}
+
+.summary {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+.deleteModalBody {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.deleteModalText {
+  margin: 0;
+  color: var(--text-secondary);
+  font: var(--font-body-sm);
+}
+
+@media (max-width: 56rem) {
+  .toolbarControls {
+    grid-template-columns: 1fr;
+  }
+
+  .search {
+    max-inline-size: none;
+  }
+
+  .bodyLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .mediaFrame {
+    width: 100%;
+    max-width: 18rem;
+  }
+}

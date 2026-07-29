@@ -1,0 +1,5 @@
+.root {
+  display: block;
+  width: var(--social-icon-size, var(--footer-social-icon-size));
+  height: var(--social-icon-size, var(--footer-social-icon-size));
+}

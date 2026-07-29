@@ -1,0 +1,13 @@
+.root {
+  position: relative;
+}
+
+.inner {
+  display: grid;
+  gap: var(--section-layout-gap-lg);
+}
+
+.answer {
+  margin: 0;
+  white-space: pre-line;
+}

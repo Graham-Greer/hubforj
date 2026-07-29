@@ -1,0 +1,213 @@
+:where([data-admin-theme="workspace"]) {
+  /*
+   * Admin-portal-only foundation palette.
+   *
+   * This is intentionally scoped to the hub admin workspace only and does not
+   * remap shared semantic surface contracts yet. The goal of this first pass is
+   * to establish a product-site-inspired color family we can consume one
+   * surface at a time in later steps.
+   */
+
+  /* Light mode admin palette */
+  --admin-palette-light-50: #f3f8ff;
+  --admin-palette-light-100: #e7efff;
+  --admin-palette-light-200: #d4e1ff;
+  --admin-palette-light-300: #b6c8f4;
+  --admin-palette-light-400: #8f9fc4;
+  --admin-palette-light-500: #63708e;
+  --admin-palette-light-600: #414c66;
+  --admin-palette-light-700: #29324a;
+  --admin-palette-light-800: #172036;
+  --admin-palette-light-900: #0c1325;
+
+  /* Dark mode admin palette */
+  --admin-palette-dark-50: #e9f2ff;
+  --admin-palette-dark-100: #d1e0ff;
+  --admin-palette-dark-200: #aabbe7;
+  --admin-palette-dark-300: #7f93c3;
+  --admin-palette-dark-400: #576b98;
+  --admin-palette-dark-500: #314067;
+  --admin-palette-dark-600: #1d2a4a;
+  --admin-palette-dark-700: #131d3c;
+  --admin-palette-dark-800: #0f1730;
+  --admin-palette-dark-900: #0a1022;
+
+  /* Accent family aligned with product-site direction */
+  --admin-accent-cyan-400: #63f3ff;
+  --admin-accent-cyan-500: #32d7ff;
+  --admin-accent-blue-500: #5a7cff;
+  --admin-accent-violet-500: #8a7dff;
+  --admin-accent-violet-550: #8a4df8;
+  --admin-accent-lime-400: #a3ffb7;
+  --admin-accent-amber-400: #ffd47a;
+
+  /*
+   * Surface tokens will be introduced incrementally.
+   * Start with canvas only so the workspace and topbar can share one clear
+   * background plane before we touch panels.
+   */
+  --admin-canvas-bg: var(--bg-canvas);
+  --admin-canvas-border: var(--border-subtle);
+  --admin-surface-default-fill: var(--panel-bg);
+  --admin-surface-default-border: var(--panel-border);
+  --admin-surface-default-shadow: var(--shadow-sm);
+  --admin-surface-muted-fill: var(--surface-secondary);
+  --admin-surface-muted-border: var(--border-subtle);
+  --admin-surface-muted-shadow: none;
+  --admin-surface-accent-fill: var(--template-accent-band);
+  --admin-surface-accent-border: var(--accent-primary);
+  --admin-surface-accent-shadow: var(--shadow-md);
+  --admin-media-selected-fill: var(--surface-secondary);
+  --admin-media-selected-border: var(--border-subtle);
+  --admin-field-bg: var(--field-bg);
+  --admin-field-border: var(--field-border);
+  --admin-compact-trigger-fill: transparent;
+  --admin-compact-trigger-border: var(--surface-secondary);
+  --admin-compact-trigger-text: var(--color-text-primary);
+  --admin-compact-trigger-shadow: none;
+  --admin-select-scrollbar-thumb: var(--border-subtle);
+  --admin-select-scrollbar-thumb-hover: var(--border-strong);
+  --admin-select-scrollbar-track: transparent;
+  --admin-stat-accent-width: 0;
+  --admin-stat-accent-1: transparent;
+  --admin-stat-accent-2: transparent;
+  --admin-stat-accent-3: transparent;
+  --admin-stat-accent-4: transparent;
+  --admin-sidebar-bg: var(--surface-primary);
+  --admin-sidebar-border: var(--border-subtle);
+  --admin-sidebar-hover-bg: transparent;
+  --admin-sidebar-active-bg: transparent;
+  --admin-sidebar-title: var(--text-muted);
+  --admin-sidebar-text: var(--text-primary);
+  --admin-sidebar-text-muted: var(--text-secondary);
+  --form-section-tabs-surface: var(--admin-media-selected-fill);
+  --form-section-tabs-border: var(--admin-media-selected-border);
+  --form-section-tabs-tab-bg-hover: var(--admin-surface-muted-fill);
+  --form-section-tabs-tab-bg-active: var(--admin-surface-default-fill);
+  --form-section-tabs-tab-border-active: var(--admin-surface-default-border);
+  --accordion-gap: var(--space-3);
+  --accordion-item-radius: var(--radius-lg);
+  --accordion-item-border: var(--admin-surface-muted-border);
+  --accordion-item-surface: var(--admin-surface-default-fill);
+  --accordion-item-surface-hover: var(--admin-surface-muted-fill);
+  --accordion-item-shadow: var(--admin-surface-muted-shadow);
+  --accordion-title-color: var(--color-text-primary);
+  --accordion-body-color: var(--color-text-secondary);
+  --accordion-icon-color: var(--accent-primary);
+}
+
+:where([data-theme="light"] [data-admin-theme="workspace"]) {
+  --admin-neutral-50: var(--admin-palette-light-50);
+  --admin-neutral-100: var(--admin-palette-light-100);
+  --admin-neutral-200: var(--admin-palette-light-200);
+  --admin-neutral-300: var(--admin-palette-light-300);
+  --admin-neutral-400: var(--admin-palette-light-400);
+  --admin-neutral-500: var(--admin-palette-light-500);
+  --admin-neutral-600: var(--admin-palette-light-600);
+  --admin-neutral-700: var(--admin-palette-light-700);
+  --admin-neutral-800: var(--admin-palette-light-800);
+  --admin-neutral-900: var(--admin-palette-light-900);
+  --admin-canvas-bg:
+    radial-gradient(circle at 10% 10%, rgb(90 124 255 / 0.12), transparent 28rem),
+    radial-gradient(circle at 88% 12%, rgb(138 77 248 / 0.1), transparent 30rem),
+    radial-gradient(circle at 50% 100%, rgb(50 215 255 / 0.04), transparent 34rem),
+    linear-gradient(180deg, var(--admin-neutral-50) 0%, var(--admin-neutral-100) 100%);
+  --admin-canvas-border: color-mix(in srgb, var(--admin-neutral-400) 72%, white 28%);
+  --admin-surface-default-fill: color-mix(in srgb, white 97%, var(--admin-neutral-100) 3%);
+  --admin-surface-default-border: color-mix(in srgb, var(--admin-surface-default-fill) 68%, var(--admin-neutral-400) 32%);
+  --admin-surface-default-shadow: 0 1rem 2.25rem -1.5rem rgb(13 17 23 / 0.12);
+  --admin-surface-muted-fill: var(--admin-palette-light-50);
+  --admin-surface-muted-border: color-mix(in srgb, var(--admin-surface-muted-fill) 72%, var(--admin-neutral-400) 28%);
+  --admin-surface-muted-shadow: 0 0.5rem 1.125rem -0.875rem rgb(13 17 23 / 0.14);
+  --admin-surface-accent-fill: var(--admin-surface-default-fill);
+  --admin-surface-accent-border: color-mix(in srgb, var(--admin-surface-accent-fill) 78%, var(--admin-accent-blue-500) 22%);
+  --admin-surface-accent-shadow: 0 0.4rem 0.9rem -0.55rem rgb(13 17 23 / 0.2);
+  --admin-media-selected-fill: var(--admin-palette-light-100);
+  --admin-media-selected-border: color-mix(in srgb, var(--admin-media-selected-fill) 74%, var(--admin-neutral-400) 26%);
+  --admin-field-bg: transparent;
+  --admin-field-border: var(--admin-surface-muted-border);
+  --admin-compact-trigger-fill: color-mix(in srgb, white 90%, var(--admin-neutral-100) 10%);
+  --admin-compact-trigger-border: color-mix(in srgb, var(--admin-compact-trigger-fill) 74%, var(--admin-neutral-400) 26%);
+  --admin-compact-trigger-text: var(--admin-neutral-700);
+  --admin-compact-trigger-shadow: 0 0.4rem 0.9rem -0.75rem rgb(13 17 23 / 0.12);
+  --admin-select-scrollbar-thumb: color-mix(in srgb, var(--admin-neutral-300) 72%, var(--admin-accent-blue-500) 28%);
+  --admin-select-scrollbar-thumb-hover: color-mix(in srgb, var(--admin-neutral-400) 64%, var(--admin-accent-blue-500) 36%);
+  --admin-select-scrollbar-track: transparent;
+  --admin-stat-accent-width: 0.3125rem;
+  --admin-stat-accent-1: #804df7;
+  --admin-stat-accent-2: #0b50ec;
+  --admin-stat-accent-3: #06b5e9;
+  --admin-stat-accent-4: #05e1dc;
+  --admin-sidebar-bg: linear-gradient(180deg, color-mix(in srgb, white 90%, var(--admin-neutral-100) 10%) 0%, var(--admin-neutral-50) 100%);
+  --admin-sidebar-border: var(--admin-surface-muted-border);
+  --admin-sidebar-hover-bg: color-mix(in srgb, var(--admin-neutral-100) 84%, white 16%);
+  --admin-sidebar-active-bg: color-mix(in srgb, var(--admin-neutral-100) 56%, var(--admin-accent-cyan-400) 44%);
+  --admin-sidebar-title: color-mix(in srgb, var(--admin-neutral-500) 88%, var(--admin-accent-blue-500) 12%);
+  --admin-sidebar-text: var(--admin-neutral-700);
+  --admin-sidebar-text-muted: var(--admin-neutral-500);
+}
+
+:where([data-theme="dark"] [data-admin-theme="workspace"]) {
+  --admin-neutral-50: var(--admin-palette-dark-50);
+  --admin-neutral-100: var(--admin-palette-dark-100);
+  --admin-neutral-200: var(--admin-palette-dark-200);
+  --admin-neutral-300: var(--admin-palette-dark-300);
+  --admin-neutral-400: var(--admin-palette-dark-400);
+  --admin-neutral-500: var(--admin-palette-dark-500);
+  --admin-neutral-600: var(--admin-palette-dark-600);
+  --admin-neutral-700: var(--admin-palette-dark-700);
+  --admin-neutral-800: var(--admin-palette-dark-800);
+  --admin-neutral-900: var(--admin-palette-dark-900);
+  --admin-canvas-bg:
+    radial-gradient(circle at 10% 10%, rgb(50 215 255 / 0.12), transparent 30rem),
+    radial-gradient(circle at 88% 12%, rgb(138 77 248 / 0.14), transparent 32rem),
+    radial-gradient(circle at 52% 100%, rgb(90 124 255 / 0.06), transparent 36rem),
+    linear-gradient(180deg, #070b18 0%, #0a1022 100%);
+  --admin-canvas-border: color-mix(in srgb, var(--admin-neutral-700) 82%, var(--admin-accent-cyan-500) 18%);
+  --admin-surface-default-fill: #10182e;
+  --admin-surface-default-border: color-mix(in srgb, #213251 82%, var(--admin-accent-cyan-500) 18%);
+  --admin-surface-default-shadow: 0 1.25rem 2.75rem -1.5rem rgb(0 0 0 / 0.34);
+  --admin-surface-muted-fill: #0d1428;
+  --admin-surface-muted-border: color-mix(in srgb, #1b2a44 84%, var(--admin-accent-cyan-500) 16%);
+  --admin-surface-muted-shadow: 0 0.625rem 1.375rem -1rem rgb(0 0 0 / 0.34);
+  --admin-surface-accent-fill: #0b1122;
+  --admin-surface-accent-border: color-mix(in srgb, var(--admin-surface-accent-fill) 76%, var(--admin-accent-cyan-500) 24%);
+  --admin-surface-accent-shadow: 0 0.4rem 0.95rem -0.45rem rgb(0 0 0 / 0.46);
+  --admin-media-selected-fill: #0c1325;
+  --admin-media-selected-border: color-mix(in srgb, var(--admin-media-selected-fill) 80%, var(--admin-accent-cyan-500) 20%);
+  --admin-field-bg: transparent;
+  --admin-field-border: var(--admin-surface-muted-border);
+  --admin-compact-trigger-fill: var(--admin-palette-dark-800);
+  --admin-compact-trigger-border: color-mix(in srgb, var(--admin-compact-trigger-fill) 78%, var(--admin-accent-cyan-500) 22%);
+  --admin-compact-trigger-text: var(--admin-neutral-100);
+  --admin-compact-trigger-shadow: 0 0.45rem 1rem -0.7rem rgb(0 0 0 / 0.38);
+  --admin-select-scrollbar-thumb: color-mix(in srgb, var(--admin-neutral-500) 72%, var(--admin-accent-cyan-500) 28%);
+  --admin-select-scrollbar-thumb-hover: color-mix(in srgb, var(--admin-neutral-400) 64%, var(--admin-accent-cyan-500) 36%);
+  --admin-select-scrollbar-track: transparent;
+  --admin-stat-accent-width: 0.3125rem;
+  --admin-stat-accent-1: #804df7;
+  --admin-stat-accent-2: #0b50ec;
+  --admin-stat-accent-3: #06b5e9;
+  --admin-stat-accent-4: #05e1dc;
+  --admin-sidebar-bg: linear-gradient(180deg, #0d1428 0%, #09101f 100%);
+  --admin-sidebar-border: var(--admin-surface-muted-border);
+  --admin-sidebar-hover-bg: color-mix(in srgb, #15203a 88%, var(--admin-accent-cyan-500) 12%);
+  --admin-sidebar-active-bg: color-mix(in srgb, #17304b 68%, var(--admin-accent-cyan-500) 32%);
+  --admin-sidebar-title: color-mix(in srgb, var(--admin-neutral-300) 82%, var(--admin-accent-cyan-500) 18%);
+  --admin-sidebar-text: var(--admin-neutral-100);
+  --admin-sidebar-text-muted: var(--admin-neutral-300);
+}
+
+/*:where([data-admin-theme="workspace"] [data-admin-theme-preview="public"]) {
+  
+   * Reserved preview escape hatch.
+   *
+   * Later admin-only surface overrides can be neutralized within public preview
+   * regions without affecting the rest of the admin workspace.
+   
+}*/
+
+:where([data-admin-theme="workspace"]) {
+  --field-bg: var(--admin-field-bg);
+  --field-border: var(--admin-field-border);
+}

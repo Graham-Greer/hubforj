@@ -1,0 +1,6 @@
+<svg width="320" height="96" viewBox="0 0 320 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="2" y="2" width="316" height="92" rx="22" fill="#0F1730" stroke="rgba(163,255,183,0.24)" stroke-width="2"/>
+  <path d="M46 30L58 38V58L46 66L34 58V38L46 30Z" stroke="#A3FFB7" stroke-width="3" stroke-linejoin="round"/>
+  <text x="82" y="44" fill="#F6FBFF" font-family="Sora, Arial, sans-serif" font-size="16" font-weight="700" letter-spacing="0.12em">CATALYST</text>
+  <text x="82" y="64" fill="#D1E0FF" font-family="Manrope, Arial, sans-serif" font-size="14" font-weight="600" letter-spacing="0.16em">HOUSE</text>
+</svg>

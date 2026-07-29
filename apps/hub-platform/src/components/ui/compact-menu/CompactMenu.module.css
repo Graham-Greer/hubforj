@@ -1,0 +1,100 @@
+.root {
+  position: relative;
+  display: inline-flex;
+}
+
+.root:hover .tooltip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  pointer-events: none;
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  border-color: var(--admin-compact-trigger-border, var(--surface-secondary));
+  background: var(--admin-compact-trigger-fill, transparent);
+  box-shadow: var(--admin-compact-trigger-shadow, none);
+  color: var(--admin-compact-trigger-text, var(--color-text-primary));
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 30;
+  inset-inline-start: 50%;
+  inset-block-end: calc(100% + var(--space-2));
+  max-inline-size: 16rem;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--surface-primary);
+  box-shadow: var(--shadow-md);
+  color: var(--color-text-primary);
+  font: var(--font-body-xs);
+  line-height: var(--line-height-snug);
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, var(--space-1));
+  transition:
+    opacity var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-standard);
+  pointer-events: none;
+}
+
+.menu {
+  position: absolute;
+  z-index: 20;
+  min-inline-size: 10rem;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-primary);
+  box-shadow: var(--shadow-lg);
+}
+
+.openDown {
+  top: calc(100% + var(--space-2));
+}
+
+.openUp {
+  bottom: calc(100% + var(--space-2));
+}
+
+.alignEnd {
+  right: 0;
+}
+
+.alignStart {
+  left: 0;
+}
+
+.list {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.item,
+.itemActive {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-primary);
+  font: var(--font-body-xs);
+  text-align: left;
+}
+
+.item:hover,
+.itemActive:hover {
+  background: var(--color-surface-muted);
+}
+
+.itemActive {
+  background: var(--color-surface-muted);
+}

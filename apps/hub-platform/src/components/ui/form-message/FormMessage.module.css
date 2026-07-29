@@ -1,0 +1,25 @@
+.root {
+  margin: 0;
+  padding: var(--space-4);
+  border: var(--space-px) solid transparent;
+  border-radius: var(--radius-md);
+  font: var(--font-body-sm-strong);
+}
+
+.toneDanger {
+  border-color: var(--accent-danger);
+  background: var(--surface-secondary);
+  color: var(--accent-danger);
+}
+
+.toneSuccess {
+  border-color: var(--accent-success);
+  background: var(--surface-secondary);
+  color: var(--accent-success);
+}
+
+.toneInfo {
+  border-color: var(--accent-primary);
+  background: var(--surface-secondary);
+  color: var(--accent-primary);
+}

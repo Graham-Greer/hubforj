@@ -1,0 +1,83 @@
+.root {
+  display: grid;
+  gap: var(--space-6);
+  padding: var(--space-7);
+}
+
+.identity {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.iconWrap {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-secondary);
+  color: var(--accent-primary);
+}
+
+.copy {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--accent-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+}
+
+.description {
+  margin: 0;
+  color: var(--text-secondary);
+  max-width: 64ch;
+}
+
+.unlocks {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--surface-secondary);
+  border: var(--space-px) solid var(--border-subtle);
+}
+
+.unlocksTitle {
+  margin: 0;
+  font-weight: var(--font-weight-semibold);
+}
+
+.unlocksList {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: var(--space-2);
+  color: var(--text-secondary);
+}
+
+.unlockItem {
+  margin: 0;
+}
+
+.footer {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}

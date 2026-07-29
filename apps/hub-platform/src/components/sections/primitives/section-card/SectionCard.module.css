@@ -1,0 +1,24 @@
+.root {
+  min-width: 0;
+  overflow: hidden;
+  border: var(--space-px) solid var(--section-card-border);
+  border-radius: var(--section-card-radius);
+  background: var(--section-card-surface);
+  box-shadow: var(--section-card-shadow);
+}
+
+.paddingDefault {
+  padding: var(--section-card-padding);
+}
+
+.paddingCompact {
+  padding: var(--section-card-padding-compact);
+}
+
+.paddingRoomy {
+  padding: var(--section-card-padding-roomy);
+}
+
+.paddingNone {
+  padding: 0;
+}

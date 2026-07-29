@@ -1,0 +1,26 @@
+.root {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.trigger {
+  --button-compact-min-height: var(--avatar-size-md);
+  --button-compact-pad-y: 0;
+  --button-compact-pad-x: 0;
+
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  border-radius: var(--avatar-radius);
+}
+
+.trigger:hover,
+.trigger:focus-visible {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.message {
+  max-width: 16rem;
+}

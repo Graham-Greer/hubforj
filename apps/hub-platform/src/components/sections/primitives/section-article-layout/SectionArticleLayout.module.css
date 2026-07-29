@@ -1,0 +1,27 @@
+.root {
+  display: grid;
+  grid-template-columns: minmax(0, var(--section-article-layout-main-fr)) minmax(0, var(--section-article-layout-aside-fr));
+  gap: var(--section-article-layout-gap);
+  align-items: start;
+}
+
+.main,
+.aside {
+  min-width: 0;
+}
+
+.rootStickyAside .aside {
+  position: sticky;
+  top: var(--section-article-layout-sticky-top);
+}
+
+@media (max-width: 64rem) {
+  .root {
+    grid-template-columns: 1fr;
+  }
+
+  .rootStickyAside .aside {
+    position: static;
+    top: auto;
+  }
+}

@@ -1,0 +1,28 @@
+.root {
+  display: grid;
+  gap: var(--section-spacing-default-mobile);
+  padding: var(--section-spacing-default-mobile) var(--site-frame-gutter);
+}
+
+.hero,
+.body {
+  border-radius: var(--section-card-radius);
+}
+
+.body {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.body p {
+  margin: 0;
+  color: var(--text-secondary);
+  max-width: 70ch;
+}
+
+@media (min-width: 48rem) {
+  .root {
+    gap: var(--section-spacing-default);
+    padding-block: var(--section-spacing-default);
+  }
+}

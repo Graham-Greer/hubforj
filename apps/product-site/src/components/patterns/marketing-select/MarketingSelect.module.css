@@ -1,0 +1,169 @@
+.root {
+  min-width: 0;
+}
+
+.controlWrap {
+  position: relative;
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%),
+    rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  font: var(--font-body-md);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.trigger:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.03) 100%),
+    rgba(255, 255, 255, 0.04);
+}
+
+.trigger:focus-visible,
+.triggerOpen {
+  outline: none;
+  border-color: var(--border-accent);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.04) 100%),
+    rgba(255, 255, 255, 0.05);
+  box-shadow:
+    0 0 0 0.2rem rgba(99, 243, 255, 0.12),
+    0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.trigger:disabled {
+  cursor: not-allowed;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.02);
+  box-shadow: none;
+}
+
+.triggerPlaceholder {
+  color: var(--text-muted);
+}
+
+.triggerLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron,
+.optionIcon {
+  flex: 0 0 auto;
+  color: var(--text-accent);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.root[data-open="true"] .chevron {
+  transform: rotate(180deg);
+}
+
+.menu {
+  position: absolute;
+  z-index: 10;
+  inset-inline: 0;
+  display: grid;
+  gap: var(--space-1);
+  max-block-size: min(20rem, 45vh);
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--text-muted) 72%, var(--text-accent) 28%) transparent;
+  padding: var(--space-2);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(180deg, rgba(18, 27, 54, 0.98) 0%, rgba(10, 16, 34, 0.99) 100%);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(18px);
+}
+
+.menu:focus {
+  outline: none;
+}
+
+.menu::-webkit-scrollbar {
+  width: 0.5rem;
+}
+
+.menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.menu::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text-muted) 72%, var(--text-accent) 28%);
+  border-radius: 999px;
+}
+
+.menu::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--text-muted) 64%, var(--text-accent) 36%);
+}
+
+.menuDown {
+  top: calc(100% + var(--space-2));
+}
+
+.menuUp {
+  bottom: calc(100% + var(--space-2));
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3);
+  border: 0;
+  border-radius: calc(var(--radius-md) - var(--space-2));
+  background: transparent;
+  color: var(--text-secondary);
+  font: var(--font-body-md);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.option:hover,
+.optionActive {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.optionSelected {
+  color: var(--text-primary);
+  box-shadow: inset 0 0 0 1px rgba(99, 243, 255, 0.14);
+}
+
+.option:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.optionLabel {
+  min-width: 0;
+}

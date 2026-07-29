@@ -1,0 +1,68 @@
+.root {
+  display: inline-grid;
+  place-items: center;
+  inline-size: var(--nav-toggle-size);
+  block-size: var(--nav-toggle-size);
+  padding: var(--nav-toggle-padding);
+  border: var(--space-px) solid var(--nav-toggle-border);
+  border-radius: var(--nav-toggle-radius);
+  background: var(--nav-toggle-bg);
+  color: var(--nav-toggle-color);
+  transition:
+    background-color var(--motion-base) var(--ease-standard),
+    border-color var(--motion-base) var(--ease-standard),
+    color var(--motion-base) var(--ease-standard),
+    box-shadow var(--motion-base) var(--ease-standard);
+}
+
+.root:hover {
+  background: var(--nav-toggle-bg-hover);
+  border-color: var(--nav-toggle-border-hover);
+}
+
+.variantSecondary {
+  border-color: var(--border-subtle);
+  background: var(--surface-primary);
+  color: var(--text-primary);
+}
+
+.variantSecondary:hover {
+  background: var(--surface-secondary);
+  border-color: var(--border-strong);
+}
+
+.root:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
+}
+
+.line {
+  grid-area: 1 / 1;
+  inline-size: var(--nav-toggle-line-width);
+  block-size: var(--nav-toggle-line-height);
+  border-radius: var(--radius-full);
+  background: currentColor;
+  transition:
+    transform var(--motion-base) var(--ease-standard),
+    opacity var(--motion-base) var(--ease-standard);
+}
+
+.line:nth-child(1) {
+  transform: translateY(calc(var(--nav-toggle-line-gap) * -1));
+}
+
+.line:nth-child(3) {
+  transform: translateY(var(--nav-toggle-line-gap));
+}
+
+.open .line:nth-child(1) {
+  transform: rotate(45deg);
+}
+
+.open .line:nth-child(2) {
+  opacity: 0;
+}
+
+.open .line:nth-child(3) {
+  transform: rotate(-45deg);
+}

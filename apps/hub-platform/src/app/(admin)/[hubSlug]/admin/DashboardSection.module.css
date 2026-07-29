@@ -1,0 +1,30 @@
+.panel {
+  display: grid;
+  gap: var(--space-4);
+  height: 100%;
+  align-content: start;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.title {
+  margin: 0;
+  color: var(--text-strong);
+  font: var(--font-body-md-strong);
+}
+
+.link {
+  color: var(--accent-primary);
+  font: var(--font-body-sm);
+  text-decoration: none;
+}
+
+.link:hover,
+.link:focus-visible {
+  text-decoration: underline;
+}

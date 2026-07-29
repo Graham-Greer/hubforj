@@ -1,0 +1,132 @@
+.card {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.header {
+  align-items: start;
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.copy {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.eyebrow {
+  color: var(--text-muted);
+  font: var(--font-body-sm);
+  letter-spacing: 0.04em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.title {
+  color: var(--color-text-primary);
+  font: var(--font-body-md-strong);
+  margin: 0;
+}
+
+.body {
+  color: var(--color-text-secondary);
+  font: var(--font-body-sm);
+  margin: 0;
+}
+
+.progress {
+  align-items: end;
+  display: grid;
+  gap: 0;
+  justify-items: end;
+}
+
+.progressValue {
+  color: var(--color-text-primary);
+  font: var(--font-body-md-strong);
+}
+
+.progressLabel {
+  color: var(--text-muted);
+  font: var(--font-body-sm);
+}
+
+.progressBar {
+  background: var(--surface-subtle, color-mix(in srgb, var(--border-subtle) 35%, transparent));
+  block-size: 0.5rem;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progressFill {
+  background: var(--accent-primary);
+  block-size: 100%;
+  border-radius: inherit;
+}
+
+.items {
+  display: grid;
+  gap: 0;
+}
+
+.item {
+  align-items: center;
+  border-bottom: 1px solid var(--panel-border);
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding-block: var(--space-3);
+}
+
+.item:first-child {
+  border-top: 1px solid var(--panel-border);
+}
+
+.itemCopy {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.itemTitle {
+  color: var(--color-text-primary);
+  font: var(--font-body-sm-strong);
+  margin: 0;
+}
+
+.itemStatus {
+  color: var(--text-muted);
+  font: var(--font-body-sm);
+  margin: 0;
+}
+
+.itemStatus[data-status="completed"] {
+  color: var(--semantic-success-700, var(--text-muted));
+}
+
+.itemStatus[data-status="in_progress"] {
+  color: var(--semantic-warning-700, var(--text-muted));
+}
+
+.actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: space-between;
+}
+
+@media (max-width: 48rem) {
+  .header,
+  .item {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .progress {
+    justify-items: start;
+  }
+
+  .actions {
+    justify-content: flex-start;
+  }
+}

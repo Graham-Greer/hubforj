@@ -1,0 +1,33 @@
+.frame,
+.fallback {
+  background: color-mix(in srgb, var(--panel-bg) 88%, black 12%);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.video {
+  aspect-ratio: 16 / 10;
+  background: #000;
+  display: block;
+  inline-size: 100%;
+  object-fit: cover;
+}
+
+.fallback {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+}
+
+.fallbackTitle {
+  font-size: 0.875rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.fallbackBody {
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin: 0;
+}

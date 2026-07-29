@@ -1,0 +1,166 @@
+.root {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.header {
+  display: grid;
+  gap: 1rem;
+}
+
+.breadcrumbs {
+  margin-bottom: -0.15rem;
+}
+
+.headerCopy {
+  min-width: 0;
+}
+
+.badgeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.summaryCard {
+  overflow: hidden;
+}
+
+.summaryCardLayout {
+  display: grid;
+}
+
+.summaryMedia {
+  min-height: 11rem;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-accent-primary) 18%, transparent), transparent 70%),
+    var(--color-surface-secondary);
+}
+
+.summaryMediaImage {
+  object-fit: cover;
+}
+
+.summaryMediaPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.summaryMediaPlaceholderText {
+  font: var(--font-label-md);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-fg-secondary);
+}
+
+.summaryCardBody {
+  display: grid;
+  align-content: center;
+  gap: 0.75rem;
+}
+
+.title {
+  margin: 0;
+  font: var(--font-heading-md);
+  color: var(--color-fg-primary);
+}
+
+.summary {
+  margin: 0;
+  color: var(--color-fg-secondary);
+  font: var(--font-body-md);
+}
+
+.listingIntro {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.sectionTitle {
+  margin: 0;
+  font: var(--font-heading-sm);
+  color: var(--color-fg-primary);
+}
+
+.sectionDescription {
+  margin: 0;
+  color: var(--color-fg-secondary);
+}
+
+.grid {
+  align-items: stretch;
+}
+
+.card {
+  height: 100%;
+}
+
+.cardBody {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.occurrenceRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+}
+
+.cardTitle {
+  margin: 0;
+  font: var(--font-label-lg);
+  color: var(--color-fg-primary);
+}
+
+.viewAction {
+  flex-shrink: 0;
+}
+
+.viewAction :global(span) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.emptyState {
+  padding: 1.5rem;
+}
+
+.emptyTitle {
+  margin: 0 0 0.5rem;
+  font: var(--font-heading-xs);
+  color: var(--color-fg-primary);
+}
+
+.emptyDescription {
+  margin: 0;
+  color: var(--color-fg-secondary);
+}
+
+.variantEditorial .title,
+.variantStudio .title {
+  font: var(--font-heading-lg);
+}
+
+@media (min-width: 48rem) {
+  .summaryCardLayout {
+    grid-template-columns: 12rem minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 47.99rem) {
+  .cardBody,
+  .occurrenceRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header {
+    gap: 0.85rem;
+  }
+}

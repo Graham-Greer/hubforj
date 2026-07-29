@@ -1,0 +1,50 @@
+:where(:root, [data-template])[data-template="studio"] {
+  --template-display-font: var(--font-display-space-grotesk), var(--font-family-sans);
+  --template-shell-bg: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg-subtle) 82%, var(--surface-secondary)) 0%,
+    var(--bg-canvas) 100%
+  );
+  --template-accent-band: color-mix(in srgb, var(--accent-primary) 10%, var(--surface-secondary));
+  --section-layout-gap-xl: clamp(var(--space-10), 5vw, var(--space-20));
+  --section-media-radius-xl: var(--radius-xl);
+  --section-card-radius: var(--radius-xl);
+  --section-card-shadow: var(--shadow-lg);
+  --section-card-surface: color-mix(in srgb, var(--surface-primary) 94%, white);
+  --badge-radius: var(--radius-sm);
+  --public-section-grid-gap: var(--space-5);
+  --public-header-surface: var(--surface-primary);
+  --public-header-sticky-surface-elevated: color-mix(in srgb, var(--surface-primary) 78%, transparent);
+  --public-header-sticky-border-elevated: var(--public-shell-border);
+  --public-header-sticky-shadow-elevated: var(--shadow-lg);
+  --public-header-sticky-backdrop-blur-elevated: 1.5rem;
+  --public-header-brand-radius: 0;
+  --public-header-info-band-surface: var(--surface-secondary);
+  --public-header-info-band-border: var(--border-strong);
+  --public-header-info-band-social-radius: 0;
+  --public-header-info-band-social-bg-hover: var(--accent-primary);
+  --public-header-info-band-social-border-hover: var(--accent-primary);
+  --public-header-info-band-social-icon: var(--accent-primary);
+  --public-header-info-band-social-icon-hover: var(--surface-primary);
+  --public-header-cta-align-self: stretch;
+  --public-header-cta-min-height: var(--public-header-height);
+  --public-header-cta-radius: 0;
+  --public-header-cta-padding-inline: clamp(var(--space-4), 2vw, var(--space-6));
+  --public-header-cta-shadow: none;
+  --public-nav-item-radius: 0;
+  --public-nav-item-bg-hover: transparent;
+  --public-nav-item-bg-active: transparent;
+  --public-nav-item-border-width: 0 0 0.125rem;
+  --public-nav-item-border-hover: var(--border-interactive-hover);
+  --public-nav-item-border-active: var(--accent-primary);
+  --public-nav-item-text-hover: var(--public-nav-item-text);
+  --public-nav-item-text-active: var(--public-nav-item-text);
+  --public-mobile-nav-surface-panel: var(--surface-primary);
+  --public-mobile-nav-border-panel: var(--border-strong);
+  --public-mobile-nav-shadow-panel: var(--shadow-lg);
+  --footer-title-font: var(--font-body-lg-strong);
+  --footer-social-radius: var(--radius-lg);
+  --footer-social-size: 2.625rem;
+  --footer-social-icon-size: 1.25rem;
+  --section-events-featured-media-width: 19rem;
+}

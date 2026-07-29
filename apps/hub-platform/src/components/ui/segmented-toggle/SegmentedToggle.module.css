@@ -1,0 +1,43 @@
+.root {
+  min-width: 0;
+}
+
+.group {
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border: var(--space-px) solid var(--field-border);
+  border-radius: var(--field-radius);
+  background: var(--surface-secondary);
+}
+
+.option {
+  padding: var(--segmented-toggle-pad-y) var(--segmented-toggle-pad-x);
+  border: 0;
+  border-radius: var(--field-radius);
+  background: transparent;
+  color: var(--text-secondary);
+  font: var(--font-body-sm-strong);
+  cursor: pointer;
+  transition:
+    background-color var(--motion-base) var(--ease-standard),
+    color var(--motion-base) var(--ease-standard),
+    box-shadow var(--motion-base) var(--ease-standard);
+}
+
+.option:hover {
+  color: var(--text-primary);
+}
+
+.option:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
+}
+
+.optionSelected {
+  background: var(--surface-primary);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}

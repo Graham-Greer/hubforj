@@ -1,0 +1,46 @@
+:where([data-workspace-theme-scope="operator"]) {
+  --admin-accent-surface: var(--accent-primary);
+  --admin-accent-surface-hover: var(--accent-primary-hover);
+  --admin-accent-text-on-surface: var(--text-inverse);
+  --admin-accent-border: var(--admin-accent-surface);
+  --admin-accent-border-hover: var(--admin-accent-surface-hover);
+  --admin-accent-text: var(--admin-accent-surface);
+  --admin-nav-item-indicator: var(--admin-accent-border);
+  --admin-focus-ring-color: var(--admin-accent-surface);
+  --focus-ring-color: var(--admin-focus-ring-color);
+  --panel-bg: var(--surface-primary);
+  --panel-border: var(--border-strong);
+  --field-bg: var(--surface-primary);
+  --field-border: var(--border-strong);
+  --field-placeholder: var(--text-muted);
+
+  --workspace-section-eyebrow-font: var(--font-label-sm);
+  --workspace-section-title-size: clamp(var(--font-size-2xl), 4vw, var(--font-size-4xl));
+  --workspace-section-title-size-compact: clamp(var(--font-size-xl), 7vw, var(--font-size-3xl));
+  --workspace-section-title-font: var(--font-weight-bold) var(--workspace-section-title-size) / var(--line-height-tight) var(--template-display-font);
+  --workspace-section-description-font: var(--font-body-lg);
+  --workspace-section-copy-max-width: 44rem;
+
+  --form-step-progress-marker-size: 2.5rem;
+  --form-step-progress-marker-radius: var(--field-radius);
+  --form-step-progress-marker-bg: var(--surface-primary);
+  --form-step-progress-marker-border: var(--border-ui-strong);
+  --form-step-progress-marker-text: var(--text-secondary);
+  --form-step-progress-marker-bg-current: var(--surface-secondary);
+  --form-step-progress-marker-border-current: var(--admin-accent-border);
+  --form-step-progress-marker-text-current: var(--admin-accent-text);
+  --form-step-progress-marker-bg-complete: var(--admin-accent-surface);
+  --form-step-progress-marker-border-complete: var(--admin-accent-border);
+  --form-step-progress-marker-text-complete: var(--admin-accent-text-on-surface);
+  --form-step-progress-rail-thickness: 0.25rem;
+  --form-step-progress-rail-bg: var(--border-ui-subtle);
+  --form-step-progress-rail-bg-complete: var(--admin-accent-surface);
+
+  --form-section-tabs-radius: var(--radius-lg);
+  --form-section-tabs-surface: var(--surface-secondary);
+  --form-section-tabs-border: var(--border-strong);
+  --form-section-tabs-tab-radius: var(--radius-md);
+  --form-section-tabs-tab-bg-hover: var(--bg-subtle);
+  --form-section-tabs-tab-bg-active: var(--surface-primary);
+  --form-section-tabs-tab-border-active: var(--admin-accent-border);
+}

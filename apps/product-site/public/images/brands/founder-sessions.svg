@@ -1,0 +1,7 @@
+<svg width="320" height="96" viewBox="0 0 320 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="2" y="2" width="316" height="92" rx="22" fill="#0F1730" stroke="rgba(138,125,255,0.34)" stroke-width="2"/>
+  <path d="M34 64L46 32L58 64" stroke="#8A7DFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M39 53H53" stroke="#8A7DFF" stroke-width="3.5" stroke-linecap="round"/>
+  <text x="82" y="44" fill="#F6FBFF" font-family="Sora, Arial, sans-serif" font-size="16" font-weight="700" letter-spacing="0.12em">FOUNDER</text>
+  <text x="82" y="64" fill="#D1E0FF" font-family="Manrope, Arial, sans-serif" font-size="14" font-weight="600" letter-spacing="0.16em">SESSIONS</text>
+</svg>

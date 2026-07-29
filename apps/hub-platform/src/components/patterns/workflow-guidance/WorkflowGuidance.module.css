@@ -1,0 +1,52 @@
+.root {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--text-secondary);
+  font: var(--font-label-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.title {
+  margin: 0;
+  color: var(--text-primary);
+  font: var(--font-heading-sm);
+}
+
+.items {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.iconWrap {
+  display: inline-flex;
+  padding-top: var(--space-1);
+}
+
+.copy {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.itemTitle {
+  margin: 0;
+  color: var(--text-primary);
+  font: var(--font-body-sm-strong);
+}
+
+.itemBody {
+  margin: 0;
+  color: var(--text-secondary);
+  font: var(--font-body-sm);
+  line-height: var(--line-height-relaxed);
+}

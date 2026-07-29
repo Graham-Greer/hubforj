@@ -1,0 +1,99 @@
+.root {
+  position: relative;
+  padding-block: var(--section-spacing-default);
+}
+
+.spacingCompact {
+  padding-block: var(--section-spacing-compact);
+}
+
+.spacingNone {
+  padding-block: 0;
+}
+
+.spacingDefault {
+  padding-block: var(--section-spacing-default);
+}
+
+.spacingSpacious {
+  padding-block: var(--section-spacing-spacious);
+}
+
+.spacingTopNone {
+  padding-top: 0;
+}
+
+.spacingTopCompact {
+  padding-top: var(--section-spacing-compact);
+}
+
+.spacingTopDefault {
+  padding-top: var(--section-spacing-default);
+}
+
+.spacingTopSpacious {
+  padding-top: var(--section-spacing-spacious);
+}
+
+.spacingBottomNone {
+  padding-bottom: 0;
+}
+
+.spacingBottomCompact {
+  padding-bottom: var(--section-spacing-compact);
+}
+
+.spacingBottomDefault {
+  padding-bottom: var(--section-spacing-default);
+}
+
+.spacingBottomSpacious {
+  padding-bottom: var(--section-spacing-spacious);
+}
+
+.surfaceTransparent {
+  background: transparent;
+}
+
+.surfaceSubtle {
+  background: var(--section-surface-subtle);
+}
+
+.surfacePrimary {
+  background: var(--section-surface-primary);
+}
+
+.surfaceInverse {
+  background: var(--section-surface-inverse);
+  color: var(--text-inverse);
+}
+
+.dividerTop {
+  border-top: var(--space-px) solid var(--section-divider-color);
+}
+
+.dividerBottom {
+  border-bottom: var(--space-px) solid var(--section-divider-color);
+}
+
+@media (max-width: 48rem) {
+  .root {
+    padding-block: var(--section-spacing-default-mobile);
+  }
+
+  .spacingNone {
+    padding-block: 0;
+  }
+
+  .spacingSpacious {
+    padding-block: var(--section-spacing-spacious-mobile);
+  }
+
+  .spacingTopSpacious {
+    padding-top: var(--section-spacing-spacious-mobile);
+  }
+
+  .spacingBottomSpacious {
+    padding-bottom: var(--section-spacing-spacious-mobile);
+  }
+}

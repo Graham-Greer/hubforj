@@ -1,0 +1,84 @@
+.overlay {
+  position: fixed;
+  inset: 0 0 0 0;
+  z-index: 24;
+  background: var(--overlay-bg);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity var(--motion-slow) var(--ease-standard);
+}
+
+.overlayOpen {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.panel {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  z-index: 25;
+  inline-size: min(80vw, 22rem);
+  max-inline-size: 100vw;
+  border-left: var(--space-px) solid var(--admin-sidebar-border);
+  background: var(--admin-sidebar-bg);
+  box-shadow: var(--shadow-lg);
+  transform: translateX(100%);
+  pointer-events: none;
+  transition: transform var(--motion-slow) var(--ease-standard);
+  overflow: hidden;
+}
+
+.panelOpen {
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.panelInner {
+  display: grid;
+  align-content: start;
+  gap: var(--space-6);
+  block-size: 100%;
+  padding: var(--space-6) var(--content-gutter) calc(var(--space-6) + env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.nav {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.utilitySection {
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: var(--space-px) solid var(--admin-sidebar-border);
+}
+
+.utilityLabel {
+  color: var(--text-secondary);
+  font: var(--font-label-sm);
+  margin: 0;
+}
+
+.utilityList {
+  display: grid;
+  gap: var(--space-3);
+}
+
+@media (min-width: 48rem) and (max-width: 64rem) {
+  .panel {
+    inline-size: clamp(22rem, 42vw, 28rem);
+  }
+}
+
+@media (min-width: 64.001rem) {
+  .overlay,
+  .panel {
+    display: none;
+  }
+}

@@ -1,0 +1,18 @@
+.root {
+  display: grid;
+  gap: var(--admin-nav-group-gap);
+}
+
+.title {
+  margin: 0;
+  color: var(--admin-sidebar-title);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.items {
+  display: grid;
+  gap: var(--admin-nav-items-gap);
+}

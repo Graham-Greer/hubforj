@@ -1,0 +1,25 @@
+.controlWrap {
+  position: relative;
+}
+
+.control {
+  padding: var(--field-pad-y) calc(var(--field-pad-x) + var(--space-6)) var(--field-pad-y) var(--field-pad-x);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.icon {
+  position: absolute;
+  top: 50%;
+  right: var(--field-pad-x);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.controlSm {
+  padding-right: calc(var(--field-compact-pad-x) + var(--space-5));
+}
+
+.controlSm + .icon {
+  right: var(--field-compact-pad-x);
+}

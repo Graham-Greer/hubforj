@@ -1,0 +1,9 @@
+.layout {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.list {
+  display: grid;
+  gap: var(--space-4);
+}

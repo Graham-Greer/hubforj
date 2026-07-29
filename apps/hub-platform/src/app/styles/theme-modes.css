@@ -1,0 +1,91 @@
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* Surface foundations - light mode */
+  --bg-canvas: var(--palette-neutral-50);
+  --bg-subtle: var(--palette-neutral-100);
+  --surface-primary: var(--color-white);
+  --surface-secondary: var(--palette-neutral-100);
+  --surface-tertiary: var(--palette-neutral-200);
+  --surface-inverse: var(--palette-neutral-900);
+  --overlay-scrim: color-mix(in srgb, var(--palette-neutral-900) 60%, transparent);
+  --overlay-bg: var(--overlay-scrim);
+
+  /* Text foundations - light mode */
+  --text-primary: var(--palette-neutral-800);
+  --text-secondary: var(--palette-neutral-500);
+  --text-muted: var(--palette-neutral-400);
+  --text-inverse: var(--palette-neutral-50);
+
+  /* Border foundations - light mode */
+  --border-subtle: var(--palette-neutral-100);
+  --border-strong: var(--palette-neutral-200);
+
+  /* Accent foundations - light mode */
+  --accent-primary: var(--palette-brand-500);
+  --accent-primary-hover: var(--palette-brand-600);
+  --accent-secondary: var(--palette-accent-500);
+}
+
+:where(:root, [data-theme])[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Surface foundations - dark mode */
+  --bg-canvas: var(--palette-neutral-900);
+  --bg-subtle: var(--palette-neutral-800);
+  --surface-primary: var(--palette-neutral-800);
+  --surface-secondary: var(--palette-neutral-700);
+  --surface-tertiary: var(--palette-neutral-600);
+  --surface-inverse: var(--palette-neutral-50);
+  --overlay-scrim: color-mix(in srgb, var(--palette-neutral-900) 80%, transparent);
+  --overlay-bg: var(--overlay-scrim);
+
+  /* Text foundations - dark mode */
+  --text-primary: var(--palette-neutral-50);
+  --text-secondary: var(--palette-neutral-200);
+  --text-muted: var(--palette-neutral-400);
+  --text-inverse: var(--palette-neutral-900);
+
+  /* Border foundations - dark mode */
+  --border-subtle: var(--palette-neutral-700);
+  --border-strong: var(--palette-neutral-600);
+
+  /* Accent foundations - dark mode */
+  --accent-primary: var(--palette-brand-400);
+  --accent-primary-hover: var(--palette-brand-300);
+  --accent-secondary: var(--palette-accent-400);
+  --badge-neutral-bg: color-mix(in srgb, var(--surface-secondary) 82%, var(--bg-canvas));
+  --badge-neutral-border: color-mix(in srgb, var(--border-strong) 92%, transparent);
+  --badge-neutral-text: color-mix(in srgb, var(--text-secondary) 72%, var(--text-primary));
+  --badge-accent-bg: color-mix(in srgb, var(--accent-primary) 10%, var(--surface-secondary));
+  --badge-accent-border: color-mix(in srgb, var(--accent-primary) 40%, var(--border-subtle));
+  --badge-accent-text: color-mix(in srgb, var(--accent-primary) 94%, var(--text-primary));
+  --badge-info-bg: color-mix(in srgb, var(--accent-info) 10%, var(--surface-secondary));
+  --badge-info-border: color-mix(in srgb, var(--accent-info) 36%, var(--border-subtle));
+  --badge-info-text: color-mix(in srgb, var(--accent-info) 88%, var(--text-primary));
+  --badge-success-bg: color-mix(in srgb, var(--accent-success) 10%, var(--surface-secondary));
+  --badge-success-border: color-mix(in srgb, var(--accent-success) 36%, var(--border-subtle));
+  --badge-success-text: color-mix(in srgb, var(--accent-success) 88%, var(--text-primary));
+  --badge-warning-bg: color-mix(in srgb, var(--accent-warning) 10%, var(--surface-secondary));
+  --badge-warning-border: color-mix(in srgb, var(--accent-warning) 36%, var(--border-subtle));
+  --badge-warning-text: color-mix(in srgb, var(--accent-warning) 90%, var(--text-primary));
+  --badge-danger-bg: color-mix(in srgb, var(--accent-danger) 10%, var(--surface-secondary));
+  --badge-danger-border: color-mix(in srgb, var(--accent-danger) 36%, var(--border-subtle));
+  --badge-danger-text: color-mix(in srgb, var(--accent-danger) 88%, var(--text-primary));
+
+  /*
+   * Transitional: alias and focus tokens remain here
+   * until their dedicated reset passes land.
+   */
+  --color-surface-muted: var(--surface-secondary);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-accent: var(--accent-primary);
+  --color-text-success: var(--accent-success);
+  --color-text-danger: var(--accent-danger);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+
+  --focus-ring-color: var(--accent-primary);
+}

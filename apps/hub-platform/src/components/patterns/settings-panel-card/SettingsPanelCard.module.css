@@ -1,0 +1,40 @@
+.card {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-content: start;
+  height: 100%;
+}
+
+.copy {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.actions {
+  margin-top: auto;
+}
+
+.cardTitle,
+.cardBody,
+.cardMeta {
+  margin: 0;
+}
+
+.cardTitle {
+  color: var(--color-text-primary);
+  font: var(--font-heading-xs);
+}
+
+.cardBody,
+.cardMeta {
+  color: var(--color-text-secondary);
+}

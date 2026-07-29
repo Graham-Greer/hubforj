@@ -1,0 +1,24 @@
+.root {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: var(--space-10);
+}
+
+.hero {
+  width: min(100%, 52rem);
+}
+
+.lead {
+  margin: 0;
+  max-width: var(--layout-reading-width);
+  color: var(--text-secondary);
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-relaxed);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}

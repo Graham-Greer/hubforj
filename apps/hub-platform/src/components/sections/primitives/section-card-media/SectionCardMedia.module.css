@@ -1,0 +1,13 @@
+.root {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.bleedInset {
+  border-radius: var(--section-card-media-radius);
+}
+
+.bleedFlush {
+  border-radius: 0;
+}

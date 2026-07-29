@@ -1,0 +1,77 @@
+.root {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.ratio16x9 {
+  aspect-ratio: 16 / 9;
+}
+
+.ratio4x3 {
+  aspect-ratio: 4 / 3;
+}
+
+.ratio1x1 {
+  aspect-ratio: 1 / 1;
+}
+
+.ratio3x4 {
+  aspect-ratio: 3 / 4;
+}
+
+.ratioAuto {
+  aspect-ratio: auto;
+}
+
+.radiusNone {
+  border-radius: 0;
+}
+
+.radiusLg {
+  border-radius: var(--section-media-radius-lg);
+}
+
+.radiusXl {
+  border-radius: var(--section-media-radius-xl);
+}
+
+.chromeNone {
+  border: none;
+  background: transparent;
+}
+
+.chromeSubtle {
+  border: var(--space-px) solid var(--section-media-chrome-subtle-border);
+  background: var(--section-media-chrome-subtle-bg);
+}
+
+.chromeDefault {
+  border: var(--space-px) solid var(--section-media-chrome-default-border);
+  background: var(--section-media-chrome-default-bg);
+}
+
+.elevationNone {
+  box-shadow: none;
+}
+
+.elevationSm {
+  box-shadow: var(--section-media-elevation-sm);
+}
+
+.elevationMd {
+  box-shadow: var(--section-media-elevation-md);
+}
+
+.elevationLg {
+  box-shadow: var(--section-media-elevation-lg);
+}
+
+.image,
+.video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

@@ -1,0 +1,25 @@
+{
+  "name": "hub-platform",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test:unit": "node --import ./tests/unit/register-aliases.mjs --test tests/unit/*.test.js"
+  },
+  "dependencies": {
+    "firebase": "^12.10.0",
+    "firebase-admin": "^13.7.0",
+    "next": "16.1.6",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "stripe": "^22.0.2"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.1.6"
+  }
+}

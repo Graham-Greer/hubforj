@@ -1,0 +1,38 @@
+.root {
+  display: grid;
+  padding: var(--space-10) var(--site-frame-gutter);
+}
+
+.hero {
+  width: min(100%, 72rem);
+  margin-inline: auto;
+}
+
+.highlights {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.card {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-snug);
+}
+
+.cardBody {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+@media (max-width: 56rem) {
+  .highlights {
+    grid-template-columns: 1fr;
+  }
+}

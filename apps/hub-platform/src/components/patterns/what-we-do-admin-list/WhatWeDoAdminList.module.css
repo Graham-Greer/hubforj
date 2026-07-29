@@ -1,0 +1,85 @@
+.root {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.stats {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.list {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.card {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.cardHeader,
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.cardHeader {
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.cardControls {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.cardTitle,
+.cardMeta,
+.description {
+  margin: 0;
+}
+
+.cardTitle {
+  color: var(--color-text-primary);
+  font: var(--font-heading-xs);
+}
+
+.cardMeta {
+  color: var(--color-text-secondary);
+}
+
+.description {
+  color: var(--color-text-primary);
+  font: var(--font-body-lg);
+  line-height: var(--line-height-relaxed);
+}
+
+.modalBody {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.modalText {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+@media (max-width: 64rem) {
+  .stats {
+    grid-template-columns: 1fr;
+  }
+
+  .cardHeader {
+    flex-direction: column;
+  }
+}

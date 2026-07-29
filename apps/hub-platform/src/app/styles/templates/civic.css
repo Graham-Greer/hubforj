@@ -1,0 +1,20 @@
+:where(:root, [data-template])[data-template="civic"] {
+  --template-display-font: var(--font-family-display);
+  --template-shell-bg: linear-gradient(180deg, var(--bg-subtle) 0%, var(--bg-canvas) 100%);
+  --template-accent-band: var(--surface-secondary);
+  --section-layout-gap-xl: clamp(var(--space-8), 4vw, var(--space-16));
+  --section-media-radius-xl: var(--radius-xl);
+  --site-frame-max-width: var(--layout-max-width);
+  --public-header-cta-radius: var(--radius-md);
+  --public-header-cta-padding-inline: var(--space-4);
+  --footer-title-font: var(--font-body-lg-strong);
+  --footer-social-radius: var(--radius-full);
+  --public-header-info-band-social-radius: var(--radius-0);
+  --public-nav-item-bg-active: var(--accent-primary);
+  --public-nav-item-border-hover: var(--border-subtle);
+  --public-nav-item-border-active: transparent;
+  --public-nav-item-text-active: var(--public-nav-item-text);
+  --public-mobile-nav-item-bg-active: var(--accent-primary);
+  --public-mobile-nav-item-border-active: transparent;
+  --public-mobile-nav-item-text-active: var(--public-mobile-nav-item-text);
+}

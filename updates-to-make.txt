@@ -1,0 +1,10 @@
+Updates to be made
+
+- admin portal Stripe setup locked screen on Starter
+- Implement FAQs page.
+- Check subdomain format e.g. should NOT be hub-name-here.hubforj.com but rather hubnamehere.hubforj.com
+- If on Growth, Stripe setup MUST be completed otherwise payment instructions MUST be provided for members to book.
+- FAQs are not currently package aware.
+- When editing the Testimonials page hero and trying to save I get an error saying the CTA Section's CTA title is not focusable.
+- Delete account process
+- Do we still need timezone when creating courses?

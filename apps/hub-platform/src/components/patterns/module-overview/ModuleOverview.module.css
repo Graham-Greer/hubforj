@@ -1,0 +1,16 @@
+.layout {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+@media (max-width: 56rem) {
+  .stats {
+    grid-template-columns: 1fr;
+  }
+}
