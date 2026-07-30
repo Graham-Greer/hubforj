@@ -1,16 +1,21 @@
+import { Suspense } from "react";
 import Badge from "@/components/ui/badge/Badge";
 import StatCard from "@/components/ui/stat-card/StatCard";
 import FormMessage from "@/components/ui/form-message/FormMessage";
 import PageHeader from "@/components/patterns/page-header/PageHeader";
 import AdminOnboardingChecklist from "@/components/patterns/admin-onboarding/AdminOnboardingChecklist";
 import { getCurrentHubOperatorAccess } from "@/lib/auth/hub-access";
-import { getHubAdminOverviewBySlug } from "@/lib/data/hub-admin";
+import {
+  getHubAdminDashboardDeferredOverviewBySlug,
+  getHubAdminDashboardSummaryBySlug,
+} from "@/lib/data/hub-admin";
 import { getHubRegionalOnboardingHref, isHubRegionalSetupComplete } from "@/lib/domain/hub-regional-setup";
 import { getLegalSettingsByHubId } from "@/lib/legal/legalRepository";
 import { redirect } from "next/navigation";
 import DashboardAttentionPanel from "./DashboardAttentionPanel";
 import DashboardMembersPanel from "./DashboardMembersPanel";
 import DashboardPanel from "./DashboardPanel";
+import DashboardSection from "./DashboardSection";
 import styles from "./page.module.css";
 
 function joinClassNames(...values) {
@@ -65,16 +70,74 @@ function buildOwnerLegalAttentionItems(hub, legalSettings) {
   }).filter(Boolean);
 }
 
-export default async function HubAdminPage({ params, searchParams }) {
-  const { hubSlug } = await params;
-  const { success = "" } = await searchParams;
-  const overview = await getHubAdminOverviewBySlug(hubSlug);
+function DashboardLoadingSection({ title }) {
+  return (
+    <DashboardSection title={title}>
+      <div className={styles.panelLoading}>
+        <span className={styles.loadingLine} />
+        <span className={styles.loadingLine} />
+        <span className={styles.loadingLineShort} />
+      </div>
+    </DashboardSection>
+  );
+}
+
+function DashboardPanelsFallback({ coursesEnabled }) {
+  return (
+    <>
+      <div
+        className={joinClassNames(
+          styles.panels,
+          coursesEnabled ? "" : styles.panelsSingle
+        )}
+      >
+        <DashboardLoadingSection title="Recent Events" />
+        {coursesEnabled ? <DashboardLoadingSection title="Top Courses" /> : null}
+      </div>
+      <div className={styles.panels}>
+        <DashboardLoadingSection title="Attention required" />
+        <DashboardLoadingSection title="Newest members" />
+      </div>
+    </>
+  );
+}
+
+async function DashboardRevenueCard({ overviewPromise }) {
+  const overview = await overviewPromise;
+  const totalRevenue = overview?.totalRevenue || {
+    formatted: "£0.00",
+    isMixedCurrency: false,
+  };
+
+  return (
+    <StatCard
+      label="Revenue"
+      value={totalRevenue.formatted}
+      detail={
+        totalRevenue.isMixedCurrency
+          ? "Net native payments recorded across multiple currencies."
+          : "Net native payments recorded after refunds."
+      }
+    />
+  );
+}
+
+async function DashboardCoursesCard({ overviewPromise }) {
+  const overview = await overviewPromise;
+
+  return (
+    <StatCard
+      label="Courses"
+      value={overview ? String(overview.activeUpcomingPublishedCourseCount) : "0"}
+      detail="Published upcoming courses currently open."
+    />
+  );
+}
+
+async function DashboardDeferredPanels({ hubSlug, overviewPromise }) {
+  const overview = await overviewPromise;
   const hub = overview?.hub || null;
-
-  if (hub && !isHubRegionalSetupComplete(hub)) {
-    redirect(getHubRegionalOnboardingHref(hub));
-  }
-
+  const packageInfo = overview?.package || null;
   const access = hub ? await getCurrentHubOperatorAccess(hub) : null;
   const legalSettings =
     hub && access?.actorRole === "owner" && access?.mode === "admin"
@@ -84,7 +147,52 @@ export default async function HubAdminPage({ params, searchParams }) {
     ...(overview?.attentionItems || []),
     ...buildOwnerLegalAttentionItems(hub, legalSettings),
   ];
-  const packageInfo = overview?.package || null;
+
+  return (
+    <>
+      <div
+        className={joinClassNames(
+          styles.panels,
+          packageInfo?.capabilities?.coursesEnabled ? "" : styles.panelsSingle
+        )}
+      >
+        <DashboardPanel
+          title="Recent Events"
+          href={`/${hubSlug}/admin/events`}
+          items={overview?.recentEvents || []}
+          kind="event"
+        />
+        {packageInfo?.capabilities?.coursesEnabled ? (
+          <DashboardPanel
+            title="Top Courses"
+            href={`/${hubSlug}/admin/courses`}
+            items={overview?.topCourses || []}
+            kind="course"
+          />
+        ) : null}
+      </div>
+      <div className={styles.panels}>
+        <DashboardAttentionPanel items={attentionItems} />
+        <DashboardMembersPanel items={overview?.newestMembers || []} />
+      </div>
+    </>
+  );
+}
+
+export default async function HubAdminPage({ params, searchParams }) {
+  const { hubSlug } = await params;
+  const { success = "" } = await searchParams;
+  const summary = await getHubAdminDashboardSummaryBySlug(hubSlug);
+  const hub = summary?.hub || null;
+
+  if (hub && !isHubRegionalSetupComplete(hub)) {
+    redirect(getHubRegionalOnboardingHref(hub));
+  }
+
+  const packageInfo = summary?.package || null;
+  const deferredOverviewPromise = hub
+    ? getHubAdminDashboardDeferredOverviewBySlug(hubSlug)
+    : Promise.resolve(null);
   const activeMembersLimit = packageInfo?.limits?.activeMembers;
   const activeUpcomingEventsLimit = packageInfo?.limits?.activeUpcomingEvents;
   const isStarterOrGrowth = packageInfo?.packageTier === "starter" || packageInfo?.packageTier === "growth";
@@ -92,25 +200,13 @@ export default async function HubAdminPage({ params, searchParams }) {
     ? [
         {
           label: "Members",
-          value: hub ? String(overview.memberCount) : "0",
+          value: hub ? String(summary.memberCount) : "0",
           detail: "Total members with access to this hub.",
         },
         {
           label: "Events",
-          value: hub ? String(overview.activeUpcomingPublishedEventCount) : "0",
+          value: hub ? String(summary.activeUpcomingPublishedEventCount) : "0",
           detail: "Published upcoming events currently live.",
-        },
-        {
-          label: "Courses",
-          value: hub ? String(overview.activeUpcomingPublishedCourseCount) : "0",
-          detail: "Published upcoming courses currently open.",
-        },
-        {
-          label: "Revenue",
-          value: hub ? overview.totalRevenue.formatted : "£0.00",
-          detail: overview.totalRevenue.isMixedCurrency
-            ? "Net native payments recorded across multiple currencies."
-            : "Net native payments recorded after refunds.",
         },
       ]
     : [
@@ -118,8 +214,8 @@ export default async function HubAdminPage({ params, searchParams }) {
           label: "Active members",
           value: hub
             ? Number.isFinite(activeMembersLimit)
-              ? `${overview.activeMemberCount}/${activeMembersLimit}`
-              : String(overview.activeMemberCount)
+              ? `${summary.activeMemberCount}/${activeMembersLimit}`
+              : String(summary.activeMemberCount)
             : "0",
           detail: Number.isFinite(activeMembersLimit)
             ? "Current usage against your active-member package limit."
@@ -129,8 +225,8 @@ export default async function HubAdminPage({ params, searchParams }) {
           label: "Upcoming events",
           value: hub
             ? Number.isFinite(activeUpcomingEventsLimit)
-              ? `${overview.activeUpcomingPublishedEventCount}/${activeUpcomingEventsLimit}`
-              : String(overview.activeUpcomingPublishedEventCount)
+              ? `${summary.activeUpcomingPublishedEventCount}/${activeUpcomingEventsLimit}`
+              : String(summary.activeUpcomingPublishedEventCount)
             : "0",
           detail: Number.isFinite(activeUpcomingEventsLimit)
             ? "Published upcoming event usage against your package limit."
@@ -138,7 +234,7 @@ export default async function HubAdminPage({ params, searchParams }) {
         },
         {
           label: "Pending invites",
-          value: hub ? String(overview.pendingInviteCount) : "0",
+          value: hub ? String(summary.pendingInviteCount) : "0",
           detail: "Admin access remains explicit and traceable.",
         },
       ];
@@ -174,32 +270,20 @@ export default async function HubAdminPage({ params, searchParams }) {
         {cards.map((card) => (
           <StatCard key={card.label} label={card.label} value={card.value} detail={card.detail} />
         ))}
-      </div>
-      <div
-        className={joinClassNames(
-          styles.panels,
-          packageInfo?.capabilities?.coursesEnabled ? "" : styles.panelsSingle
-        )}
-      >
-        <DashboardPanel
-          title="Recent Events"
-          href={`/${hubSlug}/admin/events`}
-          items={overview.recentEvents}
-          kind="event"
-        />
-        {packageInfo?.capabilities?.coursesEnabled ? (
-          <DashboardPanel
-            title="Top Courses"
-            href={`/${hubSlug}/admin/courses`}
-            items={overview.topCourses}
-            kind="course"
-          />
+        {isStarterOrGrowth ? (
+          <>
+            <Suspense fallback={<StatCard label="Courses" value="Loading" detail="Published upcoming courses currently open." />}>
+              <DashboardCoursesCard overviewPromise={deferredOverviewPromise} />
+            </Suspense>
+            <Suspense fallback={<StatCard label="Revenue" value="Loading" detail="Net native payments recorded after refunds." />}>
+              <DashboardRevenueCard overviewPromise={deferredOverviewPromise} />
+            </Suspense>
+          </>
         ) : null}
       </div>
-      <div className={styles.panels}>
-        <DashboardAttentionPanel items={attentionItems} />
-        <DashboardMembersPanel items={overview.newestMembers} />
-      </div>
+      <Suspense fallback={<DashboardPanelsFallback coursesEnabled={packageInfo?.capabilities?.coursesEnabled} />}>
+        <DashboardDeferredPanels hubSlug={hubSlug} overviewPromise={deferredOverviewPromise} />
+      </Suspense>
     </div>
   );
 }
