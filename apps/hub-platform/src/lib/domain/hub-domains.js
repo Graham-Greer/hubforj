@@ -1,4 +1,4 @@
-import { getPlatformHostedBaseHostname, getPlatformRootDomain } from "./custom-domain-runtime-config.js";
+import { getPlatformRootDomain } from "./custom-domain-runtime-config.js";
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -129,14 +129,7 @@ export function buildPlatformSubdomainHost(hub) {
 }
 
 export function buildPlatformHostedHubHref(hub) {
-  const label = normalizePlatformSubdomainLabel(hub);
-  const baseHost = getPlatformHostedBaseHostname();
-
-  if (!label) {
-    return baseHost;
-  }
-
-  return `${baseHost}/${label}`;
+  return buildPlatformSubdomainHost(hub);
 }
 
 export function normalizeHubCustomDomain(hub = {}) {
@@ -158,7 +151,7 @@ export function normalizeHubCustomDomain(hub = {}) {
   const platformSubdomainLabel = normalizePlatformSubdomainLabel(hub);
   const platformSubdomain = buildPlatformSubdomainHost(hub);
   const platformHostedHref = buildPlatformHostedHubHref(hub);
-  const currentHost = status === "connected" && hostname ? hostname : getPlatformHostedBaseHostname();
+  const currentHost = status === "connected" && hostname ? hostname : platformSubdomain;
   const currentHostLabel = status === "connected" && hostname ? hostname : platformHostedHref;
   const customDomains = hostname
     ? Array.from(new Set([hostname, ...legacyDomains]))

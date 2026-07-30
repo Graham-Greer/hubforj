@@ -77,7 +77,7 @@ export default function CreateHubForm() {
           <Input
             name="hubSlug"
             label="Hub slug"
-            placeholder="oak-hill"
+            placeholder="oakhill"
             hint="Used to generate the Hubforj-hosted address and default public and admin routes."
             defaultValue={values.hubSlug}
           />

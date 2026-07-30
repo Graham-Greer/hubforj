@@ -102,7 +102,7 @@ For the concrete production-domain cutover from placeholder hosted hub domains t
 
 - `hubforj-domain-alignment-and-host-resolution-plan-2026-04-29.md`
 
-That document is the execution authority for syncing `hubforj.com` and `community.hubforj.com/{hubSlug}` across `product-site` and `hub-platform`.
+That document is the execution authority for syncing `hubforj.com` and `{tenantSlug}.hubforj.com` across `product-site` and `hub-platform`.
 
 For the final verification, rollout, and production-only checks needed to close the domain-alignment track, read:
 

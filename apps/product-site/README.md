@@ -116,7 +116,8 @@ Still outstanding:
   - used for Stripe return URLs and branded Firebase action links
 - `HUB_PLATFORM_BASE_URL`
   - canonical operational app origin
-  - used for admin handoff and hub sign-in links
+  - used for protected internal calls to `hub-platform`
+  - in production, tenant handoff links derive `{tenantSlug}.hubforj.com` from this origin instead of sending customers to the operational root
 
 ### Internal cross-app trust
 
@@ -196,8 +197,8 @@ Use this before claiming launch readiness.
 ### DNS and app origins
 
 - set the production `PRODUCT_SITE_BASE_URL`
-- set the production `HUB_PLATFORM_BASE_URL`
-- verify both apps are deployed at those exact origins
+- set the production `HUB_PLATFORM_BASE_URL` to the operational app root, for example `https://community.hubforj.com`
+- verify the product site root, operational app root, and wildcard tenant hosts all resolve to the intended Vercel projects
 
 ### Firebase
 

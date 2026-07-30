@@ -22,6 +22,12 @@ function normalizeEmail(value) {
   return normalizeString(value).toLowerCase();
 }
 
+function normalizeSlug(value) {
+  return normalizeString(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+}
+
 function buildCommercialAccountEmailKey(email) {
   return crypto.createHash("sha256").update(normalizeEmail(email)).digest("hex");
 }
@@ -491,7 +497,7 @@ export async function attachHubOwnershipToCommercialAccount({
       ownedHubRef,
       {
         hubId: normalizedHubId,
-        hubSlug: normalizeString(hubSlug),
+        hubSlug: normalizeSlug(hubSlug),
         communityName: normalizeString(communityName),
         relationship: "owner",
         isPrimary,

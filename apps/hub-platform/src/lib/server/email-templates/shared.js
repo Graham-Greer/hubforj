@@ -9,7 +9,7 @@ import {
   resolveLaunchFormattingLocale,
 } from "@/lib/domain/regional-markets";
 import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
-import { isPlatformManagedHostname } from "@/lib/domain/hub-domains";
+import { buildPlatformSubdomainHost, isPlatformManagedHostname } from "@/lib/domain/hub-domains";
 import { getServerEnv } from "@/lib/config/env";
 
 function normalizeString(value) {
@@ -72,7 +72,7 @@ function resolveHostedHubOrigin() {
     return configuredBaseUrl;
   }
 
-  return "https://community.hubforj.com";
+  return "";
 }
 
 function resolveHubEmailOrigin(hub = {}) {
@@ -82,11 +82,19 @@ function resolveHubEmailOrigin(hub = {}) {
     return `${isLocalHostname(customDomainHost) ? "http" : "https"}://${customDomainHost}`;
   }
 
-  return resolveHostedHubOrigin();
+  const configuredHostedOrigin = resolveHostedHubOrigin();
+
+  if (configuredHostedOrigin && isLocalHostname(configuredHostedOrigin)) {
+    return configuredHostedOrigin;
+  }
+
+  const hostedHubHost = buildPlatformSubdomainHost(hub);
+  return `${isLocalHostname(hostedHubHost) ? "http" : "https"}://${hostedHubHost}`;
 }
 
 function resolveEmailRouteMode(hub = {}) {
-  return normalizeString(hub?.routeMode) === "host" && resolveConnectedCustomDomainHost(hub) ? "host" : "path";
+  const configuredHostedOrigin = resolveHostedHubOrigin();
+  return configuredHostedOrigin && isLocalHostname(configuredHostedOrigin) ? "path" : "host";
 }
 
 function buildAbsoluteHubHref(hub = {}, href = "") {

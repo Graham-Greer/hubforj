@@ -8,8 +8,8 @@ import {
 import { normalizeHubCustomDomain } from "../../src/lib/domain/hub-domains.js";
 
 test("normalizeHubSlug lowercases and constrains public slug shape", () => {
-  assert.equal(normalizeHubSlug(" Oak Hill Community "), "oak-hill-community");
-  assert.equal(normalizeHubSlug("oak_hill!!"), "oak-hill");
+  assert.equal(normalizeHubSlug(" Oak Hill Community "), "oakhillcommunity");
+  assert.equal(normalizeHubSlug("oak_hill!!"), "oakhill");
 });
 
 test("normalizeHubDomain strips protocol path port and trailing dots", () => {
@@ -29,7 +29,7 @@ test("normalizeCreateHubPayload applies defaults and validates required fields",
   });
 
   assert.deepEqual(payload.customDomains, ["oakhill.example.com"]);
-  assert.equal(payload.slug, "oak-hill");
+  assert.equal(payload.slug, "oakhill");
   assert.equal(payload.contactEmail, "hello@oakhill.com");
   assert.equal(payload.templateKey, "civic");
   assert.equal(payload.theme, "light");
@@ -44,7 +44,7 @@ test("normalizeCreateHubPayload applies defaults and validates required fields",
 test("normalizeCreateHubPayload falls back to USD regional defaults when no regional inputs are present", () => {
   const payload = normalizeCreateHubPayload({
     name: "Sunset Club",
-    slug: "sunset-club",
+    slug: "sunsetclub",
     contactEmail: "hello@sunset.club",
   });
 
@@ -59,7 +59,7 @@ test("normalizeCreateHubPayload rejects invalid contact email", () => {
     () =>
       normalizeCreateHubPayload({
         name: "Oak Hill",
-        slug: "oak-hill",
+        slug: "oakhill",
         contactEmail: "bad-email",
       }),
     /Contact email must be valid\./
@@ -71,7 +71,7 @@ test("normalizeCreateHubPayload rejects unsupported countries for self-serve hub
     () =>
       normalizeCreateHubPayload({
         name: "Harbour Collective",
-        slug: "harbour-collective",
+        slug: "harbourcollective",
         contactEmail: "hello@harbourcollective.com",
         country: "ZA",
       }),
@@ -79,27 +79,27 @@ test("normalizeCreateHubPayload rejects unsupported countries for self-serve hub
   );
 });
 
-test("normalizeHubCustomDomain keeps hosted hubs on the shared community path", () => {
+test("normalizeHubCustomDomain keeps hosted hubs on the tenant subdomain", () => {
   const domainState = normalizeHubCustomDomain({
-    slug: "oak-hill",
-    domain: "oak-hill.hubforj.com",
-    customDomains: ["oak-hill.hubforj.com"],
+    slug: "oakhill",
+    domain: "oakhill.hubforj.com",
+    customDomains: ["oakhill.hubforj.com"],
     customDomain: {
-      hostname: "oak-hill.hubforj.com",
+      hostname: "oakhill.hubforj.com",
       status: "connected",
     },
   });
 
   assert.equal(domainState.hostname, "");
   assert.equal(domainState.status, "not_configured");
-  assert.equal(domainState.currentHost, "community.hubforj.com");
-  assert.equal(domainState.currentHostLabel, "community.hubforj.com/oak-hill");
-  assert.equal(domainState.platformHostedHref, "community.hubforj.com/oak-hill");
+  assert.equal(domainState.currentHost, "oakhill.hubforj.com");
+  assert.equal(domainState.currentHostLabel, "oakhill.hubforj.com");
+  assert.equal(domainState.platformHostedHref, "oakhill.hubforj.com");
 });
 
 test("normalizeHubCustomDomain preserves connected client-owned custom domains", () => {
   const domainState = normalizeHubCustomDomain({
-    slug: "oak-hill",
+    slug: "oakhill",
     customDomain: {
       hostname: "members.oakhill.org",
       status: "connected",
@@ -110,5 +110,5 @@ test("normalizeHubCustomDomain preserves connected client-owned custom domains",
   assert.equal(domainState.status, "connected");
   assert.equal(domainState.currentHost, "members.oakhill.org");
   assert.equal(domainState.currentHostLabel, "members.oakhill.org");
-  assert.equal(domainState.platformHostedHref, "community.hubforj.com/oak-hill");
+  assert.equal(domainState.platformHostedHref, "oakhill.hubforj.com");
 });

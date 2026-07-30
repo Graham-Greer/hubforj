@@ -71,7 +71,7 @@ test("mapping records are only created for connected custom domains", () => {
   assert.equal(records.length, 2);
   assert.equal(records[0].hostname, "community.example.org");
   assert.equal(records[0].matchType, "canonical");
-  assert.equal(records[0].fallbackHost, "community.hubforj.com");
+  assert.equal(records[0].fallbackHost, "oakhill.hubforj.com");
   assert.equal(records[1].hostname, "www.community.example.org");
   assert.equal(records[1].redirectTo, "community.example.org");
 });

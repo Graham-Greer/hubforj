@@ -1,5 +1,5 @@
 import { buildHubRuntimeHref } from "./hub-runtime-paths.js";
-import { getPlatformHostedBaseHostname } from "./custom-domain-runtime-config.js";
+import { buildPlatformSubdomainHost } from "./hub-domains.js";
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -43,7 +43,19 @@ function resolveInviteRuntimeMode(hub = {}, options = {}) {
     return "host";
   }
 
-  return "path";
+  const configuredBaseUrl = resolveConfiguredBaseUrl(options);
+  if (configuredBaseUrl) {
+    const baseUrl = new URL(configuredBaseUrl);
+    if (isLocalHostname(baseUrl.hostname)) {
+      return "path";
+    }
+  }
+
+  if (process.env.NODE_ENV !== "production") {
+    return "path";
+  }
+
+  return "host";
 }
 
 function resolveInviteHost(hub = {}, options = {}) {
@@ -59,14 +71,18 @@ function resolveInviteHost(hub = {}, options = {}) {
   const configuredBaseUrl = resolveConfiguredBaseUrl(options);
   if (configuredBaseUrl) {
     const baseUrl = new URL(configuredBaseUrl);
-    return normalizeHostname(baseUrl.hostname) || "localhost";
+    if (isLocalHostname(baseUrl.hostname)) {
+      return normalizeHostname(baseUrl.hostname) || "localhost";
+    }
+
+    return buildPlatformSubdomainHost(hub);
   }
 
   if (process.env.NODE_ENV !== "production") {
     return "localhost";
   }
 
-  return getPlatformHostedBaseHostname();
+  return buildPlatformSubdomainHost(hub);
 }
 
 export function resolveHubAdminInviteOrigin(hub, options = {}) {

@@ -5,7 +5,7 @@ try {
 }
 
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
-import { getPlatformHostedBaseHostname } from "@/lib/domain/custom-domain-runtime-config";
+import { buildPlatformSubdomainHost } from "@/lib/domain/hub-domains";
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -69,7 +69,7 @@ export function buildCustomDomainMappingRecordsForHub(hubRecord, actorId = "syst
 
   const canonicalHost = hostname;
   const companionHost = buildCompanionHost(hostname);
-  const fallbackHost = getPlatformHostedBaseHostname();
+  const fallbackHost = buildPlatformSubdomainHost(hubRecord);
   const sharedFields = {
     hubId,
     hubSlug,

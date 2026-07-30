@@ -60,7 +60,7 @@ The correct production domain contract is now:
 - product site: `https://hubforj.com`
 - product marketing redirect host: `https://www.hubforj.com`
 - operational app root: `https://community.hubforj.com`
-- platform-hosted hub runtime: `https://community.hubforj.com/{hubSlug}`
+- platform-hosted hub runtime: `https://{tenantSlug}.hubforj.com`
 - connected Growth custom domains: client-owned canonical host
 
 This plan exists to make that contract explicit and to define the work needed to support it safely.
@@ -109,12 +109,12 @@ This is the correct boundary for:
 
 Platform-hosted hubs should resolve on:
 
-- `{hubSlug}.hubforj.com`
+- `{tenantSlug}.hubforj.com`
 
 Examples:
 
-- `oak-hill.hubforj.com`
-- `city-studio.hubforj.com`
+- `oakhill.hubforj.com`
+- `citystudio.hubforj.com`
 
 ### 2.4 Growth custom domains remain a separate runtime concern
 
@@ -137,7 +137,7 @@ This means:
 
 - product-site routes remain on `hubforj.com`
 - hub-platform remains on `app.hubforj.com`
-- hosted hubs remain on `{hubSlug}.hubforj.com`
+- hosted hubs remain on `{tenantSlug}.hubforj.com`
 
 ## 3) Repo-Audited Current State
 
@@ -176,7 +176,7 @@ This is structurally compatible with:
 - `hubforj.com`
 - `www.hubforj.com`
 - `app.hubforj.com`
-- `{hubSlug}.hubforj.com`
+- `{tenantSlug}.hubforj.com`
 
 Important local-development contract:
 
@@ -416,7 +416,7 @@ Primary outputs:
 
 Outcome:
 
-- `{hubSlug}.hubforj.com` is verified in staging and production-like environments
+- `{tenantSlug}.hubforj.com` is verified in staging and production-like environments
 
 Primary outputs:
 
@@ -459,7 +459,7 @@ Implementation tasks:
 3. document the canonical production contract:
    - `hubforj.com`
    - `app.hubforj.com`
-   - `{hubSlug}.hubforj.com`
+   - `{tenantSlug}.hubforj.com`
 
 Acceptance criteria:
 
@@ -488,7 +488,7 @@ Acceptance criteria:
 Implementation tasks:
 
 1. update domain-related UI copy to use the real host model
-2. verify admin account settings show `{hubSlug}.hubforj.com`
+2. verify admin account settings show `{tenantSlug}.hubforj.com`
 3. verify platform hub summaries show the correct hosted domain
 
 Acceptance criteria:
@@ -505,7 +505,7 @@ Implementation tasks:
    - `hubforj.com`
    - `www.hubforj.com`
    - `app.hubforj.com`
-   - `{hubSlug}.hubforj.com`
+   - `{tenantSlug}.hubforj.com`
 3. confirm middleware rewriting and redirect behavior
 4. confirm that non-hub platform routes remain stable
 
@@ -521,7 +521,7 @@ Implementation tasks:
 1. update verification prefix from `_ourplatform-verify`
 2. verify DNS instructions remain correct
 3. verify connected custom-domain mappings still carry the right fallback host
-4. verify disconnect behavior still returns hubs to `{hubSlug}.hubforj.com`
+4. verify disconnect behavior still returns hubs to `{tenantSlug}.hubforj.com`
 
 Acceptance criteria:
 
@@ -592,7 +592,7 @@ Recommended order:
 4. validate staging:
    - product site on `hubforj.com`
    - hub-platform on `app.hubforj.com`
-   - hosted hub on `{hubSlug}.hubforj.com`
+   - hosted hub on `{tenantSlug}.hubforj.com`
 5. verify admin activation and package-management handoff
 6. verify hosted fallback and custom-domain lifecycle behavior
 7. only then treat `.ourplatform.com` as fully retired
@@ -614,7 +614,7 @@ Recommended order:
 
 ### Hosted hub runtime
 
-- a hub resolves correctly on `{hubSlug}.hubforj.com`
+- a hub resolves correctly on `{tenantSlug}.hubforj.com`
 - middleware strips duplicated slug paths safely
 - auth entry points work from the hosted hub domain
 - public, member, and admin routes all continue to function
@@ -623,7 +623,7 @@ Recommended order:
 
 - Growth custom-domain verification still works
 - connected domains still map correctly
-- disconnect returns the hub to `{hubSlug}.hubforj.com`
+- disconnect returns the hub to `{tenantSlug}.hubforj.com`
 - fallback messaging remains accurate
 
 ### Negative and safety cases

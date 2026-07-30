@@ -90,7 +90,7 @@ function SignupProvisionFields({ values, onPackageTierChange }) {
             setHasEditedSlug(true);
             setHubSlug(event.target.value);
           }}
-          placeholder="north-shore"
+          placeholder="northshore"
         />
         <span className="form-helper">We suggest one automatically from your community name, and you can change it before you continue.</span>
       </label>

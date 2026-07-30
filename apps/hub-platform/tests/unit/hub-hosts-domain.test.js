@@ -2,14 +2,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { isStaticOrApiPath, resolveHubHostContext, resolveHubRuntimeRouteMode } from "../../src/lib/domain/hub-hosts.js";
 
-test("resolveHubHostContext keeps Hubforj-owned hosts on path-based platform routing", () => {
+test("resolveHubHostContext identifies Hubforj tenant hosts and reserved platform hosts", () => {
   assert.deepEqual(
-    resolveHubHostContext("second-community.hubforj.com"),
+    resolveHubHostContext("secondcommunity.hubforj.com"),
     {
-      kind: "platform_root",
-      host: "second-community.hubforj.com",
+      kind: "platform_subdomain",
+      host: "secondcommunity.hubforj.com",
       hubSlug: "",
-      subdomainLabel: "second-community",
+      subdomainLabel: "secondcommunity",
       platformRootDomain: "hubforj.com",
     }
   );
@@ -78,7 +78,7 @@ test("isStaticOrApiPath filters paths that should bypass host rewriting", () => 
 });
 
 test("resolveHubRuntimeRouteMode distinguishes host-based and path-based hub routing", () => {
-  assert.equal(resolveHubRuntimeRouteMode("oak-hill.hubforj.com"), "path");
+  assert.equal(resolveHubRuntimeRouteMode("oakhill.hubforj.com"), "host");
   assert.equal(resolveHubRuntimeRouteMode("community.hubforj.com"), "path");
   assert.equal(resolveHubRuntimeRouteMode("oak-hill.localhost:3000"), "host");
   assert.equal(resolveHubRuntimeRouteMode("members.oakhill.org"), "host");

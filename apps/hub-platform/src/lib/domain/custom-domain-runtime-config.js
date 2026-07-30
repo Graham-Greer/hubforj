@@ -23,10 +23,6 @@ export function getPlatformRootDomain() {
   return normalizeHostname(process.env.NEXT_PUBLIC_PLATFORM_ROOT_DOMAIN || "hubforj.com");
 }
 
-export function getPlatformHostedBaseHostname() {
-  return normalizeHostname(process.env.HUB_PLATFORM_BASE_URL || `https://community.${getPlatformRootDomain()}`);
-}
-
 export function getCustomDomainVerificationPrefix() {
   return normalizeString(process.env.CUSTOM_DOMAIN_VERIFICATION_PREFIX || "_hubforj-verify");
 }
@@ -76,7 +72,6 @@ export function isReservedHubSlug(value) {
 export function getCustomDomainRuntimeDiagnostics() {
   return {
     platformRootDomain: getPlatformRootDomain(),
-    platformHostedBaseHostname: getPlatformHostedBaseHostname(),
     verificationPrefix: getCustomDomainVerificationPrefix(),
     reservedHostLabels: getPlatformReservedHostLabels(),
     runtimeEnabled: isCustomDomainRuntimeEnabled(),
