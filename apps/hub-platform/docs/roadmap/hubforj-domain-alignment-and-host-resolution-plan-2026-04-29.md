@@ -59,8 +59,8 @@ The correct production domain contract is now:
 
 - product site: `https://hubforj.com`
 - product marketing redirect host: `https://www.hubforj.com`
-- operational app root: `https://app.hubforj.com`
-- platform-hosted hub runtime: `https://{hubSlug}.hubforj.com`
+- operational app root: `https://community.hubforj.com`
+- platform-hosted hub runtime: `https://community.hubforj.com/{hubSlug}`
 - connected Growth custom domains: client-owned canonical host
 
 This plan exists to make that contract explicit and to define the work needed to support it safely.
@@ -337,7 +337,7 @@ This should be treated as an intentional follow-on modernization track, not as a
 Expected production values:
 
 - `PRODUCT_SITE_BASE_URL=https://hubforj.com`
-- `HUB_PLATFORM_BASE_URL=https://app.hubforj.com`
+- `HUB_PLATFORM_BASE_URL=https://community.hubforj.com`
 
 These values support:
 
@@ -352,6 +352,7 @@ Expected production values:
 
 - `PRODUCT_SITE_BASE_URL=https://hubforj.com`
 - `NEXT_PUBLIC_PLATFORM_ROOT_DOMAIN=hubforj.com`
+- `HUB_PLATFORM_BASE_URL=https://community.hubforj.com`
 - `CUSTOM_DOMAIN_VERIFICATION_PREFIX=_hubforj-verify`
 - `INTERNAL_AUTOMATION_SECRET=<shared secret>`
 - `CUSTOM_DOMAIN_RUNTIME_ENABLED=false` until runtime launch criteria are satisfied

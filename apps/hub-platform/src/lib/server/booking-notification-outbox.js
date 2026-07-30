@@ -44,6 +44,8 @@ function buildHubPayload(hub = {}) {
     id: normalizeString(hub?.id),
     name: normalizeString(hub?.name),
     slug: normalizeString(hub?.slug),
+    domain: normalizeString(hub?.domain),
+    customDomain: hub?.customDomain || null,
     country: normalizeString(hub?.country),
     locale: normalizeString(hub?.locale),
     routeMode: normalizeString(hub?.routeMode || "path"),

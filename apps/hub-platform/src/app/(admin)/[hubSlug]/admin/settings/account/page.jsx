@@ -52,10 +52,10 @@ function buildPackageHighlights(packageInfo) {
 }
 
 function buildDomainStatusDescription({ canManageCustomDomain, domainStatus, domainState }) {
-  const hostedSubdomain = domainState?.platformSubdomain || "the Hubforj-hosted subdomain";
+  const hostedAddress = domainState?.platformHostedHref || domainState?.currentHostLabel || "the Hubforj-hosted address";
 
   if (!canManageCustomDomain) {
-    return `Upgrade to Growth to replace ${hostedSubdomain} with your own branded website address.`;
+    return `Upgrade to Growth to replace ${hostedAddress} with your own branded website address.`;
   }
 
   if (domainStatus === "connected") {
@@ -63,7 +63,7 @@ function buildDomainStatusDescription({ canManageCustomDomain, domainStatus, dom
   }
 
   if (domainStatus === "disconnect_scheduled") {
-    return `This hub is scheduled to return to ${hostedSubdomain} once the disconnect runs.`;
+    return `This hub is scheduled to return to ${hostedAddress} once the disconnect runs.`;
   }
 
   if (domainStatus === "verifying") {
@@ -261,8 +261,8 @@ export default async function AccountSettingsPage({ params }) {
           }
         />
         <StatCard
-          label="Hubforj-hosted subdomain"
-          value={domainState?.platformSubdomain || hub?.domainLabel || "Unknown"}
+          label="Hubforj-hosted address"
+          value={domainState?.platformHostedHref || hub?.domainLabel || "Unknown"}
           className={styles.hostStat}
           detail="This Hubforj-hosted address remains available even when no custom domain is connected."
         />
@@ -289,8 +289,8 @@ export default async function AccountSettingsPage({ params }) {
 
                 <div className={styles.domainFacts}>
                   <div className={styles.domainFact}>
-                    <span className={styles.domainLabel}>Hubforj-hosted subdomain</span>
-                    <strong className={styles.domainValue}>{domainState?.platformSubdomain || "Unknown"}</strong>
+                    <span className={styles.domainLabel}>Hubforj-hosted address</span>
+                    <strong className={styles.domainValue}>{domainState?.platformHostedHref || "Unknown"}</strong>
                   </div>
                   <div className={styles.domainFact}>
                     <span className={styles.domainLabel}>{customDomainLabel}</span>
@@ -364,7 +364,7 @@ export default async function AccountSettingsPage({ params }) {
                   <div className={styles.noticeCopy}>
                     <h3 className={styles.noticeTitle}>Disconnect custom domain</h3>
                     <p className={styles.capabilityDetail}>
-                      Use this if you want the hub to stop using the current custom domain and return to its Hubforj-hosted subdomain.
+                      Use this if you want the hub to stop using the current custom domain and return to its Hubforj-hosted address.
                     </p>
                   </div>
                   <AccountDomainDisconnectForm hubSlug={hub.slug} hostname={domainState.hostname} />
@@ -379,7 +379,7 @@ export default async function AccountSettingsPage({ params }) {
                       This domain is scheduled to be disconnected{domainState.disconnectAt ? ` at ${domainState.disconnectAt}` : ""}.
                     </p>
                     <p className={styles.capabilityDetail}>
-                      Once this is complete, the hub will continue on its Hubforj-hosted address: {domainState.platformSubdomain}.
+                      Once this is complete, the hub will continue on its Hubforj-hosted address: {domainState.platformHostedHref}.
                     </p>
                   </div>
                 </Surface>

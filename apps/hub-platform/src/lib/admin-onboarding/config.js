@@ -870,7 +870,7 @@ const accountJourneyVariants = {
       },
       title: "Review your custom domain area here",
       body:
-        "This lower panel is where Growth hubs review their branded domain setup while still keeping the Hubforj-hosted subdomain available underneath.",
+        "This lower panel is where Growth hubs review their branded domain setup while still keeping the Hubforj-hosted address available underneath.",
       ctaLabel: "Next",
     },
     {

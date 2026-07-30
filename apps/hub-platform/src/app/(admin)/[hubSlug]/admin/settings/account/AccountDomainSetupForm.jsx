@@ -50,7 +50,7 @@ export default function AccountDomainSetupForm({ hubSlug, domainState, initialHo
           hint={
             isPendingState
               ? "This hostname is currently stored in pending verification. You can still update it before the connection is finalized."
-              : "Use the client-owned hostname that should replace the Hubforj-hosted subdomain for public, member, and admin access."
+              : "Use the client-owned hostname that should replace the Hubforj-hosted address for public, member, and admin access."
           }
           defaultValue={values.hostname}
         />

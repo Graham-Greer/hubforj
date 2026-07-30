@@ -298,7 +298,7 @@ export async function disconnectCustomDomainAction(_previousState, formData) {
     return {
       error: "",
       success:
-        "Custom-domain disconnect has been scheduled immediately. The hub will return to its Hubforj-hosted subdomain once the disconnect processor runs.",
+        "Custom-domain disconnect has been scheduled immediately. The hub will return to its Hubforj-hosted address once the disconnect processor runs.",
       confirmation: "",
     };
   } catch (error) {

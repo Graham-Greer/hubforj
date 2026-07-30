@@ -5,6 +5,7 @@ import {
   normalizeHubDomain,
   normalizeCreateHubPayload,
 } from "../../src/lib/domain/hubs.js";
+import { normalizeHubCustomDomain } from "../../src/lib/domain/hub-domains.js";
 
 test("normalizeHubSlug lowercases and constrains public slug shape", () => {
   assert.equal(normalizeHubSlug(" Oak Hill Community "), "oak-hill-community");
@@ -76,4 +77,38 @@ test("normalizeCreateHubPayload rejects unsupported countries for self-serve hub
       }),
     /Country is not supported yet\./
   );
+});
+
+test("normalizeHubCustomDomain keeps hosted hubs on the shared community path", () => {
+  const domainState = normalizeHubCustomDomain({
+    slug: "oak-hill",
+    domain: "oak-hill.hubforj.com",
+    customDomains: ["oak-hill.hubforj.com"],
+    customDomain: {
+      hostname: "oak-hill.hubforj.com",
+      status: "connected",
+    },
+  });
+
+  assert.equal(domainState.hostname, "");
+  assert.equal(domainState.status, "not_configured");
+  assert.equal(domainState.currentHost, "community.hubforj.com");
+  assert.equal(domainState.currentHostLabel, "community.hubforj.com/oak-hill");
+  assert.equal(domainState.platformHostedHref, "community.hubforj.com/oak-hill");
+});
+
+test("normalizeHubCustomDomain preserves connected client-owned custom domains", () => {
+  const domainState = normalizeHubCustomDomain({
+    slug: "oak-hill",
+    customDomain: {
+      hostname: "members.oakhill.org",
+      status: "connected",
+    },
+  });
+
+  assert.equal(domainState.hostname, "members.oakhill.org");
+  assert.equal(domainState.status, "connected");
+  assert.equal(domainState.currentHost, "members.oakhill.org");
+  assert.equal(domainState.currentHostLabel, "members.oakhill.org");
+  assert.equal(domainState.platformHostedHref, "community.hubforj.com/oak-hill");
 });

@@ -62,7 +62,7 @@ export default function CreateHubForm() {
         {!canUseCustomDomain ? (
           <PackageUpgradeNotice
             title="Custom domains are locked on the selected package"
-            description="Free and Starter hubs stay on their Hubforj-hosted subdomain. Choose Growth when the client needs a branded custom domain from the outset."
+            description="Free and Starter hubs stay on their Hubforj-hosted address. Choose Growth when the client needs a branded custom domain from the outset."
             currentUsage={0}
             limit={0}
             unlocks={[
@@ -78,7 +78,7 @@ export default function CreateHubForm() {
             name="hubSlug"
             label="Hub slug"
             placeholder="oak-hill"
-            hint="Used to generate the Hubforj-hosted subdomain and default public and admin routes."
+            hint="Used to generate the Hubforj-hosted address and default public and admin routes."
             defaultValue={values.hubSlug}
           />
           <Input name="contactEmail" label="Contact email" type="email" placeholder="hello@oakhill.community" hint="Primary operational contact for the hub." defaultValue={values.contactEmail} />

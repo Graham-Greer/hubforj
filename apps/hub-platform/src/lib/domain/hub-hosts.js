@@ -38,12 +38,7 @@ export function resolveHubHostContext(hostname) {
     };
   }
 
-  if (
-    normalizedHost === platformRootDomain ||
-    normalizedHost === `www.${platformRootDomain}` ||
-    normalizedHost === `app.${platformRootDomain}` ||
-    isLocalPlatformRoot
-  ) {
+  if (normalizedHost === platformRootDomain || isLocalPlatformRoot) {
     return {
       kind: "platform_root",
       host: normalizedHost,
@@ -56,7 +51,7 @@ export function resolveHubHostContext(hostname) {
   if (normalizedHost.endsWith(`.${platformRootDomain}`)) {
     const subdomainLabel = normalizedHost.slice(0, -1 * `.${platformRootDomain}`.length);
     return {
-      kind: subdomainLabel ? "platform_subdomain" : "platform_root",
+      kind: "platform_root",
       host: normalizedHost,
       hubSlug: "",
       subdomainLabel,

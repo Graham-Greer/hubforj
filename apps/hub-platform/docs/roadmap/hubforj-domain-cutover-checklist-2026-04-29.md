@@ -96,7 +96,7 @@ These items do not require a production cutover. They should be completed before
 - [ ] confirm `apps/hub-platform/.env.example` reflects the real Hubforj production defaults
 - [ ] confirm `apps/product-site` env documentation reflects:
   - `PRODUCT_SITE_BASE_URL=https://hubforj.com`
-  - `HUB_PLATFORM_BASE_URL=https://app.hubforj.com`
+  - `HUB_PLATFORM_BASE_URL=https://community.hubforj.com`
 - [ ] confirm `NEXT_PUBLIC_PLATFORM_ROOT_DOMAIN` is never hardcoded in component logic where environment-based behavior is required
 - [ ] confirm `PLATFORM_RESERVED_HOSTS` is documented clearly for operators
 

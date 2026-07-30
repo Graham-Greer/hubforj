@@ -1,4 +1,4 @@
-import { getPlatformRootDomain } from "./custom-domain-runtime-config.js";
+import { getPlatformHostedBaseHostname, getPlatformRootDomain } from "./custom-domain-runtime-config.js";
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -84,6 +84,11 @@ export function isPlatformManagedHostname(hostname) {
   return Boolean(normalizedHostname) && (normalizedHostname === rootDomain || normalizedHostname.endsWith(`.${rootDomain}`));
 }
 
+function normalizeClientOwnedHostname(value) {
+  const hostname = normalizeHostname(value);
+  return hostname && !isPlatformManagedHostname(hostname) ? hostname : "";
+}
+
 export function assertValidCustomDomainHostname(hostname) {
   const normalizedHostname = normalizeHostname(hostname);
 
@@ -123,19 +128,38 @@ export function buildPlatformSubdomainHost(hub) {
   return `${label}.${rootDomain}`;
 }
 
+export function buildPlatformHostedHubHref(hub) {
+  const label = normalizePlatformSubdomainLabel(hub);
+  const baseHost = getPlatformHostedBaseHostname();
+
+  if (!label) {
+    return baseHost;
+  }
+
+  return `${baseHost}/${label}`;
+}
+
 export function normalizeHubCustomDomain(hub = {}) {
   const legacyDomains = Array.isArray(hub.customDomains)
-    ? hub.customDomains.map((value) => normalizeHostname(value)).filter(Boolean)
+    ? hub.customDomains.map((value) => normalizeClientOwnedHostname(value)).filter(Boolean)
     : [];
   const storedDomain = sanitizeStoredCustomDomainRecord({
     ...(hub.customDomain || {}),
-    hostname: normalizeHostname(hub?.customDomain?.hostname || hub.domain || legacyDomains[0]),
+    hostname:
+      normalizeClientOwnedHostname(hub?.customDomain?.hostname) ||
+      normalizeClientOwnedHostname(hub.domain) ||
+      legacyDomains[0],
   });
-  const hostname = normalizeHostname(storedDomain.hostname || hub.domain || legacyDomains[0]);
+  const hostname =
+    normalizeClientOwnedHostname(storedDomain.hostname) ||
+    normalizeClientOwnedHostname(hub.domain) ||
+    legacyDomains[0];
   const status = normalizeCustomDomainStatus(storedDomain.status, hostname ? "connected" : "not_configured");
   const platformSubdomainLabel = normalizePlatformSubdomainLabel(hub);
   const platformSubdomain = buildPlatformSubdomainHost(hub);
-  const currentHost = status === "connected" && hostname ? hostname : platformSubdomain;
+  const platformHostedHref = buildPlatformHostedHubHref(hub);
+  const currentHost = status === "connected" && hostname ? hostname : getPlatformHostedBaseHostname();
+  const currentHostLabel = status === "connected" && hostname ? hostname : platformHostedHref;
   const customDomains = hostname
     ? Array.from(new Set([hostname, ...legacyDomains]))
     : legacyDomains;
@@ -168,9 +192,10 @@ export function normalizeHubCustomDomain(hub = {}) {
     isReadyForActivation: status === "verifying" && Boolean(normalizeString(storedDomain.verifiedAt)),
     isDisconnectScheduled: status === "disconnect_scheduled",
     platformSubdomain,
+    platformHostedHref,
     platformSubdomainLabel,
     currentHost,
-    currentHostLabel: currentHost,
+    currentHostLabel,
     customDomains,
   };
 }
