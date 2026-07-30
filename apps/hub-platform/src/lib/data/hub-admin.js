@@ -1,6 +1,6 @@
 import { countActiveUpcomingPublishedEventsByHub } from "@/lib/data/events";
-import { listEventsByHubSlug } from "@/lib/data/events";
-import { listEventSeriesByHubSlug } from "@/lib/data/event-series";
+import { listEventsByHub } from "@/lib/data/events";
+import { listEventSeriesByHub } from "@/lib/data/event-series";
 import { listInvitesByHub } from "@/lib/data/invites";
 import { getHubBySlug } from "@/lib/data/hubs";
 import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
@@ -9,7 +9,7 @@ import { listPendingMembershipUpgradeRequestsByHub } from "@/lib/data/membership
 import { getHubPaymentReportByHub } from "@/lib/data/hub-payments";
 import { listEventBookingPaymentItemsByHub } from "@/lib/data/event-bookings";
 import { listCoursePaymentItemsByHub } from "@/lib/data/course-registrations";
-import { listCoursesByHubSlug } from "@/lib/data/courses";
+import { listCoursesByHub } from "@/lib/data/courses";
 import { countActiveMembersByHub, listUsersByHub } from "@/lib/data/users";
 import {
   isActiveUpcomingPublishedEvent,
@@ -296,9 +296,9 @@ export async function getHubAdminOverviewBySlug(hubSlug) {
     getHubPaymentConfigurationByHubId(hub.id),
     listMembershipsByHub(hub.id),
     listPendingMembershipUpgradeRequestsByHub(hub.id),
-    listEventsByHubSlug(hub.slug),
-    listEventSeriesByHubSlug(hub.slug),
-    entitlements.capabilities?.coursesEnabled ? listCoursesByHubSlug(hub.slug) : Promise.resolve([]),
+    listEventsByHub(hub),
+    listEventSeriesByHub(hub),
+    entitlements.capabilities?.coursesEnabled ? listCoursesByHub(hub) : Promise.resolve([]),
     listEventBookingPaymentItemsByHub(hub.id),
     entitlements.capabilities?.coursesEnabled ? listCoursePaymentItemsByHub(hub.id) : Promise.resolve([]),
   ]);
@@ -426,6 +426,174 @@ export async function getHubAdminOverviewBySlug(hubSlug) {
     activeMemberCount,
     pendingInviteCount: invites.filter((invite) => invite.status === "pending").length,
     activeUpcomingPublishedEventCount,
+    activeUpcomingPublishedCourseCount: activeUpcomingCourses.length,
+    totalRevenue,
+    recentEvents,
+    topCourses,
+    attentionItems,
+    newestMembers,
+  };
+}
+
+export async function getHubAdminDashboardSummaryBySlug(hubSlug) {
+  const hub = await getHubBySlug(hubSlug);
+  if (!hub) {
+    return null;
+  }
+
+  const entitlements = resolveHubPackageEntitlements(hub);
+  const [activeMemberCount, activeUpcomingPublishedEventCount] = await Promise.all([
+    countActiveMembersByHub(hub.id),
+    countActiveUpcomingPublishedEventsByHub(hub.id),
+  ]);
+
+  return {
+    hub,
+    package: entitlements,
+    memberCount: hub.memberCount,
+    activeMemberCount,
+    pendingInviteCount: hub.pendingInvitesCount,
+    activeUpcomingPublishedEventCount,
+  };
+}
+
+export async function getHubAdminDashboardDeferredOverviewBySlug(hubSlug) {
+  const hub = await getHubBySlug(hubSlug);
+  if (!hub) {
+    return null;
+  }
+
+  const entitlements = resolveHubPackageEntitlements(hub);
+  const [users, members, invites, paymentConfiguration, memberships, pendingUpgradeRequests, events, eventSeries, courses, eventPaymentItems, coursePaymentItems] = await Promise.all([
+    listUsersByHub(hub.id),
+    listUsersByHub(hub.id, { role: "member" }),
+    listInvitesByHub(hub.id),
+    getHubPaymentConfigurationByHubId(hub.id),
+    listMembershipsByHub(hub.id),
+    listPendingMembershipUpgradeRequestsByHub(hub.id),
+    listEventsByHub(hub),
+    listEventSeriesByHub(hub),
+    entitlements.capabilities?.coursesEnabled ? listCoursesByHub(hub) : Promise.resolve([]),
+    listEventBookingPaymentItemsByHub(hub.id),
+    entitlements.capabilities?.coursesEnabled ? listCoursePaymentItemsByHub(hub.id) : Promise.resolve([]),
+  ]);
+  const paymentReport = await getHubPaymentReportByHub(hub, {
+    users,
+    pendingUpgradeRequests,
+    eventItems: eventPaymentItems,
+    courseItems: coursePaymentItems,
+  });
+  const locale = resolveLaunchFormattingLocale(hub.locale, hub.country);
+  const defaultCurrency = hub.defaultCurrency || "USD";
+  const eventRegistrationCounts = buildEventRegistrationCounts(eventPaymentItems);
+  const coursePerformanceById = buildCoursePerformanceById(coursePaymentItems, locale, defaultCurrency);
+  const paymentAttentionUserIds = buildPaymentAttentionUserIds(memberships, eventPaymentItems, coursePaymentItems);
+  const totalRevenue =
+    paymentReport.summary?.collectedRevenue || {
+      amount: 0,
+      currency: defaultCurrency,
+      formatted: formatMoney(0, defaultCurrency, locale),
+      isMixedCurrency: false,
+    };
+  const paymentSetupState = getHubPaymentSetupState(hub, paymentConfiguration);
+  const activeUpcomingCourses = courses.filter((course) => isActiveUpcomingPublishedCourse(course));
+  const recentEvents = buildRecentEventItems(events, eventSeries, eventRegistrationCounts, hub, locale);
+  const topCourses = activeUpcomingCourses
+    .map((course) => {
+      const performance = coursePerformanceById.get(course.id) || {
+        enrolledCount: 0,
+        revenue: buildRevenueSummary([], locale, defaultCurrency),
+      };
+
+      return {
+        id: course.id,
+        title: course.title || "Untitled course",
+        imageUrl: course.imageAsset?.publicUrl || "",
+        imageAlt: course.imageAlt || course.imageAsset?.alt || course.title || "Course image",
+        enrolledCount: performance.enrolledCount,
+        revenueLabel: performance.revenue.hasDisplayableAmount ? performance.revenue.formatted : "",
+        revenueAmount: performance.revenue.amount,
+        href: `/${hub.slug}/admin/courses/${course.id}`,
+      };
+    })
+    .sort((left, right) => {
+      if (right.enrolledCount !== left.enrolledCount) {
+        return right.enrolledCount - left.enrolledCount;
+      }
+
+      return (right.revenueAmount || 0) - (left.revenueAmount || 0);
+    })
+    .slice(0, 3);
+  const actionableInviteCount = invites.filter(
+    (invite) => invite.derivedStatus === "pending" || invite.derivedStatus === "expired" || invite.status === "pending"
+  ).length;
+  const suspendedMembersCount = members.filter((member) => normalizeString(member.status) === "suspended").length;
+  const attentionItems = [
+    hubUsesInternalNativePayments(hub) && paymentSetupState.key !== "ready"
+      ? {
+          id: "stripe-setup",
+          label: "Stripe setup",
+          count: 1,
+          href: `/${hub.slug}/admin/payments?view=setup`,
+        }
+      : null,
+    {
+      id: "admin-invites",
+      label: "Admin invites",
+      count: actionableInviteCount,
+      href: `/${hub.slug}/admin/admins`,
+    },
+    {
+      id: "membership-upgrades",
+      label: "Upgrade requests",
+      count: pendingUpgradeRequests.length,
+      href: `/${hub.slug}/admin/payments?view=plans`,
+    },
+    {
+      id: "payment-attention",
+      label: "Payment attention",
+      count: paymentAttentionUserIds.size,
+      href: `/${hub.slug}/admin/members`,
+    },
+    {
+      id: "suspended-members",
+      label: "Suspended members",
+      count: suspendedMembersCount,
+      href: `/${hub.slug}/admin/members`,
+    },
+  ].filter((item) => item && item.count > 0);
+  const membershipsByUserId = new Map();
+  memberships.forEach((membership) => {
+    if (!membership?.userId || membershipsByUserId.has(membership.userId)) {
+      return;
+    }
+
+    membershipsByUserId.set(membership.userId, membership);
+  });
+  const newestMembers = [...members]
+    .sort((left, right) =>
+      getSortableTimestamp(right.createdAt || right.updatedAt).localeCompare(
+        getSortableTimestamp(left.createdAt || left.updatedAt)
+      )
+    )
+    .slice(0, 5)
+    .map((member) => {
+      const membership = membershipsByUserId.get(member.id) || null;
+      return {
+        id: member.id,
+        name: member.name || member.email || "Unknown member",
+        secondary: membership
+          ? membership.planTitle || (membership.isDefault ? "Default membership plan" : "Membership assigned")
+          : member.email || "Membership not assigned yet",
+        createdAtLabel: member.createdAt || member.updatedAt ? formatShortDate(member.createdAt || member.updatedAt, locale) : "Recently joined",
+        status: member.status || "active",
+        href: `/${hub.slug}/admin/members/${member.id}`,
+      };
+    });
+
+  return {
+    hub,
+    package: entitlements,
     activeUpcomingPublishedCourseCount: activeUpcomingCourses.length,
     totalRevenue,
     recentEvents,
