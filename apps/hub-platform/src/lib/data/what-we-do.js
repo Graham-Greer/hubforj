@@ -42,13 +42,28 @@ function sortWhatWeDoItems(rows) {
 
 export async function listWhatWeDoItemsByHubSlug(hubSlug) {
   const hub = await requireHubBySlug(hubSlug);
-  const snapshot = await getFirebaseAdminDb().collection("hubs").doc(hub.id).collection("whatWeDoItems").get();
-  const items = snapshot.docs.map((doc) => normalizeWhatWeDoRecord({ id: doc.id, hubId: hub.id, ...doc.data() }));
+  return listWhatWeDoItemsByHub(hub);
+}
+
+export async function listWhatWeDoItemsByHub(hub) {
+  const hubId = normalizeString(hub?.id);
+
+  if (!hubId) {
+    return [];
+  }
+
+  const snapshot = await getFirebaseAdminDb().collection("hubs").doc(hubId).collection("whatWeDoItems").get();
+  const items = snapshot.docs.map((doc) => normalizeWhatWeDoRecord({ id: doc.id, hubId, ...doc.data() }));
   return sortWhatWeDoItems(items);
 }
 
 export async function listPublicWhatWeDoItemsByHubSlug(hubSlug) {
   const items = await listWhatWeDoItemsByHubSlug(hubSlug);
+  return items.filter((item) => item.status === "published").slice(0, 6);
+}
+
+export async function listPublicWhatWeDoItemsByHub(hub) {
+  const items = await listWhatWeDoItemsByHub(hub);
   return items.filter((item) => item.status === "published").slice(0, 6);
 }
 

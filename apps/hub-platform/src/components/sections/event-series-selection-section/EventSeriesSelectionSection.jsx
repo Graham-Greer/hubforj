@@ -33,7 +33,6 @@ function SeriesSummaryCard({ series, summary, occurrenceCount }) {
               fill
               sizes="(max-width: 48rem) 100vw, 12rem"
               className={styles.summaryMediaImage}
-              unoptimized
             />
           </SectionCardMedia>
         ) : (

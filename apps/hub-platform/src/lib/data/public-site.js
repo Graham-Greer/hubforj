@@ -8,22 +8,22 @@ import { headers } from "next/headers";
 import { requireHubBySlug } from "@/lib/data/hubs";
 import { getSiteSettingsByHub } from "@/lib/data/site-settings";
 import {
-  getEventBySlug,
-  getVisibleEventBySlug,
-  listVisibleEventsByHubSlug,
+  getEventBySlugForHub,
+  getVisibleEventBySlugForHub,
+  listVisibleEventsByHub,
 } from "@/lib/data/events";
 import {
-  getVisibleEventSeriesBySlugBase,
-  listEventSeriesByHubSlug,
+  getVisibleEventSeriesBySlugBaseForHub,
+  listEventSeriesByHub,
   listEventSeriesOccurrences,
 } from "@/lib/data/event-series";
 import {
-  getCourseBySlug,
-  getVisibleCourseBySlug,
-  listVisibleCoursesByHubSlug,
+  getCourseBySlugForHub,
+  getVisibleCourseBySlugForHub,
+  listVisibleCoursesByHub,
 } from "@/lib/data/courses";
-import { listPublicTestimonialsByHubSlug } from "@/lib/data/testimonials";
-import { listPublicWhatWeDoItemsByHubSlug } from "@/lib/data/what-we-do";
+import { listPublicTestimonialsByHub } from "@/lib/data/testimonials";
+import { listPublicWhatWeDoItemsByHub } from "@/lib/data/what-we-do";
 import { getCurrentMemberSessionForHub } from "@/lib/auth/member-session";
 import {
   countActiveEventBookingAttendees,
@@ -66,8 +66,8 @@ export async function getPublicSiteContext(hubSlug) {
 export async function getPublicLandingData(hubSlug) {
   const context = await getPublicSiteContext(hubSlug);
   const [testimonials, whatWeDoItems] = await Promise.all([
-    listPublicTestimonialsByHubSlug(hubSlug),
-    listPublicWhatWeDoItemsByHubSlug(hubSlug),
+    listPublicTestimonialsByHub(context.hub),
+    listPublicWhatWeDoItemsByHub(context.hub),
   ]);
 
   return {
@@ -82,8 +82,8 @@ export async function getPublicEventsData(hubSlug) {
   const currentMemberSession = await getCurrentMemberSessionForHub(context.hub);
   const isMember = Boolean(currentMemberSession);
   const [events, eventSeries] = await Promise.all([
-    listVisibleEventsByHubSlug(hubSlug, { isMember }),
-    listEventSeriesByHubSlug(hubSlug),
+    listVisibleEventsByHub(context.hub, { isMember }),
+    listEventSeriesByHub(context.hub),
   ]);
 
   return {
@@ -99,7 +99,7 @@ export async function getPublicEventsData(hubSlug) {
 export async function getPublicCoursesData(hubSlug) {
   const context = await getPublicSiteContext(hubSlug);
   const currentMemberSession = await getCurrentMemberSessionForHub(context.hub);
-  const courses = await listVisibleCoursesByHubSlug(hubSlug, {
+  const courses = await listVisibleCoursesByHub(context.hub, {
     isMember: Boolean(currentMemberSession),
   });
   const enrolledCounts = await Promise.all(
@@ -125,14 +125,14 @@ export async function getPublicEventDetailData(hubSlug, eventSlug) {
   const context = await getPublicSiteContext(hubSlug);
   const currentMemberSession = await getCurrentMemberSessionForHub(context.hub);
   const isMember = Boolean(currentMemberSession);
-  const visibleEvent = await getVisibleEventBySlug(hubSlug, eventSlug, {
+  const visibleEvent = await getVisibleEventBySlugForHub(context.hub, eventSlug, {
     isMember,
   });
   let event = visibleEvent;
   let detailAccessMode = "public";
 
   if (!event && currentMemberSession) {
-    const historicalEvent = await getEventBySlug(hubSlug, eventSlug);
+    const historicalEvent = await getEventBySlugForHub(context.hub, eventSlug);
 
     if (historicalEvent) {
       const historicalBooking = await getActiveOrWaitlistedEventBookingByBooker(
@@ -152,7 +152,7 @@ export async function getPublicEventDetailData(hubSlug, eventSlug) {
   }
 
   if (!event) {
-    const visibleSeries = await getVisibleEventSeriesBySlugBase(hubSlug, eventSlug, { isMember });
+    const visibleSeries = await getVisibleEventSeriesBySlugBaseForHub(context.hub, eventSlug, { isMember });
 
     if (visibleSeries) {
       const occurrences = (await listEventSeriesOccurrences(context.hub.id, visibleSeries.id))
@@ -216,13 +216,13 @@ export async function getPublicEventDetailData(hubSlug, eventSlug) {
 
 export async function getPublicEventNextStepsData(hubSlug, eventSlug, userId) {
   const context = await getPublicSiteContext(hubSlug);
-  const visibleEvent = await getVisibleEventBySlug(hubSlug, eventSlug, { isMember: true });
+  const visibleEvent = await getVisibleEventBySlugForHub(context.hub, eventSlug, { isMember: true });
   let event = visibleEvent;
 
   let fallbackBooking = null;
 
   if (!event) {
-    const historicalEvent = await getEventBySlug(hubSlug, eventSlug);
+    const historicalEvent = await getEventBySlugForHub(context.hub, eventSlug);
 
     if (historicalEvent) {
       fallbackBooking = await getLatestEventBookingByBooker(context.hub.id, historicalEvent.id, userId);
@@ -260,14 +260,14 @@ export async function getPublicEventNextStepsData(hubSlug, eventSlug, userId) {
 export async function getPublicCourseDetailData(hubSlug, courseSlug) {
   const context = await getPublicSiteContext(hubSlug);
   const currentMemberSession = await getCurrentMemberSessionForHub(context.hub);
-  const visibleCourse = await getVisibleCourseBySlug(hubSlug, courseSlug, {
+  const visibleCourse = await getVisibleCourseBySlugForHub(context.hub, courseSlug, {
     isMember: Boolean(currentMemberSession),
   });
   let course = visibleCourse;
   let detailAccessMode = "public";
 
   if (!course && currentMemberSession) {
-    const historicalCourse = await getCourseBySlug(hubSlug, courseSlug);
+    const historicalCourse = await getCourseBySlugForHub(context.hub, courseSlug);
 
     if (historicalCourse) {
       const historicalRegistration = await getCourseRegistrationByUser(
@@ -316,7 +316,7 @@ export async function getPublicCourseDetailData(hubSlug, courseSlug) {
 
 export async function getPublicCourseNextStepsData(hubSlug, courseSlug, userId) {
   const context = await getPublicSiteContext(hubSlug);
-  const course = await getVisibleCourseBySlug(hubSlug, courseSlug, { isMember: true });
+  const course = await getVisibleCourseBySlugForHub(context.hub, courseSlug, { isMember: true });
 
   if (!course) {
     return {
@@ -344,7 +344,7 @@ export async function getPublicCourseNextStepsData(hubSlug, courseSlug, userId) 
 
 export async function getPublicAboutData(hubSlug) {
   const context = await getPublicSiteContext(hubSlug);
-  const testimonials = await listPublicTestimonialsByHubSlug(hubSlug);
+  const testimonials = await listPublicTestimonialsByHub(context.hub);
 
   return {
     ...context,
@@ -354,7 +354,7 @@ export async function getPublicAboutData(hubSlug) {
 
 export async function getPublicTestimonialsData(hubSlug) {
   const context = await getPublicSiteContext(hubSlug);
-  const testimonials = await listPublicTestimonialsByHubSlug(hubSlug);
+  const testimonials = await listPublicTestimonialsByHub(context.hub);
 
   return {
     ...context,

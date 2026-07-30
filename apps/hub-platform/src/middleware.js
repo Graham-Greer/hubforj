@@ -47,56 +47,6 @@ async function resolveCustomDomainMapping(request, host) {
   return payload?.found ? payload : null;
 }
 
-async function resolvePlatformSubdomain(request, subdomainLabel) {
-  const token = getInternalAutomationSecret();
-
-  if (!token || !subdomainLabel) {
-    return null;
-  }
-
-  const url = new URL("/api/internal/hubs/resolve-platform-subdomain", request.url);
-  url.searchParams.set("subdomainLabel", subdomainLabel);
-
-  const response = await fetch(url, {
-    headers: {
-      authorization: `Bearer ${token}`,
-    },
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    return null;
-  }
-
-  const payload = await response.json();
-  return payload?.found ? payload : null;
-}
-
-async function resolveCanonicalCustomDomainForHub(request, hubSlug) {
-  const token = getInternalAutomationSecret();
-
-  if (!token || !hubSlug || !isCustomDomainRuntimeEnabled()) {
-    return null;
-  }
-
-  const url = new URL("/api/internal/custom-domains/resolve", request.url);
-  url.searchParams.set("hubSlug", hubSlug);
-
-  const response = await fetch(url, {
-    headers: {
-      authorization: `Bearer ${token}`,
-    },
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    return null;
-  }
-
-  const payload = await response.json();
-  return payload?.found ? payload : null;
-}
-
 function buildRedirectUrl(request, targetHost, pathname) {
   const redirectUrl = request.nextUrl.clone();
   redirectUrl.host = targetHost;
@@ -137,19 +87,10 @@ export async function middleware(request) {
     return NextResponse.rewrite(rewriteUrl);
   }
 
-  const resolvedPlatformSubdomain = await resolvePlatformSubdomain(request, hostContext.subdomainLabel);
-  const hubSlug = resolvedPlatformSubdomain?.hubSlug || hostContext.subdomainLabel;
+  const hubSlug = hostContext.subdomainLabel;
 
   if (!hubSlug) {
     return NextResponse.next();
-  }
-
-  if (hostContext.kind === "platform_subdomain" && isCustomDomainRuntimeEnabled()) {
-    const canonical = await resolveCanonicalCustomDomainForHub(request, hubSlug);
-
-    if (canonical?.canonicalHost && canonical.canonicalHost !== hostContext.host) {
-      return NextResponse.redirect(buildRedirectUrl(request, canonical.canonicalHost, stripHubSlugPrefix(pathname, hubSlug)));
-    }
   }
 
   if (pathname === `/${hubSlug}` || pathname.startsWith(`/${hubSlug}/`)) {

@@ -7,10 +7,16 @@ try {
 export {
   getCourseById,
   getCourseBySlug,
+  getCourseBySlugForHub,
   getPublicCourseBySlug,
+  getPublicCourseBySlugForHub,
   getVisibleCourseBySlug,
+  getVisibleCourseBySlugForHub,
+  listCoursesByHub,
   listCoursesByHubSlug,
+  listPublicCoursesByHub,
   listPublicCoursesByHubSlug,
+  listVisibleCoursesByHub,
   listVisibleCoursesByHubSlug,
 } from "./course-queries.js";
 export {

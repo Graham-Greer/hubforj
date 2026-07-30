@@ -41,7 +41,6 @@ function EventMedia({ event, featured = false }) {
           fill
           sizes={featured ? "(max-width: 48rem) 100vw, 18rem" : "(max-width: 48rem) 100vw, 24rem"}
           className={styles.media}
-          unoptimized
         />
       </SectionCardMedia>
     );

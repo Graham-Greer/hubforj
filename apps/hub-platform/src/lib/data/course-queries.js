@@ -69,11 +69,26 @@ export async function listCoursesByHubSlug(hubSlug) {
     return [];
   }
 
-  return listFirestoreCoursesByHubId(hub.id);
+  return listCoursesByHub(hub);
+}
+
+export async function listCoursesByHub(hub) {
+  const hubId = normalizeString(hub?.id);
+
+  if (!hubId || !hasHubCapability(hub, "coursesEnabled")) {
+    return [];
+  }
+
+  return listFirestoreCoursesByHubId(hubId);
 }
 
 export async function listPublicCoursesByHubSlug(hubSlug) {
   const courses = await listCoursesByHubSlug(hubSlug);
+  return courses.filter(isCoursePubliclyVisible);
+}
+
+export async function listPublicCoursesByHub(hub) {
+  const courses = await listCoursesByHub(hub);
   return courses.filter(isCoursePubliclyVisible);
 }
 
@@ -111,11 +126,27 @@ export async function getCourseBySlug(hubSlug, courseSlug) {
     return null;
   }
 
-  return getFirestoreCourseBySlug(hub.id, normalizedCourseSlug);
+  return getCourseBySlugForHub(hub, normalizedCourseSlug);
+}
+
+export async function getCourseBySlugForHub(hub, courseSlug) {
+  const hubId = normalizeString(hub?.id);
+  const normalizedCourseSlug = normalizeCourseSlug(courseSlug);
+
+  if (!hubId || !normalizedCourseSlug || !hasHubCapability(hub, "coursesEnabled")) {
+    return null;
+  }
+
+  return getFirestoreCourseBySlug(hubId, normalizedCourseSlug);
 }
 
 export async function getPublicCourseBySlug(hubSlug, courseSlug) {
   const course = await getCourseBySlug(hubSlug, courseSlug);
+  return isCoursePubliclyVisible(course) ? course : null;
+}
+
+export async function getPublicCourseBySlugForHub(hub, courseSlug) {
+  const course = await getCourseBySlugForHub(hub, courseSlug);
   return isCoursePubliclyVisible(course) ? course : null;
 }
 
@@ -124,7 +155,17 @@ export async function listVisibleCoursesByHubSlug(hubSlug, { isMember = false } 
   return courses.filter((course) => canViewPublishedCourse(course, { isMember }));
 }
 
+export async function listVisibleCoursesByHub(hub, { isMember = false } = {}) {
+  const courses = await listCoursesByHub(hub);
+  return courses.filter((course) => canViewPublishedCourse(course, { isMember }));
+}
+
 export async function getVisibleCourseBySlug(hubSlug, courseSlug, { isMember = false } = {}) {
   const course = await getCourseBySlug(hubSlug, courseSlug);
+  return canViewPublishedCourse(course, { isMember }) ? course : null;
+}
+
+export async function getVisibleCourseBySlugForHub(hub, courseSlug, { isMember = false } = {}) {
+  const course = await getCourseBySlugForHub(hub, courseSlug);
   return canViewPublishedCourse(course, { isMember }) ? course : null;
 }
