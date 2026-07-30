@@ -30,7 +30,7 @@ export default function AccountDomainDisconnectForm({ hubSlug, hostname }) {
     <form action={formAction} className={styles.disconnectForm}>
       <input type="hidden" name="hubSlug" value={hubSlug} />
       <p className={styles.capabilityDetail}>
-        Disconnecting the current custom domain is destructive. The hub will return to its Hubforj-hosted subdomain
+        Disconnecting the current custom domain is destructive. The hub will return to its Hubforj-hosted address
         and the custom domain will stop serving this hub once the disconnect executes.
       </p>
       <Input

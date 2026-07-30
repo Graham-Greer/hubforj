@@ -6,7 +6,7 @@ test("normalizeProvisionHubAutomationRequestBody trims and preserves provisionin
   assert.deepEqual(
     normalizeProvisionHubAutomationRequestBody({
       name: " North Shore ",
-      slug: " north-shore ",
+      slug: " north shore ",
       contactEmail: " Team@NorthShore.Com ",
       customDomain: " northshore.example.com ",
       template: " civic ",
@@ -22,7 +22,7 @@ test("normalizeProvisionHubAutomationRequestBody trims and preserves provisionin
     }),
     {
       name: "North Shore",
-      slug: "north-shore",
+      slug: "northshore",
       contactEmail: "Team@NorthShore.Com",
       customDomain: "northshore.example.com",
       template: "civic",

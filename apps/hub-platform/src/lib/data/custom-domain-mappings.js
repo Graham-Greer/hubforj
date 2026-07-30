@@ -69,7 +69,7 @@ export function buildCustomDomainMappingRecordsForHub(hubRecord, actorId = "syst
 
   const canonicalHost = hostname;
   const companionHost = buildCompanionHost(hostname);
-  const fallbackHost = buildPlatformSubdomainHost(hubSlug);
+  const fallbackHost = buildPlatformSubdomainHost(hubRecord);
   const sharedFields = {
     hubId,
     hubSlug,

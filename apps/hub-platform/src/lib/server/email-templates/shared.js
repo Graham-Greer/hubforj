@@ -9,6 +9,8 @@ import {
   resolveLaunchFormattingLocale,
 } from "@/lib/domain/regional-markets";
 import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
+import { buildPlatformSubdomainHost, isPlatformManagedHostname } from "@/lib/domain/hub-domains";
+import { getServerEnv } from "@/lib/config/env";
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -23,6 +25,86 @@ export function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+function normalizeBaseUrl(value) {
+  return normalizeString(value).replace(/\/+$/, "");
+}
+
+function normalizeHostname(value) {
+  return normalizeString(value)
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/[/?#].*$/, "")
+    .replace(/:\d+$/, "")
+    .replace(/\.+$/, "");
+}
+
+function isAbsoluteUrl(value) {
+  return /^https?:\/\//i.test(normalizeString(value));
+}
+
+function isLocalHostname(hostname) {
+  const normalized = normalizeHostname(hostname);
+  return (
+    normalized === "localhost" ||
+    normalized === "127.0.0.1" ||
+    normalized === "[::1]" ||
+    normalized.endsWith(".localhost")
+  );
+}
+
+function resolveConnectedCustomDomainHost(hub = {}) {
+  const customDomainHostname =
+    normalizeString(hub?.customDomain?.status) === "connected"
+      ? normalizeHostname(hub?.customDomain?.hostname)
+      : "";
+  const hubDomain = normalizeHostname(hub?.domain);
+  const candidate = customDomainHostname || hubDomain;
+
+  return candidate && !isPlatformManagedHostname(candidate) ? candidate : "";
+}
+
+function resolveHostedHubOrigin() {
+  const configuredBaseUrl = normalizeBaseUrl(getServerEnv().hubPlatformBaseUrl);
+
+  if (configuredBaseUrl) {
+    return configuredBaseUrl;
+  }
+
+  return "";
+}
+
+function resolveHubEmailOrigin(hub = {}) {
+  const customDomainHost = resolveConnectedCustomDomainHost(hub);
+
+  if (normalizeString(hub?.routeMode) === "host" && customDomainHost) {
+    return `${isLocalHostname(customDomainHost) ? "http" : "https"}://${customDomainHost}`;
+  }
+
+  const configuredHostedOrigin = resolveHostedHubOrigin();
+
+  if (configuredHostedOrigin && isLocalHostname(configuredHostedOrigin)) {
+    return configuredHostedOrigin;
+  }
+
+  const hostedHubHost = buildPlatformSubdomainHost(hub);
+  return `${isLocalHostname(hostedHubHost) ? "http" : "https"}://${hostedHubHost}`;
+}
+
+function resolveEmailRouteMode(hub = {}) {
+  const configuredHostedOrigin = resolveHostedHubOrigin();
+  return configuredHostedOrigin && isLocalHostname(configuredHostedOrigin) ? "path" : "host";
+}
+
+function buildAbsoluteHubHref(hub = {}, href = "") {
+  const normalizedHref = normalizeString(href);
+
+  if (!normalizedHref || isAbsoluteUrl(normalizedHref)) {
+    return normalizedHref;
+  }
+
+  return new URL(normalizedHref, `${resolveHubEmailOrigin(hub)}/`).toString();
 }
 
 export function resolveEmailLocale(hub = {}) {
@@ -47,7 +129,7 @@ export function resolveBookingLabel(offering = {}) {
 
 export function buildOfferingHref(hub = {}, offering = {}) {
   const hubSlug = normalizeString(hub?.slug);
-  const routeMode = normalizeString(hub?.routeMode) || "path";
+  const routeMode = resolveEmailRouteMode(hub);
   const offeringSlug = normalizeString(offering?.slug);
   const kind = resolveOfferingLabel(offering);
 
@@ -55,18 +137,21 @@ export function buildOfferingHref(hub = {}, offering = {}) {
     return "";
   }
 
-  return buildHubRuntimeHref(hubSlug, kind === "course" ? `/courses/${offeringSlug}` : `/events/${offeringSlug}`, routeMode);
+  return buildAbsoluteHubHref(
+    hub,
+    buildHubRuntimeHref(hubSlug, kind === "course" ? `/courses/${offeringSlug}` : `/events/${offeringSlug}`, routeMode)
+  );
 }
 
 export function buildBookingsHref(hub = {}) {
   const hubSlug = normalizeString(hub?.slug);
-  const routeMode = normalizeString(hub?.routeMode) || "path";
+  const routeMode = resolveEmailRouteMode(hub);
 
   if (!hubSlug) {
     return "";
   }
 
-  return buildHubRuntimeHref(hubSlug, "/account/bookings", routeMode);
+  return buildAbsoluteHubHref(hub, buildHubRuntimeHref(hubSlug, "/account/bookings", routeMode));
 }
 
 export function formatNotificationDate(value, locale) {

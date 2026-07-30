@@ -1,4 +1,4 @@
-import { getPlatformRootDomain } from "./custom-domain-runtime-config.js";
+import { getPlatformReservedHostLabels, getPlatformRootDomain } from "./custom-domain-runtime-config.js";
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -26,6 +26,7 @@ export function getRequestHostWithPortFromHeaders(headers) {
 export function resolveHubHostContext(hostname) {
   const normalizedHost = normalizeHost(hostname);
   const platformRootDomain = getPlatformRootDomain();
+  const reservedHostLabels = getPlatformReservedHostLabels();
   const isLocalPlatformRoot = normalizedHost === "localhost" || normalizedHost === "127.0.0.1" || normalizedHost === "[::1]";
 
   if (!normalizedHost) {
@@ -38,12 +39,7 @@ export function resolveHubHostContext(hostname) {
     };
   }
 
-  if (
-    normalizedHost === platformRootDomain ||
-    normalizedHost === `www.${platformRootDomain}` ||
-    normalizedHost === `app.${platformRootDomain}` ||
-    isLocalPlatformRoot
-  ) {
+  if (normalizedHost === platformRootDomain || isLocalPlatformRoot) {
     return {
       kind: "platform_root",
       host: normalizedHost,
@@ -55,8 +51,9 @@ export function resolveHubHostContext(hostname) {
 
   if (normalizedHost.endsWith(`.${platformRootDomain}`)) {
     const subdomainLabel = normalizedHost.slice(0, -1 * `.${platformRootDomain}`.length);
+    const firstLabel = subdomainLabel.split(".").filter(Boolean)[0] || "";
     return {
-      kind: subdomainLabel ? "platform_subdomain" : "platform_root",
+      kind: subdomainLabel && !reservedHostLabels.includes(firstLabel) ? "platform_subdomain" : "platform_root",
       host: normalizedHost,
       hubSlug: "",
       subdomainLabel,

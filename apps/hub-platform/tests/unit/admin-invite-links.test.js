@@ -5,9 +5,9 @@ import {
   resolveHubAdminInviteOrigin,
 } from "../../src/lib/domain/admin-invite-links.js";
 
-test("hub admin invite links default to the Hubforj subdomain when no custom domain is connected", () => {
+test("hub admin invite links default to the Hubforj tenant hostname when no custom domain is connected", () => {
   const hub = {
-    slug: "oak-hub",
+    slug: "oakhub",
     customDomain: {
       status: "pending_verification",
       hostname: "oak.example.com",
@@ -18,18 +18,18 @@ test("hub admin invite links default to the Hubforj subdomain when no custom dom
     assert.equal(resolveHubAdminInviteOrigin(hub), "http://localhost:3000");
     assert.equal(
       buildHubAdminInviteAcceptUrl(hub, "signed.token"),
-      "http://localhost:3000/oak-hub/join?invite=signed.token"
+      "http://localhost:3000/oakhub/join?invite=signed.token"
     );
     return;
   }
 
-  assert.equal(resolveHubAdminInviteOrigin(hub), "https://oak-hub.hubforj.com");
-  assert.equal(buildHubAdminInviteAcceptUrl(hub, "signed.token"), "https://oak-hub.hubforj.com/join?invite=signed.token");
+  assert.equal(resolveHubAdminInviteOrigin(hub), "https://oakhub.hubforj.com");
+  assert.equal(buildHubAdminInviteAcceptUrl(hub, "signed.token"), "https://oakhub.hubforj.com/join?invite=signed.token");
 });
 
 test("hub admin invite links prefer a connected custom domain", () => {
   const hub = {
-    slug: "oak-hub",
+    slug: "oakhub",
     customDomain: {
       status: "connected",
       hostname: "community.example.com",
@@ -48,7 +48,7 @@ test("hub admin invite links prefer a connected custom domain", () => {
 
 test("hub admin invite links preserve the configured runtime protocol and port when a hub base url is available", () => {
   const hub = {
-    slug: "oak-hub",
+    slug: "oakhub",
     customDomain: {
       status: "not_configured",
       hostname: "",
@@ -61,13 +61,13 @@ test("hub admin invite links preserve the configured runtime protocol and port w
   );
   assert.equal(
     buildHubAdminInviteAcceptUrl(hub, "signed.token", { hubPlatformBaseUrl: "http://localhost:3000" }),
-    "http://localhost:3000/oak-hub/join?invite=signed.token"
+    "http://localhost:3000/oakhub/join?invite=signed.token"
   );
 });
 
 test("hub admin invite links can fall back to the configured product site base url during local development", () => {
   const hub = {
-    slug: "oak-hub",
+    slug: "oakhub",
     customDomain: {
       status: "not_configured",
       hostname: "",
@@ -80,13 +80,13 @@ test("hub admin invite links can fall back to the configured product site base u
   );
   assert.equal(
     buildHubAdminInviteAcceptUrl(hub, "signed.token", { productSiteBaseUrl: "http://localhost:3001" }),
-    "http://localhost:3001/oak-hub/join?invite=signed.token"
+    "http://localhost:3001/oakhub/join?invite=signed.token"
   );
 });
 
-test("hub admin invite links keep production-style subdomains when the configured base url is not local", () => {
+test("hub admin invite links use tenant hostnames with the configured production protocol", () => {
   const hub = {
-    slug: "oak-hub",
+    slug: "oakhub",
     customDomain: {
       status: "not_configured",
       hostname: "",
@@ -94,7 +94,11 @@ test("hub admin invite links keep production-style subdomains when the configure
   };
 
   assert.equal(
-    resolveHubAdminInviteOrigin(hub, { hubPlatformBaseUrl: "https://app.hubforj.com" }),
+    resolveHubAdminInviteOrigin(hub, { hubPlatformBaseUrl: "https://community.hubforj.com" }),
     "https://oakhub.hubforj.com"
+  );
+  assert.equal(
+    buildHubAdminInviteAcceptUrl(hub, "signed.token", { hubPlatformBaseUrl: "https://community.hubforj.com" }),
+    "https://oakhub.hubforj.com/join?invite=signed.token"
   );
 });

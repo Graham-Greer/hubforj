@@ -18,12 +18,67 @@ function normalizeEmail(value) {
 function normalizeSlug(value) {
   return normalizeString(value)
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(/[^a-z0-9]+/g, "");
 }
 
 function normalizeBaseUrl(value) {
   return normalizeString(value).replace(/\/+$/, "");
+}
+
+function normalizeHostname(value) {
+  return normalizeString(value)
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/[/?#].*$/, "")
+    .replace(/:\d+$/, "")
+    .replace(/\.+$/, "");
+}
+
+function isLocalHostname(hostname) {
+  const normalized = normalizeHostname(hostname);
+  return (
+    normalized === "localhost" ||
+    normalized === "127.0.0.1" ||
+    normalized === "[::1]" ||
+    normalized.endsWith(".localhost")
+  );
+}
+
+function resolveRootDomainFromHubPlatformBaseUrl(baseUrl) {
+  const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+
+  if (!normalizedBaseUrl) {
+    return "";
+  }
+
+  const parsed = new URL(normalizedBaseUrl);
+  const hostname = normalizeHostname(parsed.hostname);
+
+  if (isLocalHostname(hostname)) {
+    return "";
+  }
+
+  const labels = hostname.split(".").filter(Boolean);
+  return labels.length > 2 ? labels.slice(-2).join(".") : hostname;
+}
+
+function buildHostedHubBaseUrl(hubPlatformBaseUrl, hubSlug) {
+  const baseUrl = normalizeBaseUrl(hubPlatformBaseUrl);
+  const normalizedHubSlug = normalizeSlug(hubSlug);
+
+  if (!baseUrl || !normalizedHubSlug) {
+    return "";
+  }
+
+  const parsed = new URL(baseUrl);
+  const hostname = normalizeHostname(parsed.hostname);
+
+  if (isLocalHostname(hostname)) {
+    return `${baseUrl}/${normalizedHubSlug}`;
+  }
+
+  const rootDomain = resolveRootDomainFromHubPlatformBaseUrl(baseUrl);
+  return `${parsed.protocol}//${normalizedHubSlug}.${rootDomain}`;
 }
 
 function assertRequired(value, label) {
@@ -135,7 +190,7 @@ export function resolveInitialProvisioningPayloadForSignup(payload = {}) {
 }
 
 export function buildOperationalHandoffUrls({ hubPlatformBaseUrl = "", hubSlug = "" } = {}) {
-  const baseUrl = normalizeBaseUrl(hubPlatformBaseUrl);
+  const baseUrl = buildHostedHubBaseUrl(hubPlatformBaseUrl, hubSlug);
   const normalizedHubSlug = normalizeSlug(hubSlug);
 
   if (!baseUrl || !normalizedHubSlug) {
@@ -147,8 +202,8 @@ export function buildOperationalHandoffUrls({ hubPlatformBaseUrl = "", hubSlug =
   }
 
   return {
-    adminHref: `${baseUrl}/${normalizedHubSlug}/admin`,
-    publicHref: `${baseUrl}/${normalizedHubSlug}`,
+    adminHref: `${baseUrl}/admin`,
+    publicHref: baseUrl,
     placeholder: false,
   };
 }

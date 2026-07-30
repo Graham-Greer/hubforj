@@ -49,6 +49,7 @@ export function getPlatformReservedHostLabels() {
     normalizeReservedHostToken(rootDomain),
     "www",
     "app",
+    "community",
     "api",
     "status",
     "support",

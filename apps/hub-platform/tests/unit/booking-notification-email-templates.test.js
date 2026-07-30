@@ -9,7 +9,7 @@ function buildBaseNotification(kind, overrides = {}) {
     payload: {
       hub: {
         name: "Madrid Makers",
-        slug: "madrid-makers",
+        slug: "madridmakers",
         country: "ES",
         locale: "es-ES",
         routeMode: "path",
@@ -44,8 +44,29 @@ test("confirmed booking template renders an English launch-format schedule", () 
   assert.match(rendered.subject, /Your booking is confirmed/);
   assert.match(rendered.html, /Madrid Makers/);
   assert.match(rendered.text, /Sent on behalf of Madrid Makers via Hubforj\./);
+  assert.match(rendered.text, /View event: https:\/\/madridmakers\.hubforj\.com\/events\/community-sprint/);
   assert.match(rendered.html, /Sat, 20 Jun 2026/);
   assert.doesNotMatch(rendered.html, /\bjue\b|\bsáb\b|de junio/i);
+});
+
+test("booking template uses connected custom domains only for host-mode hubs", () => {
+  const rendered = renderBookingNotificationEmail(
+    buildBaseNotification("event_booking_confirmed", {
+      hub: {
+        name: "Madrid Makers",
+        slug: "madridmakers",
+        country: "ES",
+        locale: "es-ES",
+        routeMode: "host",
+        customDomain: {
+          status: "connected",
+          hostname: "members.madridmakers.org",
+        },
+      },
+    })
+  );
+
+  assert.match(rendered.text, /View event: https:\/\/members\.madridmakers\.org\/events\/community-sprint/);
 });
 
 test("waitlist booking template does not imply a confirmed place", () => {

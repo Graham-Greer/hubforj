@@ -36,7 +36,7 @@ Treat the following as the intended live production model:
 - operational application root:
   - `https://app.hubforj.com`
 - Hubforj-hosted hubs:
-  - `https://{hubSlug}.hubforj.com`
+  - `https://{tenantSlug}.hubforj.com`
 - Growth custom domains:
   - client-owned canonical host
 
@@ -96,7 +96,7 @@ These items do not require a production cutover. They should be completed before
 - [ ] confirm `apps/hub-platform/.env.example` reflects the real Hubforj production defaults
 - [ ] confirm `apps/product-site` env documentation reflects:
   - `PRODUCT_SITE_BASE_URL=https://hubforj.com`
-  - `HUB_PLATFORM_BASE_URL=https://app.hubforj.com`
+  - `HUB_PLATFORM_BASE_URL=https://community.hubforj.com`
 - [ ] confirm `NEXT_PUBLIC_PLATFORM_ROOT_DOMAIN` is never hardcoded in component logic where environment-based behavior is required
 - [ ] confirm `PLATFORM_RESERVED_HOSTS` is documented clearly for operators
 
@@ -117,7 +117,7 @@ These items do not require a production cutover. They should be completed before
 ### 4.3 Staging Or Preview Runtime Checks
 
 - [ ] verify `app.hubforj.com` is treated as platform root
-- [ ] verify a Hubforj-hosted hub like `oak-hill.hubforj.com` resolves correctly
+- [ ] verify a Hubforj-hosted hub like `oakhill.hubforj.com` resolves correctly
 - [ ] verify the same hub still works if visited through path-mode fallback on a platform root in non-production environments, if that fallback is still intentionally supported
 - [ ] verify public event detail CTA routes correctly:
   - anonymous user
@@ -163,13 +163,13 @@ These items require a real deployed environment or live infrastructure.
 - [ ] no unexpected cross-subdomain cookie leakage exists between:
   - `hubforj.com`
   - `app.hubforj.com`
-  - `{hubSlug}.hubforj.com`
+  - `{tenantSlug}.hubforj.com`
 
 ### 5.4 Real Host Verification
 
 - [ ] verify `hubforj.com` serves the product site
 - [ ] verify `app.hubforj.com` serves the operational app root
-- [ ] verify a real hosted hub serves on `{hubSlug}.hubforj.com`
+- [ ] verify a real hosted hub serves on `{tenantSlug}.hubforj.com`
 - [ ] verify public pages, member pages, and admin pages all resolve correctly on the hosted hub
 - [ ] verify redirects do not unexpectedly bounce users back into path mode on hosted hubs
 

@@ -75,14 +75,14 @@ function resolveInviteHost(hub = {}, options = {}) {
       return normalizeHostname(baseUrl.hostname) || "localhost";
     }
 
-    return buildPlatformSubdomainHost(hub.slug);
+    return buildPlatformSubdomainHost(hub);
   }
 
   if (process.env.NODE_ENV !== "production") {
     return "localhost";
   }
 
-  return buildPlatformSubdomainHost(hub.slug);
+  return buildPlatformSubdomainHost(hub);
 }
 
 export function resolveHubAdminInviteOrigin(hub, options = {}) {

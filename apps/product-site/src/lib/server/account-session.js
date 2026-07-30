@@ -19,8 +19,7 @@ function normalizeEmail(value) {
 function normalizeSlug(value) {
   return normalizeString(value)
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(/[^a-z0-9]+/g, "");
 }
 
 function resolveSessionSecret() {
