@@ -5,6 +5,7 @@ try {
 }
 
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
+import { cache } from "react";
 import { normalizeHubCustomDomain, normalizePlatformSubdomainLabel } from "@/lib/domain/hub-domains";
 import { getHubRegionalSetupStatus } from "@/lib/domain/hub-regional-setup";
 import { resolveHubPackageEntitlements } from "@/lib/domain/hub-package";
@@ -179,28 +180,12 @@ async function getFirestoreHubByPlatformSubdomainLabel(platformSubdomainLabel) {
     return hydrateHubRecord({ id: doc.id, ...doc.data() });
   }
 
-  const legacySnapshot = await db.collection("hubs").get();
-  const legacyDoc = legacySnapshot.docs.find((doc) => {
-    const data = doc.data();
-    return normalizePlatformSubdomainLabel(data?.platformSubdomainLabel || data?.slug) === platformSubdomainLabel;
-  });
-
-  if (!legacyDoc) {
-    return null;
-  }
-
-  const hub = { id: legacyDoc.id, ...legacyDoc.data() };
-  const nextPlatformSubdomainLabel = normalizePlatformSubdomainLabel(hub?.platformSubdomainLabel || hub?.slug);
-
-  if (!normalizeString(hub.platformSubdomainLabel) && nextPlatformSubdomainLabel) {
-    await db.collection("hubs").doc(legacyDoc.id).update({
-      platformSubdomainLabel: nextPlatformSubdomainLabel,
-    });
-    hub.platformSubdomainLabel = nextPlatformSubdomainLabel;
-  }
-
-  return hydrateHubRecord(hub);
+  return null;
 }
+
+const getCachedFirestoreHubById = cache(getFirestoreHubById);
+const getCachedFirestoreHubBySlug = cache(getFirestoreHubBySlug);
+const getCachedFirestoreHubByPlatformSubdomainLabel = cache(getFirestoreHubByPlatformSubdomainLabel);
 
 export async function listHubs() {
   return listFirestoreHubs();
@@ -212,7 +197,7 @@ export async function getHubById(hubId) {
     return null;
   }
 
-  return getFirestoreHubById(normalizedHubId);
+  return getCachedFirestoreHubById(normalizedHubId);
 }
 
 export async function getHubBySlug(hubSlug) {
@@ -221,7 +206,7 @@ export async function getHubBySlug(hubSlug) {
     return null;
   }
 
-  return getFirestoreHubBySlug(normalizedHubSlug);
+  return getCachedFirestoreHubBySlug(normalizedHubSlug);
 }
 
 export async function getHubByPlatformSubdomainLabel(platformSubdomainLabel) {
@@ -231,7 +216,7 @@ export async function getHubByPlatformSubdomainLabel(platformSubdomainLabel) {
     return null;
   }
 
-  return getFirestoreHubByPlatformSubdomainLabel(normalizedLabel);
+  return getCachedFirestoreHubByPlatformSubdomainLabel(normalizedLabel);
 }
 
 export async function getPlatformSummary() {

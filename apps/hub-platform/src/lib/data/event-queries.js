@@ -58,7 +58,17 @@ export async function listEventsByHubSlug(hubSlug) {
     return [];
   }
 
-  return listFirestoreEventsByHubId(hub.id);
+  return listEventsByHub(hub);
+}
+
+export async function listEventsByHub(hub) {
+  const hubId = normalizeString(hub?.id);
+
+  if (!hubId) {
+    return [];
+  }
+
+  return listFirestoreEventsByHubId(hubId);
 }
 
 export async function countActiveUpcomingPublishedEventsByHub(hubId, options = {}) {
@@ -93,8 +103,18 @@ export async function listPublicEventsByHubSlug(hubSlug) {
   return events.filter(isEventPubliclyVisible);
 }
 
+export async function listPublicEventsByHub(hub) {
+  const events = await listEventsByHub(hub);
+  return events.filter(isEventPubliclyVisible);
+}
+
 export async function listVisibleEventsByHubSlug(hubSlug, { isMember = false } = {}) {
   const events = await listEventsByHubSlug(hubSlug);
+  return events.filter((event) => canViewPublishedEvent(event, { isMember }));
+}
+
+export async function listVisibleEventsByHub(hub, { isMember = false } = {}) {
+  const events = await listEventsByHub(hub);
   return events.filter((event) => canViewPublishedEvent(event, { isMember }));
 }
 
@@ -132,7 +152,18 @@ export async function getEventBySlug(hubSlug, eventSlug) {
     return null;
   }
 
-  return getFirestoreEventBySlug(hub.id, normalizedEventSlug);
+  return getEventBySlugForHub(hub, normalizedEventSlug);
+}
+
+export async function getEventBySlugForHub(hub, eventSlug) {
+  const hubId = normalizeString(hub?.id);
+  const normalizedEventSlug = normalizeEventSlug(eventSlug);
+
+  if (!hubId || !normalizedEventSlug) {
+    return null;
+  }
+
+  return getFirestoreEventBySlug(hubId, normalizedEventSlug);
 }
 
 export async function getPublicEventBySlug(hubSlug, eventSlug) {
@@ -140,7 +171,17 @@ export async function getPublicEventBySlug(hubSlug, eventSlug) {
   return isEventPubliclyVisible(event) ? event : null;
 }
 
+export async function getPublicEventBySlugForHub(hub, eventSlug) {
+  const event = await getEventBySlugForHub(hub, eventSlug);
+  return isEventPubliclyVisible(event) ? event : null;
+}
+
 export async function getVisibleEventBySlug(hubSlug, eventSlug, { isMember = false } = {}) {
   const event = await getEventBySlug(hubSlug, eventSlug);
+  return canViewPublishedEvent(event, { isMember }) ? event : null;
+}
+
+export async function getVisibleEventBySlugForHub(hub, eventSlug, { isMember = false } = {}) {
+  const event = await getEventBySlugForHub(hub, eventSlug);
   return canViewPublishedEvent(event, { isMember }) ? event : null;
 }

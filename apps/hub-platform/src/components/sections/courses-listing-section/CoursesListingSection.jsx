@@ -41,7 +41,6 @@ function CourseMedia({ course, featured = false }) {
           fill
           sizes="(max-width: 48rem) 100vw, 24rem"
           className={styles.media}
-          unoptimized
         />
       </SectionCardMedia>
     );

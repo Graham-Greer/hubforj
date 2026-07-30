@@ -82,7 +82,6 @@ export default function SectionMedia({
         alt={resolvedAlt}
         fill
         priority={priority}
-        unoptimized
         sizes={sizes}
         className={styles.image}
       />

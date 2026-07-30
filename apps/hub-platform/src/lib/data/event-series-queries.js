@@ -41,17 +41,27 @@ export async function listEventSeriesByHubSlug(hubSlug) {
     return [];
   }
 
+  return listEventSeriesByHub(hub);
+}
+
+export async function listEventSeriesByHub(hub) {
+  const hubId = normalizeString(hub?.id);
+
+  if (!hubId) {
+    return [];
+  }
+
   const snapshot = await getFirebaseAdminDb()
     .collection("hubs")
-    .doc(hub.id)
+    .doc(hubId)
     .collection("eventSeries")
     .orderBy("createdAt", "desc")
     .get();
 
   const series = snapshot.docs
-    .map((doc) => normalizeEventSeriesRecord({ id: doc.id, hubId: hub.id, ...doc.data() }))
+    .map((doc) => normalizeEventSeriesRecord({ id: doc.id, hubId, ...doc.data() }))
     .filter(Boolean);
-  return attachSeriesMedia(hub.id, series);
+  return attachSeriesMedia(hubId, series);
 }
 
 export async function getEventSeriesById(hubId, seriesId) {
@@ -89,9 +99,20 @@ export async function getEventSeriesBySlugBase(hubSlug, slugBase) {
     return null;
   }
 
+  return getEventSeriesBySlugBaseForHub(hub, normalizedSlugBase);
+}
+
+export async function getEventSeriesBySlugBaseForHub(hub, slugBase) {
+  const hubId = normalizeString(hub?.id);
+  const normalizedSlugBase = normalizeString(slugBase);
+
+  if (!hubId || !normalizedSlugBase) {
+    return null;
+  }
+
   const snapshot = await getFirebaseAdminDb()
     .collection("hubs")
-    .doc(hub.id)
+    .doc(hubId)
     .collection("eventSeries")
     .where("slugBase", "==", normalizedSlugBase)
     .limit(1)
@@ -102,8 +123,8 @@ export async function getEventSeriesBySlugBase(hubSlug, slugBase) {
   }
 
   const [series] = await attachSeriesMedia(
-    hub.id,
-    [normalizeEventSeriesRecord({ id: snapshot.docs[0].id, hubId: hub.id, ...snapshot.docs[0].data() })]
+    hubId,
+    [normalizeEventSeriesRecord({ id: snapshot.docs[0].id, hubId, ...snapshot.docs[0].data() })]
   );
 
   return series || null;
@@ -111,6 +132,11 @@ export async function getEventSeriesBySlugBase(hubSlug, slugBase) {
 
 export async function getVisibleEventSeriesBySlugBase(hubSlug, slugBase, { isMember = false } = {}) {
   const series = await getEventSeriesBySlugBase(hubSlug, slugBase);
+  return canViewPublishedEventSeries(series, { isMember }) ? series : null;
+}
+
+export async function getVisibleEventSeriesBySlugBaseForHub(hub, slugBase, { isMember = false } = {}) {
+  const series = await getEventSeriesBySlugBaseForHub(hub, slugBase);
   return canViewPublishedEventSeries(series, { isMember }) ? series : null;
 }
 

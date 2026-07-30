@@ -25,7 +25,6 @@ function TestimonialAttribution({ testimonial }) {
             className={styles.avatar}
             fill
             sizes="3.5rem"
-            unoptimized
           />
         </div>
       ) : null}

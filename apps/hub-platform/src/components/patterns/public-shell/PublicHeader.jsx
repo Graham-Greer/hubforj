@@ -162,7 +162,6 @@ export default function PublicHeader({ hubSlug, headerModel }) {
                     className={styles.brandImage}
                     fill
                     sizes="(max-width: 640px) 10rem, 14rem"
-                    unoptimized
                   />
                 ) : (
                   "HB"

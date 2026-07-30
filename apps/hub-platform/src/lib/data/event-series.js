@@ -7,7 +7,10 @@ try {
 export {
   getEventSeriesById,
   getEventSeriesBySlugBase,
+  getEventSeriesBySlugBaseForHub,
   getVisibleEventSeriesBySlugBase,
+  getVisibleEventSeriesBySlugBaseForHub,
+  listEventSeriesByHub,
   listEventSeriesByHubSlug,
   listEventSeriesOccurrences,
 } from "./event-series-queries.js";

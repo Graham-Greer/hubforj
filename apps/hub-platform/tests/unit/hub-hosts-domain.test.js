@@ -31,7 +31,7 @@ test("resolveHubHostContext identifies Hubforj tenant hosts and reserved platfor
       kind: "platform_root",
       host: "app.hubforj.com",
       hubSlug: "",
-      subdomainLabel: "",
+      subdomainLabel: "app",
       platformRootDomain: "hubforj.com",
     }
   );

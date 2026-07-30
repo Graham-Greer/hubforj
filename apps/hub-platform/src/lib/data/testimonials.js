@@ -68,13 +68,28 @@ function sortTestimonials(rows) {
 
 export async function listTestimonialsByHubSlug(hubSlug) {
   const hub = await requireHubBySlug(hubSlug);
-  const snapshot = await getFirebaseAdminDb().collection("hubs").doc(hub.id).collection("testimonials").get();
-  const testimonials = snapshot.docs.map((doc) => normalizeTestimonialRecord({ id: doc.id, hubId: hub.id, ...doc.data() }));
-  return sortTestimonials(await attachTestimonialMedia(hub.id, testimonials));
+  return listTestimonialsByHub(hub);
+}
+
+export async function listTestimonialsByHub(hub) {
+  const hubId = normalizeString(hub?.id);
+
+  if (!hubId) {
+    return [];
+  }
+
+  const snapshot = await getFirebaseAdminDb().collection("hubs").doc(hubId).collection("testimonials").get();
+  const testimonials = snapshot.docs.map((doc) => normalizeTestimonialRecord({ id: doc.id, hubId, ...doc.data() }));
+  return sortTestimonials(await attachTestimonialMedia(hubId, testimonials));
 }
 
 export async function listPublicTestimonialsByHubSlug(hubSlug) {
   const testimonials = await listTestimonialsByHubSlug(hubSlug);
+  return testimonials.filter((testimonial) => testimonial.status === "published");
+}
+
+export async function listPublicTestimonialsByHub(hub) {
+  const testimonials = await listTestimonialsByHub(hub);
   return testimonials.filter((testimonial) => testimonial.status === "published");
 }
 

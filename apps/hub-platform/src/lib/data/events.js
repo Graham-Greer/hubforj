@@ -8,10 +8,16 @@ export {
   countActiveUpcomingPublishedEventsByHub,
   getEventById,
   getEventBySlug,
+  getEventBySlugForHub,
   getPublicEventBySlug,
+  getPublicEventBySlugForHub,
   getVisibleEventBySlug,
+  getVisibleEventBySlugForHub,
+  listEventsByHub,
   listEventsByHubSlug,
+  listPublicEventsByHub,
   listPublicEventsByHubSlug,
+  listVisibleEventsByHub,
   listVisibleEventsByHubSlug,
 } from "./event-queries.js";
 export {
