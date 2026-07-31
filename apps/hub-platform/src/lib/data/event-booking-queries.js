@@ -261,17 +261,25 @@ export async function listEventBookingPaymentAttentionUserIdsByHub(hubId) {
     return [];
   }
 
-  const snapshot = await getFirebaseAdminDb()
-    .collectionGroup("bookings")
-    .where("hubId", "==", normalizedHubId)
-    .select("bookerUserId", "status", "paymentStatus")
-    .get();
+  try {
+    const snapshot = await getFirebaseAdminDb()
+      .collectionGroup("bookings")
+      .where("hubId", "==", normalizedHubId)
+      .select("bookerUserId", "status", "paymentStatus")
+      .get();
 
-  return snapshot.docs
-    .map((doc) => normalizeEventBookingRecord({ id: doc.id, ...doc.data() }))
-    .filter((row) => row.status !== "cancelled" && ["unpaid", "overdue", "failed"].includes(row.paymentStatus))
-    .map((row) => row.bookerUserId)
-    .filter(Boolean);
+    return snapshot.docs
+      .map((doc) => normalizeEventBookingRecord({ id: doc.id, ...doc.data() }))
+      .filter((row) => row.status !== "cancelled" && ["unpaid", "overdue", "failed"].includes(row.paymentStatus))
+      .map((row) => row.bookerUserId)
+      .filter(Boolean);
+  } catch (error) {
+    console.warn("Falling back to event booking payment item scan for member attention.", error);
+    return (await listEventBookingPaymentItemsByHub(normalizedHubId))
+      .filter((row) => row.status !== "cancelled" && ["unpaid", "overdue", "failed"].includes(row.paymentStatus))
+      .map((row) => row.userId)
+      .filter(Boolean);
+  }
 }
 
 export async function listEventBookingsByBookerForEvent(hubId, eventId, userId) {

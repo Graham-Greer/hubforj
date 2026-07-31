@@ -160,17 +160,25 @@ export async function listCourseRegistrationPaymentAttentionUserIdsByHub(hubId) 
     return [];
   }
 
-  const snapshot = await getFirebaseAdminDb()
-    .collectionGroup("registrations")
-    .where("hubId", "==", normalizedHubId)
-    .select("userId", "courseId", "status", "paymentStatus")
-    .get();
+  try {
+    const snapshot = await getFirebaseAdminDb()
+      .collectionGroup("registrations")
+      .where("hubId", "==", normalizedHubId)
+      .select("userId", "courseId", "status", "paymentStatus")
+      .get();
 
-  return snapshot.docs
-    .map((doc) => normalizeCourseRegistrationRecord({ id: doc.id, ...doc.data() }))
-    .filter((row) => row.courseId && row.status !== "cancelled" && ["unpaid", "overdue", "failed"].includes(row.paymentStatus))
-    .map((row) => row.userId)
-    .filter(Boolean);
+    return snapshot.docs
+      .map((doc) => normalizeCourseRegistrationRecord({ id: doc.id, ...doc.data() }))
+      .filter((row) => row.courseId && row.status !== "cancelled" && ["unpaid", "overdue", "failed"].includes(row.paymentStatus))
+      .map((row) => row.userId)
+      .filter(Boolean);
+  } catch (error) {
+    console.warn("Falling back to course registration payment item scan for member attention.", error);
+    return (await listCoursePaymentItemsByHub(normalizedHubId))
+      .filter((row) => row.status !== "cancelled" && ["unpaid", "overdue", "failed"].includes(row.paymentStatus))
+      .map((row) => row.userId)
+      .filter(Boolean);
+  }
 }
 
 export async function getCourseRegistrationByUser(hubId, courseId, userId) {
