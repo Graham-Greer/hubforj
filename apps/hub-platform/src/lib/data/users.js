@@ -6,6 +6,8 @@ try {
 
 export {
   countActiveMembersByHub,
+  countMembersByHub,
+  summarizeMembersByHub,
   getSuperadminByAuthUid,
   getSuperadminById,
   getUserByAuthUid,

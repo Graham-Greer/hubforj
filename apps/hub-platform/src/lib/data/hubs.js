@@ -137,6 +137,29 @@ async function hydrateHubRecord(hub) {
   };
 }
 
+async function getFirestoreHubCoreById(hubId) {
+  const db = getFirebaseAdminDb();
+  const doc = await db.collection("hubs").doc(hubId).get();
+
+  if (!doc.exists) {
+    return null;
+  }
+
+  return normalizeHubRecord({ id: doc.id, ...doc.data() });
+}
+
+async function getFirestoreHubCoreBySlug(hubSlug) {
+  const db = getFirebaseAdminDb();
+  const snapshot = await db.collection("hubs").where("slug", "==", hubSlug).limit(1).get();
+
+  if (snapshot.empty) {
+    return null;
+  }
+
+  const doc = snapshot.docs[0];
+  return normalizeHubRecord({ id: doc.id, ...doc.data() });
+}
+
 async function listFirestoreHubs() {
   const db = getFirebaseAdminDb();
   const snapshot = await db.collection("hubs").orderBy("createdAt", "desc").get();
@@ -186,6 +209,8 @@ async function getFirestoreHubByPlatformSubdomainLabel(platformSubdomainLabel) {
 const getCachedFirestoreHubById = cache(getFirestoreHubById);
 const getCachedFirestoreHubBySlug = cache(getFirestoreHubBySlug);
 const getCachedFirestoreHubByPlatformSubdomainLabel = cache(getFirestoreHubByPlatformSubdomainLabel);
+const getCachedFirestoreHubCoreById = cache(getFirestoreHubCoreById);
+const getCachedFirestoreHubCoreBySlug = cache(getFirestoreHubCoreBySlug);
 
 export async function listHubs() {
   return listFirestoreHubs();
@@ -200,6 +225,15 @@ export async function getHubById(hubId) {
   return getCachedFirestoreHubById(normalizedHubId);
 }
 
+export async function getHubCoreById(hubId) {
+  const normalizedHubId = normalizeString(hubId);
+  if (!normalizedHubId) {
+    return null;
+  }
+
+  return getCachedFirestoreHubCoreById(normalizedHubId);
+}
+
 export async function getHubBySlug(hubSlug) {
   const normalizedHubSlug = normalizeString(hubSlug);
   if (!normalizedHubSlug) {
@@ -207,6 +241,15 @@ export async function getHubBySlug(hubSlug) {
   }
 
   return getCachedFirestoreHubBySlug(normalizedHubSlug);
+}
+
+export async function getHubCoreBySlug(hubSlug) {
+  const normalizedHubSlug = normalizeString(hubSlug);
+  if (!normalizedHubSlug) {
+    return null;
+  }
+
+  return getCachedFirestoreHubCoreBySlug(normalizedHubSlug);
 }
 
 export async function getHubByPlatformSubdomainLabel(platformSubdomainLabel) {
@@ -243,8 +286,28 @@ export async function requireHubById(hubId) {
   return hub;
 }
 
+export async function requireHubCoreById(hubId) {
+  const hub = await getHubCoreById(hubId);
+
+  if (!hub) {
+    throw new Error(`Unknown hub id: ${hubId}`);
+  }
+
+  return hub;
+}
+
 export async function requireHubBySlug(hubSlug) {
   const hub = await getHubBySlug(hubSlug);
+
+  if (!hub) {
+    throw new Error(`Unknown hub slug: ${hubSlug}`);
+  }
+
+  return hub;
+}
+
+export async function requireHubCoreBySlug(hubSlug) {
+  const hub = await getHubCoreBySlug(hubSlug);
 
   if (!hub) {
     throw new Error(`Unknown hub slug: ${hubSlug}`);

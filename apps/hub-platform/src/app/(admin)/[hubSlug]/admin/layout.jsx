@@ -1,7 +1,7 @@
 import ThemeScope from "@/components/primitives/theme-scope/ThemeScope";
 import HubAdminShell from "@/components/patterns/hub-admin-shell/HubAdminShell";
 import AdminOnboardingProvider from "@/components/patterns/admin-onboarding/AdminOnboardingProvider";
-import { requireHubBySlug } from "@/lib/data/hubs";
+import { requireHubCoreBySlug } from "@/lib/data/hubs";
 import { getHubAdminNavGroups } from "@/lib/navigation/hub-admin-nav";
 import { cookies, headers } from "next/headers";
 import { normalizeOperatorTheme, operatorThemeCookieName } from "@/lib/theme/operator-theme";
@@ -22,7 +22,7 @@ export default async function HubAdminLayout({ children, params }) {
   let hub;
 
   try {
-    hub = await requireHubBySlug(hubSlug);
+    hub = await requireHubCoreBySlug(hubSlug);
   } catch {
     notFound();
   }

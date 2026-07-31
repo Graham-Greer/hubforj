@@ -4,7 +4,7 @@ import { getAdminOnboardingState, saveAdminOnboardingState } from "@/lib/data/ad
 
 export async function GET(request, { params }) {
   const { hubSlug } = await params;
-  const { hub, access, errorResponse } = await requireHubOperatorRouteAccess(request, hubSlug);
+  const { hub, access, errorResponse } = await requireHubOperatorRouteAccess(request, hubSlug, { coreHub: true });
   if (errorResponse) {
     return errorResponse;
   }
@@ -15,7 +15,7 @@ export async function GET(request, { params }) {
 
 export async function PATCH(request, { params }) {
   const { hubSlug } = await params;
-  const { hub, access, errorResponse } = await requireHubOperatorRouteAccess(request, hubSlug);
+  const { hub, access, errorResponse } = await requireHubOperatorRouteAccess(request, hubSlug, { coreHub: true });
   if (errorResponse) {
     return errorResponse;
   }

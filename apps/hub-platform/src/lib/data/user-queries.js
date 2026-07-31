@@ -146,6 +146,44 @@ export async function countActiveMembersByHub(hubId) {
   return snapshot.size;
 }
 
+export async function summarizeMembersByHub(hubId) {
+  const normalizedHubId = normalizeString(hubId);
+
+  if (!normalizedHubId) {
+    return {
+      memberCount: 0,
+      activeMemberCount: 0,
+    };
+  }
+
+  const snapshot = await getFirebaseAdminDb()
+    .collection("users")
+    .where("hubId", "==", normalizedHubId)
+    .where("role", "==", "member")
+    .get();
+
+  return {
+    memberCount: snapshot.size,
+    activeMemberCount: snapshot.docs.filter((doc) => normalizeString(doc.data()?.status) === "active").length,
+  };
+}
+
+export async function countMembersByHub(hubId) {
+  const normalizedHubId = normalizeString(hubId);
+
+  if (!normalizedHubId) {
+    return 0;
+  }
+
+  const snapshot = await getFirebaseAdminDb()
+    .collection("users")
+    .where("hubId", "==", normalizedHubId)
+    .where("role", "==", "member")
+    .get();
+
+  return snapshot.size;
+}
+
 export async function getUserById(hubId, userId) {
   const normalizedHubId = normalizeString(hubId);
   const normalizedUserId = normalizeString(userId);

@@ -1,8 +1,9 @@
 import { countActiveUpcomingPublishedEventsByHub } from "@/lib/data/events";
 import { listEventsByHub } from "@/lib/data/events";
 import { listEventSeriesByHub } from "@/lib/data/event-series";
+import { countPendingInvitesByHub } from "@/lib/data/invites";
 import { listInvitesByHub } from "@/lib/data/invites";
-import { getHubBySlug } from "@/lib/data/hubs";
+import { getHubCoreBySlug } from "@/lib/data/hubs";
 import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
 import { listMembershipsByHub } from "@/lib/data/memberships";
 import { listPendingMembershipUpgradeRequestsByHub } from "@/lib/data/memberships";
@@ -10,7 +11,7 @@ import { getHubPaymentReportByHub } from "@/lib/data/hub-payments";
 import { listEventBookingPaymentItemsByHub } from "@/lib/data/event-bookings";
 import { listCoursePaymentItemsByHub } from "@/lib/data/course-registrations";
 import { listCoursesByHub } from "@/lib/data/courses";
-import { countActiveMembersByHub, listUsersByHub } from "@/lib/data/users";
+import { countActiveMembersByHub, listUsersByHub, summarizeMembersByHub } from "@/lib/data/users";
 import {
   isActiveUpcomingPublishedEvent,
 } from "@/lib/domain/events";
@@ -285,7 +286,7 @@ function buildPaymentAttentionUserIds(memberships, eventPaymentItems, coursePaym
 }
 
 export async function getHubAdminOverviewBySlug(hubSlug, options = {}) {
-  const hub = await getHubBySlug(hubSlug);
+  const hub = await getHubCoreBySlug(hubSlug);
   if (!hub) {
     return null;
   }
@@ -442,29 +443,30 @@ export async function getHubAdminOverviewBySlug(hubSlug, options = {}) {
 }
 
 export async function getHubAdminDashboardSummaryBySlug(hubSlug) {
-  const hub = await getHubBySlug(hubSlug);
+  const hub = await getHubCoreBySlug(hubSlug);
   if (!hub) {
     return null;
   }
 
   const entitlements = resolveHubPackageEntitlements(hub);
-  const [activeMemberCount, activeUpcomingPublishedEventCount] = await Promise.all([
-    countActiveMembersByHub(hub.id),
+  const [memberSummary, pendingInviteCount, activeUpcomingPublishedEventCount] = await Promise.all([
+    summarizeMembersByHub(hub.id),
+    countPendingInvitesByHub(hub.id),
     countActiveUpcomingPublishedEventsByHub(hub.id),
   ]);
 
   return {
     hub,
     package: entitlements,
-    memberCount: hub.memberCount,
-    activeMemberCount,
-    pendingInviteCount: hub.pendingInvitesCount,
+    memberCount: memberSummary.memberCount,
+    activeMemberCount: memberSummary.activeMemberCount,
+    pendingInviteCount,
     activeUpcomingPublishedEventCount,
   };
 }
 
 export async function getHubAdminDashboardDeferredOverviewBySlug(hubSlug, options = {}) {
-  const hub = await getHubBySlug(hubSlug);
+  const hub = await getHubCoreBySlug(hubSlug);
   if (!hub) {
     return null;
   }
