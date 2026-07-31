@@ -9,13 +9,12 @@ import { getCurrentAdminSessionForHub, getCurrentMemberSessionForHub } from "@/l
 import { resolvePublicHeaderModel } from "@/lib/domain/public-header";
 import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
 
-export async function getPublicHeaderModel(hub, siteSettings) {
+export async function getPublicHeaderModel(hub, siteSettings, options = {}) {
   const [memberSession, adminSession] = await Promise.all([
     getCurrentMemberSessionForHub(hub),
     getCurrentAdminSessionForHub(hub),
   ]);
-  const requestHeaders = await headers();
-  const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(requestHeaders));
+  const routeMode = options.routeMode || resolveHubRuntimeRouteMode(getRequestHostFromHeaders(await headers()));
 
   return resolvePublicHeaderModel({
     hub,

@@ -7,6 +7,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Button from "@/components/ui/button/Button";
 import FormMessage from "@/components/ui/form-message/FormMessage";
 import { buildHubAuthHref } from "@/lib/auth/hub-auth-redirects";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { getFirebaseClientAuth } from "@/lib/firebase/client";
 import styles from "./PublicMobileNav.module.css";
 
@@ -17,6 +18,7 @@ function isActive(pathname, href) {
 export default function PublicMobileNav({
   id,
   hubSlug,
+  routeMode = "path",
   navItems = [],
   utility,
   cta = null,
@@ -31,19 +33,19 @@ export default function PublicMobileNav({
   const [isPending, startTransition] = useTransition();
   const query = searchParams?.toString();
   const nextPath = query ? `${pathname}?${query}` : pathname;
-  const redirectPath = nextPath || `/${hubSlug}`;
+  const redirectPath = nextPath || buildHubRuntimeHref(hubSlug, "/", routeMode);
 
   const utilityItems = [
     ...(utility?.menuItems || []),
     ...(utility?.viewerState === "anonymous"
       ? [
-          ...(utility?.primaryAction?.href ? [{ key: "join", label: utility.primaryAction.label, href: buildHubAuthHref(hubSlug, "join", nextPath) }] : []),
-          ...(utility?.secondaryAction?.href ? [{ key: "signIn", label: utility.secondaryAction.label, href: buildHubAuthHref(hubSlug, "sign-in", nextPath) }] : []),
+          ...(utility?.primaryAction?.href ? [{ key: "join", label: utility.primaryAction.label, href: buildHubAuthHref(hubSlug, "join", nextPath, routeMode) }] : []),
+          ...(utility?.secondaryAction?.href ? [{ key: "signIn", label: utility.secondaryAction.label, href: buildHubAuthHref(hubSlug, "sign-in", nextPath, routeMode) }] : []),
         ]
       : []),
   ];
   const mobileCtaHref = cta?.kind === "auth"
-    ? buildHubAuthHref(hubSlug, cta.route, nextPath)
+    ? buildHubAuthHref(hubSlug, cta.route, nextPath, routeMode)
     : cta?.href || "";
 
   useEffect(() => {
@@ -73,6 +75,7 @@ export default function PublicMobileNav({
               <Link
                 key={`${item.label}-${item.href}`}
                 href={item.href}
+                prefetch={false}
                 className={[styles.link, isActive(pathname, item.href) ? styles.linkActive : ""].filter(Boolean).join(" ")}
                 aria-current={isActive(pathname, item.href) ? "page" : undefined}
                 onClick={() => onClose?.()}
@@ -86,6 +89,7 @@ export default function PublicMobileNav({
             <div className={styles.ctaSection}>
               <Button
                 href={mobileCtaHref}
+                prefetch={false}
                 className={styles.ctaButton}
                 onClick={() => onClose?.()}
               >
@@ -102,6 +106,7 @@ export default function PublicMobileNav({
                   <Link
                     key={item.key}
                     href={item.href}
+                    prefetch={false}
                     className={styles.utilityLink}
                     onClick={() => onClose?.()}
                   >

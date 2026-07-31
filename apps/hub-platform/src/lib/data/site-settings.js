@@ -5,6 +5,7 @@ try {
 }
 
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
+import { cache } from "react";
 import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
 import { requireHubBySlug } from "@/lib/data/hubs";
 import { getMediaAssetById } from "@/lib/data/media";
@@ -34,7 +35,7 @@ export async function getSiteSettingsByHubSlug(hubSlug) {
   return getSiteSettingsByHub(hub);
 }
 
-export async function getSiteSettingsByHub(hub) {
+async function readSiteSettingsByHub(hub) {
   const doc = await getFirebaseAdminDb().collection("hubs").doc(hub.id).collection("siteSettings").doc(SITE_SETTINGS_DOC).get();
   const settings = normalizeSiteSettingsRecord(hub, doc.exists ? doc.data() : {});
 
@@ -83,6 +84,12 @@ export async function getSiteSettingsByHub(hub) {
       return pages;
     }, {}),
   };
+}
+
+export const getCachedSiteSettingsByHub = cache(readSiteSettingsByHub);
+
+export async function getSiteSettingsByHub(hub) {
+  return readSiteSettingsByHub(hub);
 }
 
 export async function getSiteSettingsFormValuesByHub(hub) {

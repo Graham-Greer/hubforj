@@ -31,6 +31,7 @@ export default function PublicShellNav({ items, align = "start" }) {
         <Link
           key={`${item.label}-${item.href}`}
           href={item.href}
+          prefetch={false}
           className={[styles.link, isActive(pathname, item.href) ? styles.active : ""].filter(Boolean).join(" ")}
           aria-current={isActive(pathname, item.href) ? "page" : undefined}
         >
