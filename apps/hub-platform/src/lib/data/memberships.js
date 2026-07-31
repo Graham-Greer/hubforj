@@ -16,6 +16,7 @@ export {
 export {
   listMembershipsByUser,
   getCurrentMembershipByUser,
+  listMembershipDirectorySummariesByHub,
   listMembershipsByHub,
   assignDefaultMembershipToUser,
   applyScheduledMembershipDefaultPlanDowngrade,
@@ -38,6 +39,7 @@ export {
   normalizeMembershipUpgradeRequestRecord,
   getMembershipUpgradeRequestById,
   getPendingMembershipUpgradeRequestByUser,
+  listPendingMembershipUpgradeRequestUserIdsByHub,
   listPendingMembershipUpgradeRequestsByHub,
   createMembershipUpgradeRequest,
   approveMembershipUpgradeRequest,

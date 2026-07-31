@@ -56,7 +56,7 @@ function formatLastSignedInForCsv(value) {
 
 function MemberRow({ item, membersQuery = "" }) {
   return (
-    <Link href={`${item.href}${membersQuery}`} className={styles.rowLink}>
+    <Link href={`${item.href}${membersQuery}`} prefetch={false} className={styles.rowLink}>
       <Surface padding="md" className={styles.row}>
         <div className={styles.rowMain}>
           <div className={styles.identity}>

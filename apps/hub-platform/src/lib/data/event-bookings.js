@@ -10,6 +10,7 @@ export {
   getActiveOrWaitlistedEventBookingByBooker,
   listEventAdminAttendanceRows,
   listEventAdminBookingRows,
+  listEventBookingPaymentAttentionUserIdsByHub,
   listEventBookingPaymentItemsByHub,
   getEventBookingById,
   getLatestEventBookingByBooker,

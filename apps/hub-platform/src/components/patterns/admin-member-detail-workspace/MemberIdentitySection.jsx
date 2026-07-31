@@ -3,6 +3,7 @@ import Button from "@/components/ui/button/Button";
 import PageHeader from "@/components/patterns/page-header/PageHeader";
 import Surface from "@/components/primitives/surface/Surface";
 import { getUserRoleLabel, getUserRoleTone, getUserStatusLabel, getUserStatusTone } from "@/lib/domain/users";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import {
   getFallbackRegionalMarket,
   resolveLaunchFormattingLocale,
@@ -38,10 +39,10 @@ function formatAdminDate(value, locale = fallbackRegionalMarket.defaultLocale, f
 export default function MemberIdentitySection({ hub, user, statusAction = null, membersQuery = "" }) {
   const locale = resolveLaunchFormattingLocale(hub.locale, hub.country);
   const statusMeta = getMemberStatusAction(user.status);
-  const backHref = `/${hub.slug}/admin/members${membersQuery ? `?${membersQuery}` : ""}`;
+  const backHref = buildHubRuntimeHref(hub.slug, `/admin/members${membersQuery ? `?${membersQuery}` : ""}`, hub.routeMode);
   const actions = (
     <div className={styles.headerActions}>
-      <Button href={backHref}>Back to members</Button>
+      <Button href={backHref} prefetch={false}>Back to members</Button>
       {statusAction ? (
         <MemberStatusActionButton
           hubSlug={hub.slug}

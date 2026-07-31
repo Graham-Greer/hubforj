@@ -106,6 +106,48 @@ export async function listMembershipsByHub(hubId) {
     .sort((left, right) => getMembershipSortValue(right).localeCompare(getMembershipSortValue(left)));
 }
 
+export async function listMembershipDirectorySummariesByHub(hubId) {
+  const normalizedHubId = normalizeString(hubId);
+
+  if (!normalizedHubId) {
+    return [];
+  }
+
+  const snapshot = await getFirebaseAdminDb()
+    .collection("hubs")
+    .doc(normalizedHubId)
+    .collection("memberships")
+    .select("userId", "planId", "status", "paymentStatus", "startDate", "renewalDate", "createdAt", "updatedAt")
+    .get();
+
+  const baseRows = snapshot.docs.map((doc) => ({
+    id: doc.id,
+    hubId: normalizedHubId,
+    ...doc.data(),
+  }));
+  const plansById = await getMembershipPlansByIds(
+    normalizedHubId,
+    baseRows.map((row) => row.planId)
+  );
+
+  return baseRows
+    .map((row) => {
+      const plan = plansById.get(row.planId);
+      const membership = normalizeMembershipRecord(row, plan);
+
+      return {
+        id: membership.id,
+        userId: membership.userId,
+        planTitle: membership.planTitle,
+        isDefault: membership.isDefault,
+        status: membership.status,
+        paymentStatus: membership.paymentStatus,
+        sortValue: getMembershipSortValue(membership),
+      };
+    })
+    .sort((left, right) => String(right.sortValue || "").localeCompare(String(left.sortValue || "")));
+}
+
 export async function upsertMembershipForUser(hubId, userId, payload, actorId = "system") {
   const normalizedHubId = normalizeString(hubId);
   const normalizedUserId = normalizeString(userId);

@@ -9,6 +9,7 @@ export {
   getCourseRegistrationById,
   getCourseRegistrationByUser,
   getLatestCourseRegistrationByUser,
+  listCourseRegistrationPaymentAttentionUserIdsByHub,
   listCoursePaymentItemsByHub,
   listCourseRegistrations,
   listCourseRegistrationsByUser,

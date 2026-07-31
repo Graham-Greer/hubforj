@@ -1,23 +1,31 @@
 import EmptyState from "@/components/patterns/empty-state/EmptyState";
 import MembersWorkspace from "@/components/patterns/members-workspace/MembersWorkspace";
 import PageHeader from "@/components/patterns/page-header/PageHeader";
-import { listCoursePaymentItemsByHub } from "@/lib/data/course-registrations";
-import { listEventBookingPaymentItemsByHub } from "@/lib/data/event-bookings";
-import { requireHubBySlug } from "@/lib/data/hubs";
-import { listMembershipsByHub, listPendingMembershipUpgradeRequestsByHub } from "@/lib/data/memberships";
-import { listUsersByHub } from "@/lib/data/users";
+import { listCourseRegistrationPaymentAttentionUserIdsByHub } from "@/lib/data/course-registrations";
+import { listEventBookingPaymentAttentionUserIdsByHub } from "@/lib/data/event-bookings";
+import { requireHubCoreBySlug } from "@/lib/data/hubs";
+import {
+  listMembershipDirectorySummariesByHub,
+  listPendingMembershipUpgradeRequestUserIdsByHub,
+} from "@/lib/data/memberships";
+import { listUserDirectoryRowsByHub } from "@/lib/data/users";
+import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { getUserStatusLabel, getUserStatusTone } from "@/lib/domain/users";
+import { headers } from "next/headers";
 import styles from "./page.module.css";
 
 export default async function MembersPage({ params }) {
   const { hubSlug } = await params;
-  const hub = await requireHubBySlug(hubSlug);
-  const [members, memberships, upgradeRequests, eventPaymentItems, coursePaymentItems] = await Promise.all([
-    listUsersByHub(hub.id, { role: "member" }),
-    listMembershipsByHub(hub.id),
-    listPendingMembershipUpgradeRequestsByHub(hub.id),
-    listEventBookingPaymentItemsByHub(hub.id),
-    listCoursePaymentItemsByHub(hub.id),
+  const headerStore = await headers();
+  const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
+  const hub = await requireHubCoreBySlug(hubSlug);
+  const [members, memberships, upgradeRequestUserIds, eventPaymentAttentionUserIds, coursePaymentAttentionUserIds] = await Promise.all([
+    listUserDirectoryRowsByHub(hub.id, { role: "member" }),
+    listMembershipDirectorySummariesByHub(hub.id),
+    listPendingMembershipUpgradeRequestUserIdsByHub(hub.id),
+    listEventBookingPaymentAttentionUserIdsByHub(hub.id),
+    listCourseRegistrationPaymentAttentionUserIdsByHub(hub.id),
   ]);
 
   const membershipsByUserId = new Map();
@@ -29,23 +37,19 @@ export default async function MembersPage({ params }) {
     membershipsByUserId.set(membership.userId, membership);
   });
 
-  const upgradeRequestsByUserId = new Map(upgradeRequests.map((request) => [request.userId, request]));
-  const paymentAttentionUserIds = new Set(
-    [...memberships, ...eventPaymentItems, ...coursePaymentItems]
-      .filter((item) => {
-        if (["event", "course"].includes(String(item?.kind || "")) && String(item?.status || "") === "cancelled") {
-          return false;
-        }
-
-        return ["unpaid", "overdue", "failed"].includes(String(item?.paymentStatus || ""));
-      })
-      .map((item) => item.userId)
-      .filter(Boolean)
-  );
+  const upgradeRequestUserIdSet = new Set(upgradeRequestUserIds);
+  const paymentAttentionUserIds = new Set([
+    ...memberships
+      .filter((membership) => ["unpaid", "overdue", "failed"].includes(String(membership?.paymentStatus || "")))
+      .map((membership) => membership.userId)
+      .filter(Boolean),
+    ...eventPaymentAttentionUserIds,
+    ...coursePaymentAttentionUserIds,
+  ]);
 
   const memberItems = members.map((member) => {
     const membership = membershipsByUserId.get(member.id) || null;
-    const hasUpgradeRequest = upgradeRequestsByUserId.has(member.id);
+    const hasUpgradeRequest = upgradeRequestUserIdSet.has(member.id);
     const hasPaymentAttention = paymentAttentionUserIds.has(member.id);
     const membershipType = membership ? (membership.isDefault ? "default" : "upgrade") : "none";
     const badges = [
@@ -70,7 +74,7 @@ export default async function MembersPage({ params }) {
 
     return {
       id: member.id,
-      href: `/${hubSlug}/admin/members/${member.id}`,
+      href: buildHubRuntimeHref(hub.slug, `/admin/members/${member.id}`, routeMode),
       name: member.name || member.email,
       email: member.email || "",
       lastSignedInAt: member.lastSignedInAt || "",
@@ -90,7 +94,7 @@ export default async function MembersPage({ params }) {
   const summary = {
     total: members.length,
     suspended: members.filter((member) => member.status === "suspended").length,
-    upgradeRequests: upgradeRequests.length,
+    upgradeRequests: upgradeRequestUserIds.length,
     paymentAttention: paymentAttentionUserIds.size,
   };
 
@@ -155,7 +159,7 @@ export default async function MembersPage({ params }) {
           eyebrow="No members yet"
           title="No members have joined yet"
           description="Member records will appear here after people join through the public or booking flows."
-          primaryAction={{ href: `/${hub.slug}/admin`, label: "Back to overview" }}
+          primaryAction={{ href: buildHubRuntimeHref(hub.slug, "/admin", routeMode), label: "Back to overview" }}
         />
       ) : null}
     </div>
