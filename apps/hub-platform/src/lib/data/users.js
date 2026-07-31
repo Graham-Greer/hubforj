@@ -12,6 +12,7 @@ export {
   getSuperadminById,
   getUserByAuthUid,
   getUserById,
+  listUserDirectoryRowsByHub,
   listUsersByHub,
 } from "./user-queries.js";
 export {

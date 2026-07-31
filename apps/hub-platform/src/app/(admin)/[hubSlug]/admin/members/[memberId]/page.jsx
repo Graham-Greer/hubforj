@@ -1,7 +1,9 @@
 import AdminMemberDetailWorkspace from "@/components/patterns/admin-member-detail-workspace/AdminMemberDetailWorkspace";
-import { requireHubBySlug } from "@/lib/data/hubs";
+import { requireHubCoreBySlug } from "@/lib/data/hubs";
 import { getMemberDetailById } from "@/lib/data/member-details";
 import { listMembershipPlansByHub } from "@/lib/data/memberships";
+import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import {
   approveMembershipUpgradeRequestAction,
@@ -14,6 +16,8 @@ import {
 export default async function MemberDetailPage({ params, searchParams }) {
   const { hubSlug, memberId } = await params;
   const resolvedSearchParams = await searchParams;
+  const headerStore = await headers();
+  const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
   const { success = "", error = "" } = resolvedSearchParams;
   const membersSearchParams = new URLSearchParams();
 
@@ -26,7 +30,8 @@ export default async function MemberDetailPage({ params, searchParams }) {
   });
 
   const membersQuery = membersSearchParams.toString();
-  const hub = await requireHubBySlug(hubSlug);
+  const hubRecord = await requireHubCoreBySlug(hubSlug);
+  const hub = { ...hubRecord, routeMode };
   const [detail, membershipPlans] = await Promise.all([
     getMemberDetailById(hub.id, memberId),
     listMembershipPlansByHub(hub.id),

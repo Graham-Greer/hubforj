@@ -254,6 +254,26 @@ export async function listEventBookingPaymentItemsByHub(hubId) {
   });
 }
 
+export async function listEventBookingPaymentAttentionUserIdsByHub(hubId) {
+  const normalizedHubId = normalizeString(hubId);
+
+  if (!normalizedHubId) {
+    return [];
+  }
+
+  const snapshot = await getFirebaseAdminDb()
+    .collectionGroup("bookings")
+    .where("hubId", "==", normalizedHubId)
+    .select("bookerUserId", "status", "paymentStatus")
+    .get();
+
+  return snapshot.docs
+    .map((doc) => normalizeEventBookingRecord({ id: doc.id, ...doc.data() }))
+    .filter((row) => row.status !== "cancelled" && ["unpaid", "overdue", "failed"].includes(row.paymentStatus))
+    .map((row) => row.bookerUserId)
+    .filter(Boolean);
+}
+
 export async function listEventBookingsByBookerForEvent(hubId, eventId, userId) {
   const normalizedHubId = normalizeString(hubId);
   const normalizedEventId = normalizeString(eventId);

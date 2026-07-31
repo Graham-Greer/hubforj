@@ -153,6 +153,26 @@ export async function listCoursePaymentItemsByHub(hubId) {
     });
 }
 
+export async function listCourseRegistrationPaymentAttentionUserIdsByHub(hubId) {
+  const normalizedHubId = normalizeString(hubId);
+
+  if (!normalizedHubId) {
+    return [];
+  }
+
+  const snapshot = await getFirebaseAdminDb()
+    .collectionGroup("registrations")
+    .where("hubId", "==", normalizedHubId)
+    .select("userId", "courseId", "status", "paymentStatus")
+    .get();
+
+  return snapshot.docs
+    .map((doc) => normalizeCourseRegistrationRecord({ id: doc.id, ...doc.data() }))
+    .filter((row) => row.courseId && row.status !== "cancelled" && ["unpaid", "overdue", "failed"].includes(row.paymentStatus))
+    .map((row) => row.userId)
+    .filter(Boolean);
+}
+
 export async function getCourseRegistrationByUser(hubId, courseId, userId) {
   const normalizedHubId = normalizeString(hubId);
   const normalizedCourseId = normalizeString(courseId);

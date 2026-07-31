@@ -34,6 +34,22 @@ async function listFirestoreUsersByHub(hubId, role = "") {
   );
 }
 
+async function listFirestoreUserDirectoryRowsByHub(hubId, role = "") {
+  let query = getFirebaseAdminDb()
+    .collection("users")
+    .where("hubId", "==", hubId);
+
+  if (role) {
+    query = query.where("role", "==", role);
+  }
+
+  const snapshot = await query
+    .select("hubId", "role", "status", "email", "name", "createdAt", "lastSignedInAt", "updatedAt")
+    .get();
+
+  return sortUsers(snapshot.docs.map((doc) => normalizeUserRecord({ id: doc.id, ...doc.data() })));
+}
+
 async function getFirestoreUserById(hubId, userId) {
   const doc = await getFirebaseAdminDb().collection("users").doc(userId).get();
 
@@ -132,6 +148,17 @@ export async function listUsersByHub(hubId, options = {}) {
   }
 
   return listFirestoreUsersByHub(normalizedHubId, role);
+}
+
+export async function listUserDirectoryRowsByHub(hubId, options = {}) {
+  const normalizedHubId = normalizeString(hubId);
+  const role = normalizeString(options.role);
+
+  if (!normalizedHubId) {
+    return [];
+  }
+
+  return listFirestoreUserDirectoryRowsByHub(normalizedHubId, role);
 }
 
 export async function countActiveMembersByHub(hubId) {

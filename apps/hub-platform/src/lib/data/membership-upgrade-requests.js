@@ -140,6 +140,26 @@ export async function listPendingMembershipUpgradeRequestsByHub(hubId) {
     .sort((left, right) => String(right.requestedAt || "").localeCompare(String(left.requestedAt || "")));
 }
 
+export async function listPendingMembershipUpgradeRequestUserIdsByHub(hubId) {
+  const normalizedHubId = normalizeString(hubId);
+
+  if (!normalizedHubId) {
+    return [];
+  }
+
+  const snapshot = await getFirebaseAdminDb()
+    .collection("hubs")
+    .doc(normalizedHubId)
+    .collection("membershipUpgradeRequests")
+    .where("status", "==", "pending")
+    .select("userId")
+    .get();
+
+  return snapshot.docs
+    .map((doc) => normalizeString(doc.data()?.userId))
+    .filter(Boolean);
+}
+
 export async function createMembershipUpgradeRequest(hubId, userId, planId, actorId = "member") {
   const normalizedHubId = normalizeString(hubId);
   const normalizedUserId = normalizeString(userId);
