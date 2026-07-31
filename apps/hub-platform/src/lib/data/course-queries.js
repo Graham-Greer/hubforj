@@ -12,7 +12,7 @@ import {
   isCoursePubliclyVisible,
   normalizeCourseSlug,
 } from "@/lib/domain/courses";
-import { normalizeCourseRecord, normalizeString, withCourseMedia } from "./course-shared.js";
+import { normalizeCourseRecord, normalizeString, withCourseMedia, withPublicCourseMedia } from "./course-shared.js";
 
 function toSortableTimestamp(course) {
   const timestamp = Date.parse(String(course?.startAt || ""));
@@ -41,6 +41,19 @@ async function listFirestoreCoursesByHubId(hubId) {
 
   const courses = snapshot.docs.map((doc) => normalizeCourseRecord({ id: doc.id, hubId, ...doc.data() }));
   const coursesWithMedia = await withCourseMedia(hubId, courses);
+  return sortCoursesByUpcoming(coursesWithMedia);
+}
+
+async function listFirestorePublishedCoursesByHubId(hubId) {
+  const snapshot = await getFirebaseAdminDb()
+    .collection("hubs")
+    .doc(hubId)
+    .collection("courses")
+    .where("status", "==", "published")
+    .get();
+
+  const courses = snapshot.docs.map((doc) => normalizeCourseRecord({ id: doc.id, hubId, ...doc.data() }));
+  const coursesWithMedia = await withPublicCourseMedia(hubId, courses);
   return sortCoursesByUpcoming(coursesWithMedia);
 }
 
@@ -156,7 +169,13 @@ export async function listVisibleCoursesByHubSlug(hubSlug, { isMember = false } 
 }
 
 export async function listVisibleCoursesByHub(hub, { isMember = false } = {}) {
-  const courses = await listCoursesByHub(hub);
+  const hubId = normalizeString(hub?.id);
+
+  if (!hubId || !hasHubCapability(hub, "coursesEnabled")) {
+    return [];
+  }
+
+  const courses = await listFirestorePublishedCoursesByHubId(hubId);
   return courses.filter((course) => canViewPublishedCourse(course, { isMember }));
 }
 

@@ -63,8 +63,20 @@ export async function listPublicWhatWeDoItemsByHubSlug(hubSlug) {
 }
 
 export async function listPublicWhatWeDoItemsByHub(hub) {
-  const items = await listWhatWeDoItemsByHub(hub);
-  return items.filter((item) => item.status === "published").slice(0, 6);
+  const hubId = normalizeString(hub?.id);
+
+  if (!hubId) {
+    return [];
+  }
+
+  const snapshot = await getFirebaseAdminDb()
+    .collection("hubs")
+    .doc(hubId)
+    .collection("whatWeDoItems")
+    .where("status", "==", "published")
+    .get();
+  const items = snapshot.docs.map((doc) => normalizeWhatWeDoRecord({ id: doc.id, hubId, ...doc.data() }));
+  return sortWhatWeDoItems(items).slice(0, 6);
 }
 
 export async function getWhatWeDoItemById(hubId, itemId) {

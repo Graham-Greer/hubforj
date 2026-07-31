@@ -5,7 +5,7 @@ import { getTemplateStaticPageConfig } from "@/lib/templates/template-registry";
 
 export async function generateMetadata({ params }) {
   const { hubSlug } = await params;
-  const { hub, siteSettings } = await getPublicSiteContext(hubSlug);
+  const { hub, siteSettings } = await getPublicSiteContext(hubSlug, { homeMedia: false, pageHeroKeys: [] });
   const siteLabel = siteSettings.siteName || hub.name || "Community";
 
   return {
@@ -15,7 +15,7 @@ export async function generateMetadata({ params }) {
 
 export default async function CookiesPage({ params }) {
   const { hubSlug } = await params;
-  const { hub, siteSettings } = await getPublicSiteContext(hubSlug);
+  const { hub, siteSettings } = await getPublicSiteContext(hubSlug, { homeMedia: false, pageHeroKeys: [] });
   const pageTemplate = getTemplateStaticPageConfig(hub.template);
   const model = buildPublicLegalPageModel("cookies", siteSettings, hub);
 

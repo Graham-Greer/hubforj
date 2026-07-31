@@ -21,7 +21,12 @@ export default async function HubLayout({ children, params }) {
     notFound();
   }
 
-  const siteSettings = await getCachedSiteSettingsByHub(hub, { routeMode });
+  const siteSettings = await getCachedSiteSettingsByHub(hub, {
+    routeMode,
+    publicMedia: true,
+    homeMedia: false,
+    pageHeroKeys: [],
+  });
   const headerModel = await getPublicHeaderModel(hub, siteSettings, { routeMode });
   const footerModel = resolvePublicFooterModel({ hub });
   const theme = siteSettings.themeKey || hub.theme;

@@ -34,6 +34,7 @@ import {
 import { getNativePaymentTransactionById } from "@/lib/data/native-payment-transactions";
 import {
   countEnrolledCourseRegistrations,
+  countEnrolledCourseRegistrationsByCourseIds,
   getCourseRegistrationByUser,
   getLatestCourseRegistrationByUser,
 } from "@/lib/data/course-registrations";
@@ -50,11 +51,16 @@ function canViewPublishedEventSeries(series, { isMember = false } = {}) {
   return visibility === "public" || (visibility === "members-only" && isMember);
 }
 
-export async function getPublicSiteContext(hubSlug) {
+export async function getPublicSiteContext(hubSlug, options = {}) {
   const hubRecord = await requireHubCoreBySlug(hubSlug);
   const requestHeaders = await headers();
   const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(requestHeaders));
-  const siteSettings = await getCachedSiteSettingsByHub(hubRecord, { routeMode });
+  const siteSettings = await getCachedSiteSettingsByHub(hubRecord, {
+    routeMode,
+    publicMedia: true,
+    homeMedia: options.homeMedia,
+    pageHeroKeys: options.pageHeroKeys,
+  });
 
   return {
     hub: { ...hubRecord, routeMode },
@@ -63,7 +69,7 @@ export async function getPublicSiteContext(hubSlug) {
 }
 
 export async function getPublicLandingShellData(hubSlug) {
-  return getPublicSiteContext(hubSlug);
+  return getPublicSiteContext(hubSlug, { homeMedia: true, pageHeroKeys: [] });
 }
 
 export async function getPublicLandingDeferredData(hub) {
@@ -79,7 +85,7 @@ export async function getPublicLandingDeferredData(hub) {
 }
 
 export async function getPublicLandingData(hubSlug) {
-  const context = await getPublicSiteContext(hubSlug);
+  const context = await getPublicSiteContext(hubSlug, { homeMedia: true, pageHeroKeys: [] });
   const deferredData = await getPublicLandingDeferredData(context.hub);
 
   return {
@@ -89,7 +95,7 @@ export async function getPublicLandingData(hubSlug) {
 }
 
 export async function getPublicEventsShellData(hubSlug) {
-  return getPublicSiteContext(hubSlug);
+  return getPublicSiteContext(hubSlug, { homeMedia: false, pageHeroKeys: ["events"] });
 }
 
 export async function getPublicEventsDeferredData(hub) {
@@ -110,7 +116,7 @@ export async function getPublicEventsDeferredData(hub) {
 }
 
 export async function getPublicEventsData(hubSlug) {
-  const context = await getPublicSiteContext(hubSlug);
+  const context = await getPublicSiteContext(hubSlug, { homeMedia: false, pageHeroKeys: ["events"] });
   const deferredData = await getPublicEventsDeferredData(context.hub);
 
   return {
@@ -120,7 +126,7 @@ export async function getPublicEventsData(hubSlug) {
 }
 
 export async function getPublicCoursesShellData(hubSlug) {
-  return getPublicSiteContext(hubSlug);
+  return getPublicSiteContext(hubSlug, { homeMedia: false, pageHeroKeys: ["courses"] });
 }
 
 export async function getPublicCoursesDeferredData(hub) {
@@ -128,14 +134,9 @@ export async function getPublicCoursesDeferredData(hub) {
   const courses = await listVisibleCoursesByHub(hub, {
     isMember: Boolean(currentMemberSession),
   });
-  const enrolledCounts = await Promise.all(
-    courses.map(async (course) => ({
-      courseId: course.id,
-      enrolledCount: await countEnrolledCourseRegistrations(hub.id, course.id),
-    }))
-  );
-  const enrolledCountByCourseId = new Map(
-    enrolledCounts.map(({ courseId, enrolledCount }) => [courseId, enrolledCount])
+  const enrolledCountByCourseId = await countEnrolledCourseRegistrationsByCourseIds(
+    hub.id,
+    courses.map((course) => course.id)
   );
 
   return {
@@ -147,7 +148,7 @@ export async function getPublicCoursesDeferredData(hub) {
 }
 
 export async function getPublicCoursesData(hubSlug) {
-  const context = await getPublicSiteContext(hubSlug);
+  const context = await getPublicSiteContext(hubSlug, { homeMedia: false, pageHeroKeys: ["courses"] });
   const deferredData = await getPublicCoursesDeferredData(context.hub);
 
   return {
@@ -157,7 +158,7 @@ export async function getPublicCoursesData(hubSlug) {
 }
 
 export async function getPublicEventDetailData(hubSlug, eventSlug) {
-  const context = await getPublicSiteContext(hubSlug);
+  const context = await getPublicSiteContext(hubSlug, { homeMedia: false, pageHeroKeys: [] });
   const currentMemberSession = await getCurrentMemberSessionForHub(context.hub);
   const isMember = Boolean(currentMemberSession);
   const visibleEvent = await getVisibleEventBySlugForHub(context.hub, eventSlug, {
@@ -250,7 +251,7 @@ export async function getPublicEventDetailData(hubSlug, eventSlug) {
 }
 
 export async function getPublicEventNextStepsData(hubSlug, eventSlug, userId) {
-  const context = await getPublicSiteContext(hubSlug);
+  const context = await getPublicSiteContext(hubSlug, { homeMedia: false, pageHeroKeys: [] });
   const visibleEvent = await getVisibleEventBySlugForHub(context.hub, eventSlug, { isMember: true });
   let event = visibleEvent;
 
@@ -293,7 +294,7 @@ export async function getPublicEventNextStepsData(hubSlug, eventSlug, userId) {
 }
 
 export async function getPublicCourseDetailData(hubSlug, courseSlug) {
-  const context = await getPublicSiteContext(hubSlug);
+  const context = await getPublicSiteContext(hubSlug, { homeMedia: false, pageHeroKeys: [] });
   const currentMemberSession = await getCurrentMemberSessionForHub(context.hub);
   const visibleCourse = await getVisibleCourseBySlugForHub(context.hub, courseSlug, {
     isMember: Boolean(currentMemberSession),
@@ -350,7 +351,7 @@ export async function getPublicCourseDetailData(hubSlug, courseSlug) {
 }
 
 export async function getPublicCourseNextStepsData(hubSlug, courseSlug, userId) {
-  const context = await getPublicSiteContext(hubSlug);
+  const context = await getPublicSiteContext(hubSlug, { homeMedia: false, pageHeroKeys: [] });
   const course = await getVisibleCourseBySlugForHub(context.hub, courseSlug, { isMember: true });
 
   if (!course) {
@@ -378,7 +379,7 @@ export async function getPublicCourseNextStepsData(hubSlug, courseSlug, userId) 
 }
 
 export async function getPublicAboutData(hubSlug) {
-  const context = await getPublicSiteContext(hubSlug);
+  const context = await getPublicSiteContext(hubSlug, { homeMedia: false, pageHeroKeys: ["about"] });
   const testimonials = await listPublicTestimonialsByHub(context.hub);
 
   return {
@@ -388,7 +389,7 @@ export async function getPublicAboutData(hubSlug) {
 }
 
 export async function getPublicTestimonialsData(hubSlug) {
-  const context = await getPublicSiteContext(hubSlug);
+  const context = await getPublicSiteContext(hubSlug, { homeMedia: false, pageHeroKeys: ["testimonials"] });
   const testimonials = await listPublicTestimonialsByHub(context.hub);
 
   return {

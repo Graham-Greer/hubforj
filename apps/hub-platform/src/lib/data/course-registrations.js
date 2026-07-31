@@ -6,6 +6,7 @@ try {
 
 export {
   countEnrolledCourseRegistrations,
+  countEnrolledCourseRegistrationsByCourseIds,
   getCourseRegistrationById,
   getCourseRegistrationByUser,
   getLatestCourseRegistrationByUser,

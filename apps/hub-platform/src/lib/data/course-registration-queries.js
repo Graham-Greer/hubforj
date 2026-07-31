@@ -258,4 +258,34 @@ export async function getCourseRegistrationById(hubId, courseId, registrationId)
   });
 }
 
+export async function countEnrolledCourseRegistrationsByCourseIds(hubId, courseIds = []) {
+  const normalizedHubId = normalizeString(hubId);
+  const courseIdSet = new Set(courseIds.map(normalizeString).filter(Boolean));
+
+  if (!normalizedHubId || courseIdSet.size === 0) {
+    return new Map();
+  }
+
+  const snapshot = await getFirebaseAdminDb()
+    .collectionGroup("registrations")
+    .where("hubId", "==", normalizedHubId)
+    .select("courseId", "status")
+    .get();
+
+  const counts = new Map([...courseIdSet].map((courseId) => [courseId, 0]));
+
+  snapshot.docs.forEach((doc) => {
+    const row = doc.data() || {};
+    const courseId = normalizeString(row.courseId);
+
+    if (!courseIdSet.has(courseId) || normalizeString(row.status) !== "enrolled") {
+      return;
+    }
+
+    counts.set(courseId, (counts.get(courseId) || 0) + 1);
+  });
+
+  return counts;
+}
+
 export { countEnrolledCourseRegistrations };

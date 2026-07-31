@@ -7,6 +7,8 @@ try {
 export {
   getMediaAssetById,
   getMediaAssetsByIds,
+  getPublicMediaAssetById,
+  getPublicMediaAssetsByIds,
   listMediaAssetsByHubId,
   listMediaFoldersByHubId,
 } from "./media-queries.js";

@@ -7,7 +7,7 @@ try {
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
 import { getHubBySlug } from "@/lib/data/hubs";
 import { canViewPublishedEvent, isEventPubliclyVisible, normalizeEventSlug } from "@/lib/domain/events";
-import { normalizeEventRecord, normalizeString, withEventMedia } from "./event-shared.js";
+import { normalizeEventRecord, normalizeString, withEventMedia, withPublicEventMedia } from "./event-shared.js";
 
 async function listFirestoreEventsByHubId(hubId) {
   const snapshot = await getFirebaseAdminDb()
@@ -19,6 +19,21 @@ async function listFirestoreEventsByHubId(hubId) {
 
   const events = snapshot.docs.map((doc) => normalizeEventRecord({ id: doc.id, hubId, ...doc.data() }));
   return withEventMedia(hubId, events);
+}
+
+async function listFirestorePublishedEventsByHubId(hubId) {
+  const snapshot = await getFirebaseAdminDb()
+    .collection("hubs")
+    .doc(hubId)
+    .collection("events")
+    .where("status", "==", "published")
+    .get();
+
+  const events = snapshot.docs.map((doc) => normalizeEventRecord({ id: doc.id, hubId, ...doc.data() }));
+  return withPublicEventMedia(
+    hubId,
+    events.sort((left, right) => String(left.startAt || "").localeCompare(String(right.startAt || "")))
+  );
 }
 
 async function countFirestoreActiveUpcomingPublishedEventsByHubId(hubId, now = new Date()) {
@@ -115,7 +130,13 @@ export async function listVisibleEventsByHubSlug(hubSlug, { isMember = false } =
 }
 
 export async function listVisibleEventsByHub(hub, { isMember = false } = {}) {
-  const events = await listEventsByHub(hub);
+  const hubId = normalizeString(hub?.id);
+
+  if (!hubId) {
+    return [];
+  }
+
+  const events = await listFirestorePublishedEventsByHubId(hubId);
   return events.filter((event) => canViewPublishedEvent(event, { isMember }));
 }
 
