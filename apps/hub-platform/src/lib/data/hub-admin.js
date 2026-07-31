@@ -19,12 +19,17 @@ import {
 } from "@/lib/domain/courses";
 import { formatMoney } from "@/lib/domain/memberships";
 import { resolveHubPackageEntitlements } from "@/lib/domain/hub-package";
+import { buildHubRuntimeHref, normalizeHubRouteMode } from "@/lib/domain/hub-runtime-paths";
 import { getHubPaymentSetupState, hubUsesInternalNativePayments } from "@/lib/domain/hub-payment-configuration";
 import { resolveLaunchFormattingLocale } from "@/lib/domain/regional-markets";
 import { isHubOperatorRole } from "@/lib/domain/users";
 
 function normalizeString(value) {
   return String(value || "").trim();
+}
+
+function buildAdminHref(hubSlug, pathname, routeMode = "path") {
+  return buildHubRuntimeHref(hubSlug, pathname, normalizeHubRouteMode(routeMode));
 }
 
 function normalizeCurrencyCode(value, fallbackCurrency = "USD") {
@@ -160,7 +165,7 @@ function buildEventRegistrationCounts(items) {
   return counts;
 }
 
-function buildRecentEventItems(events, eventSeries, eventRegistrationCounts, hub, locale = "en-US") {
+function buildRecentEventItems(events, eventSeries, eventRegistrationCounts, hub, locale = "en-US", routeMode = "path") {
   const seriesById = new Map(eventSeries.map((series) => [series.id, series]));
   const seriesItemsById = new Map();
   const standaloneItems = [];
@@ -192,7 +197,7 @@ function buildRecentEventItems(events, eventSeries, eventRegistrationCounts, hub
               "Recurring event image",
             dateLabel: formatShortDate(event.startDate || event.startAt, locale),
             registeredCount,
-            href: `/${hub.slug}/admin/events/series/${seriesId}`,
+            href: buildAdminHref(hub.slug, `/admin/events/series/${seriesId}`, routeMode),
             sortValue: occurrenceSortValue,
           });
           return;
@@ -215,7 +220,7 @@ function buildRecentEventItems(events, eventSeries, eventRegistrationCounts, hub
         imageAlt: event.imageAlt || event.imageAsset?.alt || event.title || "Event image",
         dateLabel: formatShortDate(event.startDate || event.startAt, locale),
         registeredCount,
-        href: `/${hub.slug}/admin/events/${event.id}`,
+        href: buildAdminHref(hub.slug, `/admin/events/${event.id}`, routeMode),
         sortValue: getSortableTimestamp(event.startAt || event.startDate),
       });
     });
@@ -279,12 +284,13 @@ function buildPaymentAttentionUserIds(memberships, eventPaymentItems, coursePaym
   );
 }
 
-export async function getHubAdminOverviewBySlug(hubSlug) {
+export async function getHubAdminOverviewBySlug(hubSlug, options = {}) {
   const hub = await getHubBySlug(hubSlug);
   if (!hub) {
     return null;
   }
 
+  const routeMode = normalizeHubRouteMode(options.routeMode);
   const entitlements = resolveHubPackageEntitlements(hub);
 
   const [users, members, invites, activeMemberCount, activeUpcomingPublishedEventCount, paymentConfiguration, memberships, pendingUpgradeRequests, events, eventSeries, courses, eventPaymentItems, coursePaymentItems] = await Promise.all([
@@ -323,7 +329,7 @@ export async function getHubAdminOverviewBySlug(hubSlug) {
   const paymentSetupState = getHubPaymentSetupState(hub, paymentConfiguration);
   const admins = users.filter((user) => isHubOperatorRole(user.role));
   const activeUpcomingCourses = courses.filter((course) => isActiveUpcomingPublishedCourse(course));
-  const recentEvents = buildRecentEventItems(events, eventSeries, eventRegistrationCounts, hub, locale);
+  const recentEvents = buildRecentEventItems(events, eventSeries, eventRegistrationCounts, hub, locale, routeMode);
   const topCourses = activeUpcomingCourses
     .map((course) => {
       const performance = coursePerformanceById.get(course.id) || {
@@ -339,7 +345,7 @@ export async function getHubAdminOverviewBySlug(hubSlug) {
         enrolledCount: performance.enrolledCount,
         revenueLabel: performance.revenue.hasDisplayableAmount ? performance.revenue.formatted : "",
         revenueAmount: performance.revenue.amount,
-        href: `/${hub.slug}/admin/courses/${course.id}`,
+        href: buildAdminHref(hub.slug, `/admin/courses/${course.id}`, routeMode),
       };
     })
     .sort((left, right) => {
@@ -360,32 +366,32 @@ export async function getHubAdminOverviewBySlug(hubSlug) {
           id: "stripe-setup",
           label: "Stripe setup",
           count: 1,
-          href: `/${hub.slug}/admin/payments?view=setup`,
+          href: buildAdminHref(hub.slug, "/admin/payments?view=setup", routeMode),
         }
       : null,
     {
       id: "admin-invites",
       label: "Admin invites",
       count: actionableInviteCount,
-      href: `/${hub.slug}/admin/admins`,
+      href: buildAdminHref(hub.slug, "/admin/admins", routeMode),
     },
     {
       id: "membership-upgrades",
       label: "Upgrade requests",
       count: pendingUpgradeRequests.length,
-      href: `/${hub.slug}/admin/payments?view=plans`,
+      href: buildAdminHref(hub.slug, "/admin/payments?view=plans", routeMode),
     },
     {
       id: "payment-attention",
       label: "Payment attention",
       count: paymentAttentionUserIds.size,
-      href: `/${hub.slug}/admin/members`,
+      href: buildAdminHref(hub.slug, "/admin/members", routeMode),
     },
     {
       id: "suspended-members",
       label: "Suspended members",
       count: suspendedMembersCount,
-      href: `/${hub.slug}/admin/members`,
+      href: buildAdminHref(hub.slug, "/admin/members", routeMode),
     },
   ].filter((item) => item && item.count > 0);
   const membershipsByUserId = new Map();
@@ -413,7 +419,7 @@ export async function getHubAdminOverviewBySlug(hubSlug) {
           : member.email || "Membership not assigned yet",
         createdAtLabel: member.createdAt || member.updatedAt ? formatShortDate(member.createdAt || member.updatedAt, locale) : "Recently joined",
         status: member.status || "active",
-        href: `/${hub.slug}/admin/members/${member.id}`,
+        href: buildAdminHref(hub.slug, `/admin/members/${member.id}`, routeMode),
       };
     });
 
@@ -457,12 +463,13 @@ export async function getHubAdminDashboardSummaryBySlug(hubSlug) {
   };
 }
 
-export async function getHubAdminDashboardDeferredOverviewBySlug(hubSlug) {
+export async function getHubAdminDashboardDeferredOverviewBySlug(hubSlug, options = {}) {
   const hub = await getHubBySlug(hubSlug);
   if (!hub) {
     return null;
   }
 
+  const routeMode = normalizeHubRouteMode(options.routeMode);
   const entitlements = resolveHubPackageEntitlements(hub);
   const [users, members, invites, paymentConfiguration, memberships, pendingUpgradeRequests, events, eventSeries, courses, eventPaymentItems, coursePaymentItems] = await Promise.all([
     listUsersByHub(hub.id),
@@ -497,7 +504,7 @@ export async function getHubAdminDashboardDeferredOverviewBySlug(hubSlug) {
     };
   const paymentSetupState = getHubPaymentSetupState(hub, paymentConfiguration);
   const activeUpcomingCourses = courses.filter((course) => isActiveUpcomingPublishedCourse(course));
-  const recentEvents = buildRecentEventItems(events, eventSeries, eventRegistrationCounts, hub, locale);
+  const recentEvents = buildRecentEventItems(events, eventSeries, eventRegistrationCounts, hub, locale, routeMode);
   const topCourses = activeUpcomingCourses
     .map((course) => {
       const performance = coursePerformanceById.get(course.id) || {
@@ -513,7 +520,7 @@ export async function getHubAdminDashboardDeferredOverviewBySlug(hubSlug) {
         enrolledCount: performance.enrolledCount,
         revenueLabel: performance.revenue.hasDisplayableAmount ? performance.revenue.formatted : "",
         revenueAmount: performance.revenue.amount,
-        href: `/${hub.slug}/admin/courses/${course.id}`,
+        href: buildAdminHref(hub.slug, `/admin/courses/${course.id}`, routeMode),
       };
     })
     .sort((left, right) => {
@@ -534,32 +541,32 @@ export async function getHubAdminDashboardDeferredOverviewBySlug(hubSlug) {
           id: "stripe-setup",
           label: "Stripe setup",
           count: 1,
-          href: `/${hub.slug}/admin/payments?view=setup`,
+          href: buildAdminHref(hub.slug, "/admin/payments?view=setup", routeMode),
         }
       : null,
     {
       id: "admin-invites",
       label: "Admin invites",
       count: actionableInviteCount,
-      href: `/${hub.slug}/admin/admins`,
+      href: buildAdminHref(hub.slug, "/admin/admins", routeMode),
     },
     {
       id: "membership-upgrades",
       label: "Upgrade requests",
       count: pendingUpgradeRequests.length,
-      href: `/${hub.slug}/admin/payments?view=plans`,
+      href: buildAdminHref(hub.slug, "/admin/payments?view=plans", routeMode),
     },
     {
       id: "payment-attention",
       label: "Payment attention",
       count: paymentAttentionUserIds.size,
-      href: `/${hub.slug}/admin/members`,
+      href: buildAdminHref(hub.slug, "/admin/members", routeMode),
     },
     {
       id: "suspended-members",
       label: "Suspended members",
       count: suspendedMembersCount,
-      href: `/${hub.slug}/admin/members`,
+      href: buildAdminHref(hub.slug, "/admin/members", routeMode),
     },
   ].filter((item) => item && item.count > 0);
   const membershipsByUserId = new Map();
@@ -587,7 +594,7 @@ export async function getHubAdminDashboardDeferredOverviewBySlug(hubSlug) {
           : member.email || "Membership not assigned yet",
         createdAtLabel: member.createdAt || member.updatedAt ? formatShortDate(member.createdAt || member.updatedAt, locale) : "Recently joined",
         status: member.status || "active",
-        href: `/${hub.slug}/admin/members/${member.id}`,
+        href: buildAdminHref(hub.slug, `/admin/members/${member.id}`, routeMode),
       };
     });
 

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import LockedFeatureState from "@/components/patterns/locked-feature-state/LockedFeatureState";
 import PageHeader from "@/components/patterns/page-header/PageHeader";
 import HubPaymentsWorkspace from "@/components/patterns/hub-payments-workspace/HubPaymentsWorkspace";
@@ -6,7 +7,7 @@ import { requireHubBySlug } from "@/lib/data/hubs";
 import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
 import { getHubPaymentLedgerSyncStatus } from "@/lib/data/payment-ledger-sync";
 import { getHubPaymentReconciliationReport } from "@/lib/data/payment-reconciliation";
-import { listHubPaymentItemsBySlug } from "@/lib/data/hub-payments";
+import { getHubPaymentReportByHub } from "@/lib/data/hub-payments";
 import { listMembershipPlansByHub, listPendingMembershipUpgradeRequestsByHub } from "@/lib/data/memberships";
 import { getHubPaymentSetupState } from "@/lib/domain/hub-payment-configuration";
 import { hasHubCapability } from "@/lib/domain/package-guards";
@@ -24,6 +25,125 @@ import {
 } from "./actions";
 import styles from "./page.module.css";
 
+function buildEmptyPaymentSummary(hub) {
+  const currency = hub.defaultCurrency || "USD";
+
+  return {
+    total: 0,
+    actionRequired: 0,
+    collectedRevenue: {
+      amount: 0,
+      currency,
+      formatted: formatMoney(0, currency, hub.locale || "en-US"),
+      isMixedCurrency: false,
+    },
+  };
+}
+
+function buildPaymentSuccessMessage(success) {
+  return success === "stripeSetupStarted"
+    ? "Stripe account created. Continue the embedded onboarding below."
+    : success === "stripeStatusRefreshed"
+      ? "Stripe setup status refreshed."
+      : success === "paymentLedgerSynced"
+        ? "Payment ledger sync completed."
+        : success === "planCreated"
+          ? "Membership plan created."
+          : success === "planUpdated"
+            ? "Membership plan updated."
+            : success === "planDeleted"
+              ? "Membership plan deleted."
+              : success === "upgradeRequestApproved"
+                ? "Membership upgrade request approved."
+                : success === "paymentUpdated"
+                  ? "Payment status updated."
+                  : "";
+}
+
+function PaymentsWorkspaceFallback({ selectedView }) {
+  const title =
+    selectedView === "payments"
+      ? "Loading payment records"
+      : selectedView === "plans"
+        ? "Loading membership plans"
+        : "Loading payment setup";
+
+  return (
+    <section className={styles.loadingPanel} aria-busy="true" aria-label={title}>
+      <div>
+        <p className={styles.loadingEyebrow}>{title}</p>
+        <div className={`${styles.loadingLine} ${styles.loadingLineWide}`} />
+      </div>
+      <div className={styles.loadingGrid}>
+        <div className={styles.loadingTile} />
+        <div className={styles.loadingTile} />
+        <div className={styles.loadingTile} />
+      </div>
+      <div className={styles.loadingLine} />
+      <div className={`${styles.loadingLine} ${styles.loadingLineShort}`} />
+    </section>
+  );
+}
+
+async function PaymentsWorkspaceLoader({ hub, selectedView, success, error }) {
+  const paymentsEnabled = hasHubCapability(hub, "paymentsEnabled");
+  const shouldCheckSupportDiagnostics = selectedView === "setup";
+  const access = shouldCheckSupportDiagnostics ? await getCurrentHubOperatorAccess(hub) : null;
+  const showSupportDiagnostics = access?.mode === "support";
+  const shouldLoadPaymentReport = paymentsEnabled && selectedView === "payments";
+  const shouldLoadMembershipPlans = selectedView === "plans";
+  const shouldLoadPaymentConfiguration = selectedView !== "payments";
+
+  const [
+    paymentReport,
+    membershipPlans,
+    pendingUpgradeRequests,
+    paymentConfiguration,
+    paymentLedgerSyncStatus,
+    paymentReconciliationReport,
+  ] = await Promise.all([
+    shouldLoadPaymentReport
+      ? getHubPaymentReportByHub(hub)
+      : Promise.resolve({
+          items: [],
+          summary: buildEmptyPaymentSummary(hub),
+        }),
+    shouldLoadMembershipPlans ? listMembershipPlansByHub(hub.id) : Promise.resolve([]),
+    shouldLoadMembershipPlans ? listPendingMembershipUpgradeRequestsByHub(hub.id) : Promise.resolve([]),
+    shouldLoadPaymentConfiguration ? getHubPaymentConfigurationByHubId(hub.id) : Promise.resolve(null),
+    showSupportDiagnostics ? getHubPaymentLedgerSyncStatus(hub.id) : Promise.resolve(null),
+    showSupportDiagnostics ? getHubPaymentReconciliationReport(hub.id) : Promise.resolve(null),
+  ]);
+  const paymentSetupState = paymentConfiguration ? getHubPaymentSetupState(hub, paymentConfiguration) : null;
+  const stripeConnectEnvironment = selectedView === "setup" ? getStripeConnectEnvironmentState() : null;
+
+  return (
+    <HubPaymentsWorkspace
+      key={`${selectedView}:${typeof success === "string" ? success : ""}:${typeof error === "string" ? error : ""}`}
+      hub={hub}
+      items={paymentReport.items}
+      summary={paymentReport.summary}
+      view={selectedView}
+      paymentSetupState={paymentSetupState}
+      stripeConnectEnvironment={stripeConnectEnvironment}
+      paymentLedgerSyncStatus={paymentLedgerSyncStatus}
+      paymentReconciliationReport={paymentReconciliationReport}
+      showSupportDiagnostics={showSupportDiagnostics}
+      membershipPlans={membershipPlans}
+      pendingUpgradeRequests={pendingUpgradeRequests}
+      beginHubPaymentSetupAction={beginHubPaymentSetupAction}
+      refreshHubPaymentSetupAction={refreshHubPaymentSetupAction}
+      syncHubPaymentLedgerAction={syncHubPaymentLedgerAction}
+      createMembershipPlanAction={createMembershipPlanAction}
+      updateMembershipPlanAction={updateMembershipPlanAction}
+      deleteMembershipPlanAction={deleteMembershipPlanAction}
+      approveMembershipUpgradeRequestAction={approveMembershipUpgradeRequestAction}
+      successMessage={buildPaymentSuccessMessage(success)}
+      errorMessage={typeof error === "string" ? error : ""}
+    />
+  );
+}
+
 export default async function PaymentsPage({ params, searchParams }) {
   const { hubSlug } = await params;
   const { success = "", error = "", view = "setup" } = await searchParams;
@@ -35,8 +155,6 @@ export default async function PaymentsPage({ params, searchParams }) {
   }
 
   const paymentsEnabled = hasHubCapability(hub, "paymentsEnabled");
-  const access = await getCurrentHubOperatorAccess(hub);
-  const showSupportDiagnostics = access?.mode === "support";
 
   if (!paymentsEnabled && selectedView !== "plans") {
     return (
@@ -57,49 +175,6 @@ export default async function PaymentsPage({ params, searchParams }) {
     );
   }
 
-  const [{ items, summary }, membershipPlans, pendingUpgradeRequests, paymentConfiguration, paymentLedgerSyncStatus, paymentReconciliationReport] = await Promise.all([
-    paymentsEnabled && selectedView === "payments"
-      ? listHubPaymentItemsBySlug(hubSlug)
-      : Promise.resolve({
-          items: [],
-          summary: {
-            total: 0,
-            actionRequired: 0,
-            collectedRevenue: {
-              amount: 0,
-              currency: hub.defaultCurrency || "USD",
-              formatted: formatMoney(0, hub.defaultCurrency || "USD", hub.locale || "en-US"),
-              isMixedCurrency: false,
-            },
-          },
-        }),
-    listMembershipPlansByHub(hub.id),
-    listPendingMembershipUpgradeRequestsByHub(hub.id),
-    getHubPaymentConfigurationByHubId(hub.id),
-    showSupportDiagnostics ? getHubPaymentLedgerSyncStatus(hub.id) : Promise.resolve(null),
-    showSupportDiagnostics ? getHubPaymentReconciliationReport(hub.id) : Promise.resolve(null),
-  ]);
-  const paymentSetupState = getHubPaymentSetupState(hub, paymentConfiguration);
-  const stripeConnectEnvironment = getStripeConnectEnvironmentState();
-  const successMessage =
-    success === "stripeSetupStarted"
-      ? "Stripe account created. Continue the embedded onboarding below."
-      : success === "stripeStatusRefreshed"
-        ? "Stripe setup status refreshed."
-        : success === "paymentLedgerSynced"
-          ? "Payment ledger sync completed."
-        : success === "planCreated"
-          ? "Membership plan created."
-          : success === "planUpdated"
-            ? "Membership plan updated."
-            : success === "planDeleted"
-              ? "Membership plan deleted."
-              : success === "upgradeRequestApproved"
-                ? "Membership upgrade request approved."
-                : success === "paymentUpdated"
-                  ? "Payment status updated."
-                  : "";
-
   return (
     <div className={styles.layout}>
       {selectedView === "payments" ? (
@@ -110,29 +185,14 @@ export default async function PaymentsPage({ params, searchParams }) {
         />
       ) : null}
 
-      <HubPaymentsWorkspace
-        key={`${view}:${typeof success === "string" ? success : ""}:${typeof error === "string" ? error : ""}`}
-        hub={hub}
-        items={items}
-        summary={summary}
-        view={selectedView}
-        paymentSetupState={paymentSetupState}
-        stripeConnectEnvironment={stripeConnectEnvironment}
-        paymentLedgerSyncStatus={paymentLedgerSyncStatus}
-        paymentReconciliationReport={paymentReconciliationReport}
-        showSupportDiagnostics={showSupportDiagnostics}
-        membershipPlans={membershipPlans}
-        pendingUpgradeRequests={pendingUpgradeRequests}
-        beginHubPaymentSetupAction={beginHubPaymentSetupAction}
-        refreshHubPaymentSetupAction={refreshHubPaymentSetupAction}
-        syncHubPaymentLedgerAction={syncHubPaymentLedgerAction}
-        createMembershipPlanAction={createMembershipPlanAction}
-        updateMembershipPlanAction={updateMembershipPlanAction}
-        deleteMembershipPlanAction={deleteMembershipPlanAction}
-        approveMembershipUpgradeRequestAction={approveMembershipUpgradeRequestAction}
-        successMessage={successMessage}
-        errorMessage={typeof error === "string" ? error : ""}
-      />
+      <Suspense fallback={<PaymentsWorkspaceFallback selectedView={selectedView} />}>
+        <PaymentsWorkspaceLoader
+          hub={hub}
+          selectedView={selectedView}
+          success={success}
+          error={error}
+        />
+      </Suspense>
     </div>
   );
 }

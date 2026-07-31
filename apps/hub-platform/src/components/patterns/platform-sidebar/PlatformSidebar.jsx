@@ -63,6 +63,7 @@ export default function PlatformSidebar({ title, groups }) {
                 active={activeHref === item.href}
                 locked={item.locked}
                 onboardingKey={item.onboardingKey}
+                prefetch={item.prefetch}
               />
             ))}
           </NavGroup>

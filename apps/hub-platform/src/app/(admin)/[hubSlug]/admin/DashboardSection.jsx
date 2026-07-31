@@ -8,7 +8,7 @@ export default function DashboardSection({ title, href = "", children }) {
       <div className={styles.header}>
         <h2 className={styles.title}>{title}</h2>
         {href ? (
-          <Link href={href} className={styles.link}>
+          <Link href={href} prefetch={false} className={styles.link}>
             View all
           </Link>
         ) : null}

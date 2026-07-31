@@ -11,7 +11,7 @@ export default function DashboardMembersPanel({ items = [] }) {
       {items.length ? (
         <div className={rowStyles.list}>
           {items.map((item) => (
-            <Link key={item.id} href={item.href} className={`${rowStyles.textRow} ${rowStyles.interactive}`}>
+            <Link key={item.id} href={item.href} prefetch={false} className={`${rowStyles.textRow} ${rowStyles.interactive}`}>
               <div className={rowStyles.content}>
                 <div className={rowStyles.identity}>
                   <strong className={rowStyles.title}>{item.name}</strong>

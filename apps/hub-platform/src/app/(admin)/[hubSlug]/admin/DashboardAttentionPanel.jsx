@@ -9,7 +9,7 @@ export default function DashboardAttentionPanel({ items = [] }) {
       {items.length ? (
         <div className={rowStyles.list}>
           {items.map((item) => (
-            <Link key={item.id} href={item.href} className={`${rowStyles.textRow} ${rowStyles.interactive}`}>
+            <Link key={item.id} href={item.href} prefetch={false} className={`${rowStyles.textRow} ${rowStyles.interactive}`}>
               <span className={`${rowStyles.title} ${styles.label}`}>{item.label}</span>
               <span className={rowStyles.sideMeta}>{item.count}</span>
             </Link>

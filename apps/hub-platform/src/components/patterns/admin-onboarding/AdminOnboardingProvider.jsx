@@ -82,6 +82,7 @@ export default function AdminOnboardingProvider({
   const searchParams = useSearchParams();
   const router = useRouter();
   const adminBasePath = useMemo(() => deriveAdminBasePath(pathname, hub.slug), [hub.slug, pathname]);
+  const routeKey = `${pathname || ""}?${searchParams?.toString() || ""}`;
   const [state, setState] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentJourneyKey, setCurrentJourneyKey] = useState("");
@@ -90,6 +91,8 @@ export default function AdminOnboardingProvider({
   const [suppressedJourneyKeys, setSuppressedJourneyKeys] = useState([]);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const currentJourneyKeyRef = useRef("");
+  const loadedHubSlugRef = useRef("");
+  const lastLoadedRouteKeyRef = useRef("");
   const loadStateRef = useRef(async () => {});
 
   useEffect(() => {
@@ -99,7 +102,12 @@ export default function AdminOnboardingProvider({
   useEffect(() => {
     let cancelled = false;
 
-    loadStateRef.current = async ({ silent = false } = {}) => {
+    if (loadedHubSlugRef.current !== hub.slug) {
+      loadedHubSlugRef.current = hub.slug;
+      lastLoadedRouteKeyRef.current = "";
+    }
+
+    loadStateRef.current = async ({ silent = false, routeKey: nextRouteKey = "" } = {}) => {
       if (!silent) {
         setLoading(true);
       }
@@ -118,26 +126,35 @@ export default function AdminOnboardingProvider({
           setState(null);
         }
       } finally {
+        if (!cancelled && nextRouteKey) {
+          lastLoadedRouteKeyRef.current = nextRouteKey;
+        }
         if (!cancelled && !silent) {
           setLoading(false);
         }
       }
     };
 
-    loadStateRef.current();
+    if (!lastLoadedRouteKeyRef.current) {
+      loadStateRef.current({ routeKey });
+    }
 
     return () => {
       cancelled = true;
     };
-  }, [hub.slug]);
+  }, [hub.slug, routeKey]);
 
   useEffect(() => {
     if (!pathname) {
       return;
     }
 
-    loadStateRef.current({ silent: true });
-  }, [pathname, searchParams]);
+    if (loading || lastLoadedRouteKeyRef.current === routeKey) {
+      return;
+    }
+
+    loadStateRef.current({ silent: true, routeKey });
+  }, [loading, pathname, routeKey]);
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {

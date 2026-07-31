@@ -68,7 +68,7 @@ export default function AdminOnboardingChecklist() {
                     : "Not started"}
               </p>
             </div>
-            <Button href={item.href} variant="secondary">
+            <Button href={item.href} prefetch={false} variant="secondary">
               Open
             </Button>
           </div>

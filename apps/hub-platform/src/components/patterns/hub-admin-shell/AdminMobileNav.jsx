@@ -44,6 +44,7 @@ function getActiveHref(pathname, searchParams, groups) {
 export default function AdminMobileNav({
   id,
   hubSlug,
+  publicSiteHref = "/",
   title,
   groups,
   open = false,
@@ -153,6 +154,7 @@ export default function AdminMobileNav({
                     active={activeHref === item.href}
                     locked={item.locked}
                     onboardingKey={item.onboardingKey}
+                    prefetch={item.prefetch}
                   />
                 ))}
               </NavGroup>
@@ -161,7 +163,7 @@ export default function AdminMobileNav({
           <div className={styles.utilitySection}>
             <p className={styles.utilityLabel}>Workspace</p>
             <div className={styles.utilityList}>
-              <Button href={`/${hubSlug}`} variant="secondary" onClick={() => onClose?.()}>
+              <Button href={publicSiteHref} prefetch={false} variant="secondary" onClick={() => onClose?.()}>
                 View public site
               </Button>
               <WorkspaceThemeToggle currentTheme={operatorTheme} />

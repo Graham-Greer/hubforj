@@ -9,8 +9,11 @@ import {
   getHubAdminDashboardDeferredOverviewBySlug,
   getHubAdminDashboardSummaryBySlug,
 } from "@/lib/data/hub-admin";
-import { getHubRegionalOnboardingHref, isHubRegionalSetupComplete } from "@/lib/domain/hub-regional-setup";
+import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
+import { isHubRegionalSetupComplete } from "@/lib/domain/hub-regional-setup";
 import { getLegalSettingsByHubId } from "@/lib/legal/legalRepository";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import DashboardAttentionPanel from "./DashboardAttentionPanel";
 import DashboardMembersPanel from "./DashboardMembersPanel";
@@ -22,7 +25,11 @@ function joinClassNames(...values) {
   return values.filter(Boolean).join(" ");
 }
 
-function buildOwnerLegalAttentionItems(hub, legalSettings) {
+function buildAdminHref(hubSlug, pathname, routeMode) {
+  return buildHubRuntimeHref(hubSlug, pathname, routeMode);
+}
+
+function buildOwnerLegalAttentionItems(hub, legalSettings, routeMode = "path") {
   if (!hub || !legalSettings?.legalStatus) {
     return [];
   }
@@ -35,7 +42,7 @@ function buildOwnerLegalAttentionItems(hub, legalSettings) {
         id: "legal-terms-missing",
         label: "Complete Terms of Service",
         count: 1,
-        href: `/${hub.slug}/admin/settings/legal`,
+        href: buildAdminHref(hub.slug, "/admin/settings/legal", routeMode),
       };
     }
 
@@ -44,7 +51,7 @@ function buildOwnerLegalAttentionItems(hub, legalSettings) {
         id: "legal-privacy-missing",
         label: "Complete Privacy Policy",
         count: 1,
-        href: `/${hub.slug}/admin/settings/legal`,
+        href: buildAdminHref(hub.slug, "/admin/settings/legal", routeMode),
       };
     }
 
@@ -53,7 +60,7 @@ function buildOwnerLegalAttentionItems(hub, legalSettings) {
         id: "legal-terms-review",
         label: "Review Terms of Service changes",
         count: Math.max(1, Array.isArray(reviewTargets.terms) ? reviewTargets.terms.length : 0),
-        href: `/${hub.slug}/admin/settings/legal`,
+        href: buildAdminHref(hub.slug, "/admin/settings/legal", routeMode),
       };
     }
 
@@ -62,7 +69,7 @@ function buildOwnerLegalAttentionItems(hub, legalSettings) {
         id: "legal-privacy-review",
         label: "Review Privacy Policy changes",
         count: Math.max(1, Array.isArray(reviewTargets.privacy) ? reviewTargets.privacy.length : 0),
-        href: `/${hub.slug}/admin/settings/legal`,
+        href: buildAdminHref(hub.slug, "/admin/settings/legal", routeMode),
       };
     }
 
@@ -134,7 +141,7 @@ async function DashboardCoursesCard({ overviewPromise }) {
   );
 }
 
-async function DashboardDeferredPanels({ hubSlug, overviewPromise }) {
+async function DashboardDeferredPanels({ hubSlug, routeMode, overviewPromise }) {
   const overview = await overviewPromise;
   const hub = overview?.hub || null;
   const packageInfo = overview?.package || null;
@@ -145,7 +152,7 @@ async function DashboardDeferredPanels({ hubSlug, overviewPromise }) {
       : null;
   const attentionItems = [
     ...(overview?.attentionItems || []),
-    ...buildOwnerLegalAttentionItems(hub, legalSettings),
+    ...buildOwnerLegalAttentionItems(hub, legalSettings, routeMode),
   ];
 
   return (
@@ -158,14 +165,14 @@ async function DashboardDeferredPanels({ hubSlug, overviewPromise }) {
       >
         <DashboardPanel
           title="Recent Events"
-          href={`/${hubSlug}/admin/events`}
+          href={buildAdminHref(hubSlug, "/admin/events", routeMode)}
           items={overview?.recentEvents || []}
           kind="event"
         />
         {packageInfo?.capabilities?.coursesEnabled ? (
           <DashboardPanel
             title="Top Courses"
-            href={`/${hubSlug}/admin/courses`}
+            href={buildAdminHref(hubSlug, "/admin/courses", routeMode)}
             items={overview?.topCourses || []}
             kind="course"
           />
@@ -182,16 +189,18 @@ async function DashboardDeferredPanels({ hubSlug, overviewPromise }) {
 export default async function HubAdminPage({ params, searchParams }) {
   const { hubSlug } = await params;
   const { success = "" } = await searchParams;
+  const headerStore = await headers();
+  const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
   const summary = await getHubAdminDashboardSummaryBySlug(hubSlug);
   const hub = summary?.hub || null;
 
   if (hub && !isHubRegionalSetupComplete(hub)) {
-    redirect(getHubRegionalOnboardingHref(hub));
+    redirect(buildAdminHref(hub.slug, "/admin/onboarding", routeMode));
   }
 
   const packageInfo = summary?.package || null;
   const deferredOverviewPromise = hub
-    ? getHubAdminDashboardDeferredOverviewBySlug(hubSlug)
+    ? getHubAdminDashboardDeferredOverviewBySlug(hubSlug, { routeMode })
     : Promise.resolve(null);
   const activeMembersLimit = packageInfo?.limits?.activeMembers;
   const activeUpcomingEventsLimit = packageInfo?.limits?.activeUpcomingEvents;
@@ -282,7 +291,7 @@ export default async function HubAdminPage({ params, searchParams }) {
         ) : null}
       </div>
       <Suspense fallback={<DashboardPanelsFallback coursesEnabled={packageInfo?.capabilities?.coursesEnabled} />}>
-        <DashboardDeferredPanels hubSlug={hubSlug} overviewPromise={deferredOverviewPromise} />
+        <DashboardDeferredPanels hubSlug={hubSlug} routeMode={routeMode} overviewPromise={deferredOverviewPromise} />
       </Suspense>
     </div>
   );

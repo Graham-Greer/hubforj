@@ -5,12 +5,7 @@ try {
 }
 
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
-import { listCoursesByHubSlug } from "@/lib/data/courses";
-import { listEventsByHubSlug } from "@/lib/data/events";
 import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
-import { listMediaAssetsByHubId } from "@/lib/data/media";
-import { listTestimonialsByHubSlug } from "@/lib/data/testimonials";
-import { listWhatWeDoItemsByHubSlug } from "@/lib/data/what-we-do";
 import { getHubPaymentSetupState } from "@/lib/domain/hub-payment-configuration";
 import { resolveHubPackageEntitlements } from "@/lib/domain/hub-package";
 import { isHubRegionalSetupComplete } from "@/lib/domain/hub-regional-setup";
@@ -103,20 +98,20 @@ function normalizePersistedState(raw, fallback) {
 }
 
 async function buildChecklistItems(state, hub, capabilities, paymentSetupState) {
-  const [whatWeDoItems, testimonials, events, courses, mediaAssets] = await Promise.all([
-    listWhatWeDoItemsByHubSlug(hub.slug),
-    listTestimonialsByHubSlug(hub.slug),
-    listEventsByHubSlug(hub.slug),
-    capabilities.coursesEnabled ? listCoursesByHubSlug(hub.slug) : Promise.resolve([]),
-    listMediaAssetsByHubId(hub.id),
+  const [hasWhatWeDoItems, hasTestimonials, hasEvents, hasCourses, hasMediaAssets] = await Promise.all([
+    hasHubCollectionRecords(hub.id, "whatWeDoItems"),
+    hasHubCollectionRecords(hub.id, "testimonials"),
+    hasHubCollectionRecords(hub.id, "events"),
+    capabilities.coursesEnabled ? hasHubCollectionRecords(hub.id, "courses") : Promise.resolve(false),
+    hasHubCollectionRecords(hub.id, "mediaAssets"),
   ]);
 
   const recordCounts = {
-    whatWeDo: whatWeDoItems.length,
-    testimonials: testimonials.length,
-    events: events.length,
-    courses: courses.length,
-    media: mediaAssets.length,
+    whatWeDo: hasWhatWeDoItems ? 1 : 0,
+    testimonials: hasTestimonials ? 1 : 0,
+    events: hasEvents ? 1 : 0,
+    courses: hasCourses ? 1 : 0,
+    media: hasMediaAssets ? 1 : 0,
   };
 
   const checklistOrder = getAdminOnboardingChecklistOrder(state?.packageTier);
@@ -164,7 +159,7 @@ async function buildChecklistItems(state, hub, capabilities, paymentSetupState) 
         status = isHubRegionalSetupComplete(hub) ? "completed" : "not_started";
       }
 
-      if (item.key === "payments_setup" && hub?.packageCapabilities?.nativePaymentsEnabled === true) {
+      if (item.key === "payments_setup" && capabilities.nativePaymentsEnabled === true) {
         if (paymentSetupState?.key === "ready") {
           status = "completed";
         } else if (paymentSetupState?.configuration?.hasConnectedAccount === true) {
@@ -189,6 +184,24 @@ function getDocRef(hubId, actorUserId) {
   return getFirebaseAdminDb().collection("hubs").doc(hubId).collection("adminOnboarding").doc(actorUserId);
 }
 
+async function hasHubCollectionRecords(hubId, collectionName) {
+  const normalizedHubId = normalizeString(hubId);
+  const normalizedCollectionName = normalizeString(collectionName);
+
+  if (!normalizedHubId || !normalizedCollectionName) {
+    return false;
+  }
+
+  const snapshot = await getFirebaseAdminDb()
+    .collection("hubs")
+    .doc(normalizedHubId)
+    .collection(normalizedCollectionName)
+    .limit(1)
+    .get();
+
+  return !snapshot.empty;
+}
+
 export async function getAdminOnboardingState(hub, actorUserId, actorRole) {
   const fallback = createDefaultAdminOnboardingState({
     hubId: hub.id,
@@ -201,7 +214,10 @@ export async function getAdminOnboardingState(hub, actorUserId, actorRole) {
   const entitlements = resolveHubPackageEntitlements(hub);
   const capabilities = entitlements.capabilities || {};
   fallback.packageTier = entitlements.packageTier;
-  const paymentConfiguration = await getHubPaymentConfigurationByHubId(hub.id);
+  const shouldLoadPaymentConfiguration = capabilities.nativePaymentsEnabled === true;
+  const paymentConfiguration = shouldLoadPaymentConfiguration
+    ? await getHubPaymentConfigurationByHubId(hub.id)
+    : null;
   const paymentSetupState = getHubPaymentSetupState(hub, paymentConfiguration);
   const checklistItems = await buildChecklistItems(persisted, hub, capabilities, paymentSetupState);
 

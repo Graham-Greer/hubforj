@@ -15,7 +15,7 @@ export default function DashboardPanel({ title, href, items = [], kind = "event"
       {items.length ? (
         <div className={rowStyles.list}>
           {items.map((item) => (
-            <Link key={item.id} href={item.href} className={`${rowStyles.mediaRow} ${rowStyles.interactive}`}>
+            <Link key={item.id} href={item.href} prefetch={false} className={`${rowStyles.mediaRow} ${rowStyles.interactive}`}>
               <div className={rowStyles.mediaWrap}>
                 {item.imageUrl ? (
                   <Image src={item.imageUrl} alt={item.imageAlt} fill sizes="72px" className={rowStyles.media} />
