@@ -97,7 +97,7 @@ function normalizePersistedState(raw, fallback) {
   return next;
 }
 
-async function buildChecklistItems(state, hub, capabilities, paymentSetupState) {
+async function getChecklistRecordCounts(hub, capabilities) {
   const [hasWhatWeDoItems, hasTestimonials, hasEvents, hasCourses, hasMediaAssets] = await Promise.all([
     hasHubCollectionRecords(hub.id, "whatWeDoItems"),
     hasHubCollectionRecords(hub.id, "testimonials"),
@@ -106,14 +106,16 @@ async function buildChecklistItems(state, hub, capabilities, paymentSetupState) 
     hasHubCollectionRecords(hub.id, "mediaAssets"),
   ]);
 
-  const recordCounts = {
+  return {
     whatWeDo: hasWhatWeDoItems ? 1 : 0,
     testimonials: hasTestimonials ? 1 : 0,
     events: hasEvents ? 1 : 0,
     courses: hasCourses ? 1 : 0,
     media: hasMediaAssets ? 1 : 0,
   };
+}
 
+function buildChecklistItemsFromFacts(state, hub, capabilities, paymentSetupState, recordCounts = {}) {
   const checklistOrder = getAdminOnboardingChecklistOrder(state?.packageTier);
   const orderedChecklistItems = [...adminOnboardingChecklistItems].sort((left, right) => {
     const leftIndex = checklistOrder.indexOf(left.key);
@@ -209,17 +211,18 @@ export async function getAdminOnboardingState(hub, actorUserId, actorRole) {
     actorRole,
   });
 
-  const doc = await getDocRef(hub.id, actorUserId).get();
-  const persisted = normalizePersistedState(doc.exists ? doc.data() : null, fallback);
   const entitlements = resolveHubPackageEntitlements(hub);
   const capabilities = entitlements.capabilities || {};
   fallback.packageTier = entitlements.packageTier;
   const shouldLoadPaymentConfiguration = capabilities.nativePaymentsEnabled === true;
-  const paymentConfiguration = shouldLoadPaymentConfiguration
-    ? await getHubPaymentConfigurationByHubId(hub.id)
-    : null;
+  const [doc, paymentConfiguration, recordCounts] = await Promise.all([
+    getDocRef(hub.id, actorUserId).get(),
+    shouldLoadPaymentConfiguration ? getHubPaymentConfigurationByHubId(hub.id) : Promise.resolve(null),
+    getChecklistRecordCounts(hub, capabilities),
+  ]);
+  const persisted = normalizePersistedState(doc.exists ? doc.data() : null, fallback);
   const paymentSetupState = getHubPaymentSetupState(hub, paymentConfiguration);
-  const checklistItems = await buildChecklistItems(persisted, hub, capabilities, paymentSetupState);
+  const checklistItems = buildChecklistItemsFromFacts(persisted, hub, capabilities, paymentSetupState, recordCounts);
 
   return {
     ...persisted,

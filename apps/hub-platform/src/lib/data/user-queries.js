@@ -118,6 +118,11 @@ async function getFirestoreSuperadminByAuthUid(uid) {
   return normalizeUserRecord({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() });
 }
 
+async function getQueryCount(query) {
+  const snapshot = await query.count().get();
+  return Number(snapshot.data().count || 0);
+}
+
 export async function listUsersByHub(hubId, options = {}) {
   const normalizedHubId = normalizeString(hubId);
   const role = normalizeString(options.role);
@@ -136,14 +141,13 @@ export async function countActiveMembersByHub(hubId) {
     return 0;
   }
 
-  const snapshot = await getFirebaseAdminDb()
+  return getQueryCount(
+    getFirebaseAdminDb()
     .collection("users")
     .where("hubId", "==", normalizedHubId)
     .where("role", "==", "member")
     .where("status", "==", "active")
-    .get();
-
-  return snapshot.size;
+  );
 }
 
 export async function summarizeMembersByHub(hubId) {
@@ -156,15 +160,18 @@ export async function summarizeMembersByHub(hubId) {
     };
   }
 
-  const snapshot = await getFirebaseAdminDb()
+  const memberQuery = getFirebaseAdminDb()
     .collection("users")
     .where("hubId", "==", normalizedHubId)
-    .where("role", "==", "member")
-    .get();
+    .where("role", "==", "member");
+  const [memberCount, activeMemberCount] = await Promise.all([
+    getQueryCount(memberQuery),
+    getQueryCount(memberQuery.where("status", "==", "active")),
+  ]);
 
   return {
-    memberCount: snapshot.size,
-    activeMemberCount: snapshot.docs.filter((doc) => normalizeString(doc.data()?.status) === "active").length,
+    memberCount,
+    activeMemberCount,
   };
 }
 
@@ -175,13 +182,12 @@ export async function countMembersByHub(hubId) {
     return 0;
   }
 
-  const snapshot = await getFirebaseAdminDb()
+  return getQueryCount(
+    getFirebaseAdminDb()
     .collection("users")
     .where("hubId", "==", normalizedHubId)
     .where("role", "==", "member")
-    .get();
-
-  return snapshot.size;
+  );
 }
 
 export async function getUserById(hubId, userId) {

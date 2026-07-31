@@ -28,6 +28,7 @@ async function countFirestoreActiveUpcomingPublishedEventsByHubId(hubId, now = n
     .doc(hubId)
     .collection("events")
     .where("status", "==", "published")
+    .select("startAt")
     .get();
 
   return snapshot.docs.filter((doc) => normalizeString(doc.data()?.startAt) >= nowIso).length;
