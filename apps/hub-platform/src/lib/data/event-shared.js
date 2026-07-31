@@ -4,7 +4,7 @@ try {
   // Plain Node compatibility for future unit tests.
 }
 
-import { getMediaAssetsByIds } from "@/lib/data/media";
+import { getMediaAssetsByIds, getPublicMediaAssetsByIds } from "@/lib/data/media";
 import {
   deriveEventScheduleFromLegacyTimestamps,
   deriveEventTimestamps,
@@ -126,5 +126,11 @@ export function attachEventMedia(events, assets) {
 export async function withEventMedia(hubId, events) {
   const assetIds = [...new Set(events.map((event) => event.imageAssetId).filter(Boolean))];
   const assets = await getMediaAssetsByIds(hubId, assetIds);
+  return attachEventMedia(events, assets);
+}
+
+export async function withPublicEventMedia(hubId, events) {
+  const assetIds = [...new Set(events.map((event) => event.imageAssetId).filter(Boolean))];
+  const assets = await getPublicMediaAssetsByIds(hubId, assetIds);
   return attachEventMedia(events, assets);
 }

@@ -58,6 +58,23 @@ export async function getMediaAssetById(hubId, assetId) {
   return attachUsageToAsset(asset, usageByAssetId);
 }
 
+export async function getPublicMediaAssetById(hubId, assetId) {
+  const normalizedHubId = normalizeString(hubId);
+  const normalizedAssetId = normalizeString(assetId);
+
+  if (!normalizedHubId || !normalizedAssetId) {
+    return null;
+  }
+
+  const doc = await mediaCollection(normalizedHubId).doc(normalizedAssetId).get();
+
+  if (!doc.exists) {
+    return null;
+  }
+
+  return normalizeActiveMediaAsset(doc, normalizedHubId);
+}
+
 export async function getMediaAssetsByIds(hubId, assetIds = []) {
   const normalizedHubId = normalizeString(hubId);
 
@@ -76,6 +93,22 @@ export async function getMediaAssetsByIds(hubId, assetIds = []) {
     .map((doc) => normalizeActiveMediaAsset(doc, normalizedHubId))
     .filter(Boolean)
     .map((asset) => attachUsageToAsset(asset, usageByAssetId));
+}
+
+export async function getPublicMediaAssetsByIds(hubId, assetIds = []) {
+  const normalizedHubId = normalizeString(hubId);
+
+  if (!normalizedHubId || !Array.isArray(assetIds) || !assetIds.length) {
+    return [];
+  }
+
+  const uniqueIds = [...new Set(assetIds.map((value) => normalizeString(value)).filter(Boolean))];
+  const docs = await Promise.all(uniqueIds.map((assetId) => mediaCollection(normalizedHubId).doc(assetId).get()));
+
+  return docs
+    .filter((doc) => doc.exists)
+    .map((doc) => normalizeActiveMediaAsset(doc, normalizedHubId))
+    .filter(Boolean);
 }
 
 export async function listMediaFoldersByHubId(hubId) {

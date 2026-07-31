@@ -8,7 +8,7 @@ import { getFirebaseAdminDb } from "@/lib/firebase/admin";
 import { cache } from "react";
 import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
 import { requireHubBySlug } from "@/lib/data/hubs";
-import { getMediaAssetById } from "@/lib/data/media";
+import { getMediaAssetById, getPublicMediaAssetById } from "@/lib/data/media";
 import {
   hasSectionRichTextContent,
   normalizeSectionRichTextContent,
@@ -30,29 +30,42 @@ import { normalizeSiteSettingsRecord } from "@/lib/domain/public-site";
 
 const SITE_SETTINGS_DOC = "primary";
 
+const getCachedSiteSettingsRecordDataByHubId = cache(async (hubId) => {
+  const doc = await getFirebaseAdminDb().collection("hubs").doc(hubId).collection("siteSettings").doc(SITE_SETTINGS_DOC).get();
+  return doc.exists ? doc.data() : {};
+});
+
 export async function getSiteSettingsByHubSlug(hubSlug) {
   const hub = await requireHubBySlug(hubSlug);
   return getSiteSettingsByHub(hub);
 }
 
 async function readSiteSettingsByHub(hub, options = {}) {
-  const doc = await getFirebaseAdminDb().collection("hubs").doc(hub.id).collection("siteSettings").doc(SITE_SETTINGS_DOC).get();
-  const settings = normalizeSiteSettingsRecord(hub, doc.exists ? doc.data() : {}, { routeMode: options.routeMode });
+  const record = await getCachedSiteSettingsRecordDataByHubId(hub.id);
+  const settings = normalizeSiteSettingsRecord(hub, record, { routeMode: options.routeMode });
+  const mediaReader = options.publicMedia === true ? getPublicMediaAssetById : getMediaAssetById;
+  const pageHeroKeySet = Array.isArray(options.pageHeroKeys)
+    ? new Set(options.pageHeroKeys.map((key) => String(key || "").trim()).filter(Boolean))
+    : null;
+  const shouldHydrateHomeMedia = options.homeMedia !== false;
 
   const pageHeroMediaEntries = Object.entries(settings.pages || {})
+    .filter(([key]) => !pageHeroKeySet || pageHeroKeySet.has(key))
     .filter(([, page]) => page?.hero?.mediaAssetId)
     .map(([key, page]) => [key, page.hero.mediaAssetId]);
   const hasPageHeroMedia = pageHeroMediaEntries.length > 0;
+  const homeHeroMediaAssetId = shouldHydrateHomeMedia ? settings.homePage?.hero?.mediaAssetId : "";
+  const homeInfoMediaAssetId = shouldHydrateHomeMedia ? settings.homePage?.info?.mediaAssetId : "";
 
-  if (!settings.logoAssetId && !settings.homePage?.hero?.mediaAssetId && !settings.homePage?.info?.mediaAssetId && !hasPageHeroMedia) {
+  if (!settings.logoAssetId && !homeHeroMediaAssetId && !homeInfoMediaAssetId && !hasPageHeroMedia) {
     return settings;
   }
 
   const [logoAsset, heroMediaAsset, infoMediaAsset, ...pageHeroAssets] = await Promise.all([
-    settings.logoAssetId ? getMediaAssetById(hub.id, settings.logoAssetId) : Promise.resolve(null),
-    settings.homePage?.hero?.mediaAssetId ? getMediaAssetById(hub.id, settings.homePage.hero.mediaAssetId) : Promise.resolve(null),
-    settings.homePage?.info?.mediaAssetId ? getMediaAssetById(hub.id, settings.homePage.info.mediaAssetId) : Promise.resolve(null),
-    ...pageHeroMediaEntries.map(([, assetId]) => getMediaAssetById(hub.id, assetId)),
+    settings.logoAssetId ? mediaReader(hub.id, settings.logoAssetId) : Promise.resolve(null),
+    homeHeroMediaAssetId ? mediaReader(hub.id, homeHeroMediaAssetId) : Promise.resolve(null),
+    homeInfoMediaAssetId ? mediaReader(hub.id, homeInfoMediaAssetId) : Promise.resolve(null),
+    ...pageHeroMediaEntries.map(([, assetId]) => mediaReader(hub.id, assetId)),
   ]);
   const pageHeroAssetMap = pageHeroMediaEntries.reduce((map, [key], index) => {
     map[key] = pageHeroAssets[index] || null;
@@ -86,10 +99,43 @@ async function readSiteSettingsByHub(hub, options = {}) {
   };
 }
 
-const getCachedSiteSettingsByHubForRouteMode = cache(async (hub, routeMode) => readSiteSettingsByHub(hub, { routeMode }));
+function normalizeMediaScope(options = {}) {
+  const pageHeroKeys = Array.isArray(options.pageHeroKeys)
+    ? options.pageHeroKeys.map((key) => String(key || "").trim()).filter(Boolean).sort().join(",")
+    : "*";
+  return [
+    options.routeMode || "path",
+    options.publicMedia === true ? "public" : "admin",
+    options.homeMedia === false ? "no-home" : "home",
+    pageHeroKeys,
+  ].join("|");
+}
+
+const getCachedSiteSettingsByHubForScope = cache(async (hub, scopeKey, routeMode, publicMedia, homeMedia, pageHeroKeysCsv) =>
+  readSiteSettingsByHub(hub, {
+    routeMode,
+    publicMedia,
+    homeMedia,
+    pageHeroKeys: pageHeroKeysCsv === "*" ? undefined : pageHeroKeysCsv.split(",").filter(Boolean),
+  })
+);
 
 export async function getCachedSiteSettingsByHub(hub, options = {}) {
-  return getCachedSiteSettingsByHubForRouteMode(hub, options.routeMode || "path");
+  const normalizedOptions = {
+    ...options,
+    routeMode: options.routeMode || "path",
+    publicMedia: options.publicMedia === true,
+  };
+  const scopeKey = normalizeMediaScope(normalizedOptions);
+  const [, , homeMediaKey, pageHeroKeysCsv] = scopeKey.split("|");
+  return getCachedSiteSettingsByHubForScope(
+    hub,
+    scopeKey,
+    normalizedOptions.routeMode,
+    normalizedOptions.publicMedia,
+    homeMediaKey !== "no-home",
+    pageHeroKeysCsv ?? "*"
+  );
 }
 
 export async function getSiteSettingsByHub(hub) {

@@ -7,7 +7,7 @@ try {
 import crypto from "node:crypto";
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
 import { requireHubBySlug } from "@/lib/data/hubs";
-import { getMediaAssetById, getMediaAssetsByIds } from "@/lib/data/media";
+import { getMediaAssetById, getMediaAssetsByIds, getPublicMediaAssetsByIds } from "@/lib/data/media";
 import { normalizeCreateTestimonialPayload } from "@/lib/domain/testimonials";
 
 function normalizeString(value) {
@@ -44,6 +44,21 @@ async function attachTestimonialMedia(hubId, testimonials) {
   }
 
   const assets = await getMediaAssetsByIds(hubId, assetIds);
+  const byId = new Map(assets.map((asset) => [asset.id, asset]));
+
+  return testimonials.map((testimonial) => ({
+    ...testimonial,
+    authorImageAsset: testimonial.authorImageAssetId ? byId.get(testimonial.authorImageAssetId) || null : null,
+  }));
+}
+
+async function attachPublicTestimonialMedia(hubId, testimonials) {
+  const assetIds = [...new Set(testimonials.map((testimonial) => testimonial.authorImageAssetId).filter(Boolean))];
+  if (!assetIds.length) {
+    return testimonials;
+  }
+
+  const assets = await getPublicMediaAssetsByIds(hubId, assetIds);
   const byId = new Map(assets.map((asset) => [asset.id, asset]));
 
   return testimonials.map((testimonial) => ({
@@ -89,8 +104,20 @@ export async function listPublicTestimonialsByHubSlug(hubSlug) {
 }
 
 export async function listPublicTestimonialsByHub(hub) {
-  const testimonials = await listTestimonialsByHub(hub);
-  return testimonials.filter((testimonial) => testimonial.status === "published");
+  const hubId = normalizeString(hub?.id);
+
+  if (!hubId) {
+    return [];
+  }
+
+  const snapshot = await getFirebaseAdminDb()
+    .collection("hubs")
+    .doc(hubId)
+    .collection("testimonials")
+    .where("status", "==", "published")
+    .get();
+  const testimonials = snapshot.docs.map((doc) => normalizeTestimonialRecord({ id: doc.id, hubId, ...doc.data() }));
+  return sortTestimonials(await attachPublicTestimonialMedia(hubId, testimonials));
 }
 
 export async function getTestimonialById(hubId, testimonialId) {
