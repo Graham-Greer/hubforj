@@ -84,6 +84,22 @@ export async function listInvitesByHub(hubId) {
   return listFirestoreInvitesByHub(normalizedHubId);
 }
 
+export async function countPendingInvitesByHub(hubId) {
+  const normalizedHubId = normalizeString(hubId);
+  if (!normalizedHubId) {
+    return 0;
+  }
+
+  const snapshot = await getFirebaseAdminDb()
+    .collection("hubs")
+    .doc(normalizedHubId)
+    .collection("invites")
+    .where("status", "==", "pending")
+    .get();
+
+  return snapshot.size;
+}
+
 export async function getInviteById(hubId, inviteId) {
   const normalizedHubId = normalizeString(hubId);
   const normalizedInviteId = normalizeString(inviteId);

@@ -7,7 +7,7 @@ try {
 import { NextResponse } from "next/server";
 import { getCurrentHubOperatorAccess } from "@/lib/auth/hub-access";
 import { requireCurrentSuperadminSession } from "@/lib/auth/platform-session";
-import { requireHubBySlug } from "@/lib/data/hubs";
+import { requireHubBySlug, requireHubCoreBySlug } from "@/lib/data/hubs";
 import { canAccessHubAdmin, canManageHubAdmins } from "@/lib/domain/users";
 
 function normalizeString(value) {
@@ -32,7 +32,7 @@ export async function requireHubOperatorActionAccess(hubSlug, options = {}) {
     throw new Error("Hub context is required.");
   }
 
-  const hub = await requireHubBySlug(normalizedHubSlug);
+  const hub = options.coreHub ? await requireHubCoreBySlug(normalizedHubSlug) : await requireHubBySlug(normalizedHubSlug);
   const access = await getCurrentHubOperatorAccess(hub);
 
   if (!access || !canUseHubOperatorBoundary(access)) {
