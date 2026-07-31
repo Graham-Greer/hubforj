@@ -473,7 +473,22 @@ function DeleteMembershipPlanModal({ hub, plan, deleteMembershipPlanAction, onCl
   );
 }
 
-function PendingUpgradeRequestsPanel({ hub, requests = [], approveMembershipUpgradeRequestAction = null }) {
+function buildWorkspaceAdminHref(adminBasePath, pathname) {
+  const normalizedBasePath = String(adminBasePath || "").replace(/\/$/, "");
+  const normalizedPathname = String(pathname || "");
+
+  if (normalizedBasePath && normalizedPathname.startsWith("/admin/payments")) {
+    return `${normalizedBasePath}${normalizedPathname.replace(/^\/admin\/payments/, "")}`;
+  }
+
+  if (normalizedBasePath && normalizedPathname.startsWith("/admin/")) {
+    return `${normalizedBasePath.replace(/\/payments$/, "")}${normalizedPathname.replace(/^\/admin/, "")}`;
+  }
+
+  return normalizedPathname;
+}
+
+function PendingUpgradeRequestsPanel({ hub, adminBasePath = "", requests = [], approveMembershipUpgradeRequestAction = null }) {
   if (!requests.length) {
     return null;
   }
@@ -511,7 +526,7 @@ function PendingUpgradeRequestsPanel({ hub, requests = [], approveMembershipUpgr
               </div>
 
               <div className={styles.planActions}>
-                <Button href={`/${hub.slug}/admin/members/${request.userId}`} variant="ghost">
+                <Button href={buildWorkspaceAdminHref(adminBasePath, `/admin/members/${request.userId}`)} prefetch={false} variant="ghost">
                   Open member
                 </Button>
                 {approveMembershipUpgradeRequestAction ? (
@@ -534,6 +549,7 @@ function PendingUpgradeRequestsPanel({ hub, requests = [], approveMembershipUpgr
 
 export default function MembershipPlanManager({
   hub,
+  adminBasePath = "",
   membershipPlans,
   pendingUpgradeRequests = [],
   paymentSetupState = null,
@@ -567,6 +583,7 @@ export default function MembershipPlanManager({
       <div className={styles.planSection} data-onboarding="membership-plans-section">
         <PendingUpgradeRequestsPanel
           hub={hub}
+          adminBasePath={adminBasePath}
           requests={pendingUpgradeRequests}
           approveMembershipUpgradeRequestAction={approveMembershipUpgradeRequestAction}
         />

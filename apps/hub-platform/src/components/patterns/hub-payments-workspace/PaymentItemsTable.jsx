@@ -35,7 +35,7 @@ export default function PaymentItemsTable({ hub, items = [] }) {
             <Surface key={item.id} as="div" tone="default" padding="md" className={styles.tableRow} role="row">
               <div className={styles.memberCell}>
                 {item.userId && hasMemberRecord ? (
-                  <Link href={`/${hub.slug}/admin/members/${item.userId}`} className={styles.memberLink}>
+                  <Link href={item.memberHref || `/${hub.slug}/admin/members/${item.userId}`} prefetch={false} className={styles.memberLink}>
                     {memberName}
                   </Link>
                 ) : (
@@ -66,7 +66,7 @@ export default function PaymentItemsTable({ hub, items = [] }) {
               <p className={styles.primaryValue}>{formatMembershipDate(item.lifecycleDate || item.dueDate, hub.locale)}</p>
               <div className={styles.viewCell}>
                 {item.detailHref ? (
-                  <Button href={item.detailHref} variant="ghost" iconOnly aria-label="View payment record">
+                  <Button href={item.detailHref} prefetch={false} variant="ghost" iconOnly aria-label="View payment record">
                     <Icon name="open_in_new" size="sm" decorative />
                   </Button>
                 ) : null}

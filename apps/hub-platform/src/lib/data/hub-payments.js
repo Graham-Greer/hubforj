@@ -36,6 +36,7 @@ import {
   getFallbackRegionalMarket,
   resolveLaunchFormattingLocale,
 } from "@/lib/domain/regional-markets";
+import { buildHubRuntimeHref, normalizeHubRouteMode } from "@/lib/domain/hub-runtime-paths";
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -135,22 +136,26 @@ function normalizeMembershipCommercialTitle(title) {
   return normalizeString(title).replace(/\s+upgrade$/i, "");
 }
 
-function buildPaymentDetailHref(hubSlug, paymentItemId) {
-  return `/${hubSlug}/admin/payments/${paymentItemId}`;
+function buildAdminHref(hubSlug, pathname, routeMode = "path") {
+  return buildHubRuntimeHref(hubSlug, pathname, normalizeHubRouteMode(routeMode));
 }
 
-function buildMemberHref(hubSlug, userId) {
+function buildPaymentDetailHref(hubSlug, paymentItemId, routeMode = "path") {
+  return buildAdminHref(hubSlug, `/admin/payments/${paymentItemId}`, routeMode);
+}
+
+function buildMemberHref(hubSlug, userId, routeMode = "path") {
   const normalizedUserId = normalizeString(userId);
-  return normalizedUserId ? `/${hubSlug}/admin/members/${normalizedUserId}` : "";
+  return normalizedUserId ? buildAdminHref(hubSlug, `/admin/members/${normalizedUserId}`, routeMode) : "";
 }
 
-function buildLinkedRecordDetail(hubSlug, item, record = null) {
+function buildLinkedRecordDetail(hubSlug, item, record = null, routeMode = "path") {
   if (item.kind === "event") {
     return {
       label: "Event booking",
       title: item.title || "Event booking",
       supportingText: item.detail || "This payment is linked to an event booking.",
-      href: item.eventId ? `/${hubSlug}/admin/events/${item.eventId}/registrations` : "",
+      href: item.eventId ? buildAdminHref(hubSlug, `/admin/events/${item.eventId}/registrations`, routeMode) : "",
       hrefLabel: "Open bookings",
       stateLabel: normalizeString(record?.status) || normalizeString(item.status) || "active",
     };
@@ -161,7 +166,7 @@ function buildLinkedRecordDetail(hubSlug, item, record = null) {
       label: "Course enrolment",
       title: item.title || "Course enrolment",
       supportingText: item.detail || "This payment is linked to a course enrolment.",
-      href: item.courseId ? `/${hubSlug}/admin/courses/${item.courseId}/registrations` : "",
+      href: item.courseId ? buildAdminHref(hubSlug, `/admin/courses/${item.courseId}/registrations`, routeMode) : "",
       hrefLabel: "Open registrations",
       stateLabel: normalizeString(record?.status) || normalizeString(item.status) || "enrolled",
     };
@@ -171,7 +176,7 @@ function buildLinkedRecordDetail(hubSlug, item, record = null) {
     label: "Membership plan",
     title: item.title || "Membership plan",
     supportingText: item.operationalLabel ? "This payment is for a membership upgrade." : "This payment is part of the member's membership plan.",
-    href: `/${hubSlug}/admin/payments?view=plans`,
+    href: buildAdminHref(hubSlug, "/admin/payments?view=plans", routeMode),
     hrefLabel: "Open membership plans",
     stateLabel: normalizeString(record?.operationalStatus || record?.status) || "",
   };
@@ -243,14 +248,14 @@ function hasEventSnapshotDrift(record = null, currentEvent = null) {
   );
 }
 
-function buildMemberDetail(hubSlug, item) {
+function buildMemberDetail(hubSlug, item, routeMode = "path") {
   const memberRecordAvailable = item?.memberRecordAvailable !== false;
   const fallbackName = item.userName || item.userEmail || "Former member";
 
   return {
     name: fallbackName,
     email: item.userEmail,
-    href: memberRecordAvailable ? buildMemberHref(hubSlug, item.userId) : "",
+    href: memberRecordAvailable ? buildMemberHref(hubSlug, item.userId, routeMode) : "",
     rows: [
       { label: "Name", value: fallbackName },
       { label: "Email", value: item.userEmail || "Email not available" },
@@ -312,7 +317,7 @@ function resolveLifecycleDateInfo({
   };
 }
 
-function mapLedgerRecordToPaymentItem(record, hubSlug, user = null, fallback = null) {
+function mapLedgerRecordToPaymentItem(record, hubSlug, user = null, fallback = null, routeMode = "path") {
   const kind = mapPaymentRecordKindToItemKind(record.kind);
   const isMembershipUpgrade = isMembershipUpgradeRecord(record);
   const lifecycle = resolveLifecycleDateInfo({
@@ -370,7 +375,7 @@ function mapLedgerRecordToPaymentItem(record, hubSlug, user = null, fallback = n
     courseId: record.courseId || fallback?.courseId || "",
     nativePaymentTransactionId: record.nativeTransactionId || fallback?.nativePaymentTransactionId || "",
     operationalLabel: "",
-    detailHref: buildPaymentDetailHref(hubSlug, `ledger_${record.id}`),
+    detailHref: buildPaymentDetailHref(hubSlug, `ledger_${record.id}`, routeMode),
   };
 }
 
@@ -431,13 +436,13 @@ function buildLifecycleRows(item, record = null, transaction = null, paymentReco
   return rows;
 }
 
-export async function listHubPaymentItemsBySlug(hubSlug) {
+export async function listHubPaymentItemsBySlug(hubSlug, options = {}) {
   const hub = await getHubBySlug(hubSlug);
   if (!hub) {
     return { hub: null, items: [], summary: summarizeHubPaymentItems([]) };
   }
 
-  return getHubPaymentReportByHub(hub);
+  return getHubPaymentReportByHub(hub, options);
 }
 
 function resolvePreloadedCollection(preloaded, key, fallback) {
@@ -449,6 +454,7 @@ export async function getHubPaymentReportByHub(hub, preloaded = {}) {
     return { hub: null, items: [], summary: summarizeHubPaymentItems([]) };
   }
 
+  const routeMode = normalizeHubRouteMode(preloaded.routeMode);
   const [memberships, paymentRecords, nativeTransactions, pendingUpgradeRequests, users, eventItems, courseItems] = await Promise.all([
     resolvePreloadedCollection(preloaded, "memberships", () => listMembershipPaymentItemsByHub(hub.id)),
     resolvePreloadedCollection(preloaded, "paymentRecords", () => listPaymentRecordsByHub(hub.id)),
@@ -518,7 +524,7 @@ export async function getHubPaymentReportByHub(hub, preloaded = {}) {
       userId: membership.userId,
       userName: normalizeString(membership.userName),
       userEmail: normalizeString(membership.userEmail).toLowerCase(),
-      detailHref: buildPaymentDetailHref(hub.slug, `membership_payment_${membership.id}`),
+      detailHref: buildPaymentDetailHref(hub.slug, `membership_payment_${membership.id}`, routeMode),
     }))
     .filter((membership) => {
       if (ledgerMembershipPaymentSourceIds.has(normalizeString(membership.recordId))) {
@@ -560,7 +566,7 @@ export async function getHubPaymentReportByHub(hub, preloaded = {}) {
             ? courseItemsByRegistrationId.get(normalizeString(record.courseRegistrationId || record.sourceId))
             : null;
 
-      return mapLedgerRecordToPaymentItem(record, hub.slug, user, fallback);
+      return mapLedgerRecordToPaymentItem(record, hub.slug, user, fallback, routeMode);
     });
   const legacyNativeMembershipUpgradeItems = nativeTransactions
     .filter(
@@ -602,7 +608,7 @@ export async function getHubPaymentReportByHub(hub, preloaded = {}) {
         userId: transaction.userId,
         userName: normalizeString(user?.name),
         userEmail: normalizeString(user?.email).toLowerCase(),
-        detailHref: buildPaymentDetailHref(hub.slug, `native_${transaction.id}`),
+        detailHref: buildPaymentDetailHref(hub.slug, `native_${transaction.id}`, routeMode),
       };
     });
   const fallbackEventItems = eventItems
@@ -629,7 +635,7 @@ export async function getHubPaymentReportByHub(hub, preloaded = {}) {
               : normalizeString(item.paymentStatus) === "overdue"
                 ? "Overdue"
                 : "Recorded",
-      detailHref: buildPaymentDetailHref(hub.slug, item.id),
+      detailHref: buildPaymentDetailHref(hub.slug, item.id, routeMode),
     }));
   const fallbackCourseItems = courseItems
     .filter((item) => !ledgerNativeTransactionIds.has(normalizeString(item.nativePaymentTransactionId)))
@@ -655,7 +661,7 @@ export async function getHubPaymentReportByHub(hub, preloaded = {}) {
               : normalizeString(item.paymentStatus) === "overdue"
                 ? "Overdue"
                 : "Recorded",
-      detailHref: buildPaymentDetailHref(hub.slug, item.id),
+      detailHref: buildPaymentDetailHref(hub.slug, item.id, routeMode),
     }));
 
   const items = sortItems([
@@ -667,6 +673,7 @@ export async function getHubPaymentReportByHub(hub, preloaded = {}) {
   ]).map((item) => ({
     ...item,
     memberRecordAvailable: usersById.has(normalizeString(item.userId)),
+    memberHref: buildMemberHref(hub.slug, item.userId, routeMode),
   }));
   const locale = resolveLaunchFormattingLocale(hub.locale, hub.country);
 
@@ -693,9 +700,10 @@ export async function getHubPaymentReportByHub(hub, preloaded = {}) {
   };
 }
 
-export async function getHubPaymentItemDetailBySlug(hubSlug, paymentItemId) {
+export async function getHubPaymentItemDetailBySlug(hubSlug, paymentItemId, options = {}) {
   const normalizedPaymentItemId = normalizeString(paymentItemId);
-  const { hub, items } = await listHubPaymentItemsBySlug(hubSlug);
+  const routeMode = normalizeHubRouteMode(options.routeMode);
+  const { hub, items } = await listHubPaymentItemsBySlug(hubSlug, { routeMode });
 
   if (!hub || !normalizedPaymentItemId) {
     return { hub: null, item: null, detail: null };
@@ -783,8 +791,8 @@ export async function getHubPaymentItemDetailBySlug(hubSlug, paymentItemId) {
     currentEvent = await getEventById(hub.id, item.eventId);
   }
 
-  const linkedRecord = buildLinkedRecordDetail(hub.slug, item, record || transaction);
-  const member = buildMemberDetail(hub.slug, item);
+  const linkedRecord = buildLinkedRecordDetail(hub.slug, item, record || transaction, routeMode);
+  const member = buildMemberDetail(hub.slug, item, routeMode);
   const eventComparisonRows = item.kind === "event" ? buildEventSnapshotComparison(record, currentEvent) : [];
 
   return {

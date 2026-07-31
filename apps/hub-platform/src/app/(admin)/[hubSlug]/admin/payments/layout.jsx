@@ -1,10 +1,10 @@
 import RegionalSetupRequiredState from "@/components/patterns/regional-setup-required-state/RegionalSetupRequiredState";
-import { requireHubBySlug } from "@/lib/data/hubs";
+import { requireHubCoreBySlug } from "@/lib/data/hubs";
 import { isHubRegionalSetupComplete } from "@/lib/domain/hub-regional-setup";
 
 export default async function PaymentsAdminLayout({ children, params }) {
   const { hubSlug } = await params;
-  const hub = await requireHubBySlug(hubSlug);
+  const hub = await requireHubCoreBySlug(hubSlug);
 
   if (!isHubRegionalSetupComplete(hub)) {
     return (

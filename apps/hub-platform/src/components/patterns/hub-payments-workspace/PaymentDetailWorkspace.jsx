@@ -129,7 +129,7 @@ function formatEventComparisonValue(row, _item, locale = fallbackRegionalMarket.
   return row.value;
 }
 
-export default function PaymentDetailWorkspace({ hub, item, detail }) {
+export default function PaymentDetailWorkspace({ hub, item, detail, paymentsHref = "" }) {
   const linkedRecord = detail?.linkedRecord || null;
   const comparisonRows = linkedRecord?.comparisonRows || [];
   const hasSnapshotDrift = linkedRecord?.snapshotDrift === true;
@@ -149,7 +149,7 @@ export default function PaymentDetailWorkspace({ hub, item, detail }) {
         description="Check what happened with this payment, who it belongs to, and where to go next if you need to follow up."
         actions={
           <div className={styles.headerActions}>
-            <Button href={`/${hub.slug}/admin/payments?view=payments`} variant="secondary">
+            <Button href={paymentsHref || `/${hub.slug}/admin/payments?view=payments`} prefetch={false} variant="secondary">
               Back to payments
             </Button>
           </div>
@@ -195,7 +195,7 @@ export default function PaymentDetailWorkspace({ hub, item, detail }) {
 
         {detail.nextAction ? (
           <div className={styles.contextActions}>
-            <Button href={detail.nextAction.href}>{detail.nextAction.label}</Button>
+            <Button href={detail.nextAction.href} prefetch={false}>{detail.nextAction.label}</Button>
           </div>
         ) : null}
       </Surface>
@@ -214,7 +214,7 @@ export default function PaymentDetailWorkspace({ hub, item, detail }) {
             <DetailList rows={detail.member?.rows || []} item={item} locale={hub.locale} className={styles.factGrid} />
             {detail.member?.href ? (
               <div className={styles.contextActions}>
-                <Button href={detail.member.href} variant="ghost">Open member record</Button>
+                <Button href={detail.member.href} prefetch={false} variant="ghost">Open member record</Button>
               </div>
             ) : null}
           </Surface>
