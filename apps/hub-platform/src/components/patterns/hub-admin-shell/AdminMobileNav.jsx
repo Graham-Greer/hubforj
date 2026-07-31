@@ -163,7 +163,14 @@ export default function AdminMobileNav({
           <div className={styles.utilitySection}>
             <p className={styles.utilityLabel}>Workspace</p>
             <div className={styles.utilityList}>
-              <Button href={publicSiteHref} prefetch={false} variant="secondary" onClick={() => onClose?.()}>
+              <Button
+                href={publicSiteHref}
+                prefetch={false}
+                variant="secondary"
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => onClose?.()}
+              >
                 View public site
               </Button>
               <WorkspaceThemeToggle currentTheme={operatorTheme} />
