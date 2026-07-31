@@ -9,7 +9,10 @@ export async function GET(request, { params }) {
     return errorResponse;
   }
 
-  const state = await getAdminOnboardingState(hub, access.actorId, access.actorRole);
+  const scope = request.nextUrl?.searchParams?.get("scope") || "";
+  const state = await getAdminOnboardingState(hub, access.actorId, access.actorRole, {
+    includeChecklist: scope !== "route",
+  });
   return NextResponse.json({ state });
 }
 
