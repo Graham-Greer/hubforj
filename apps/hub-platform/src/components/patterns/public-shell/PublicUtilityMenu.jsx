@@ -6,10 +6,11 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Avatar from "@/components/ui/avatar/Avatar";
 import CompactMenu from "@/components/ui/compact-menu/CompactMenu";
 import FormMessage from "@/components/ui/form-message/FormMessage";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { getFirebaseClientAuth } from "@/lib/firebase/client";
 import styles from "./PublicUtilityMenu.module.css";
 
-export default function PublicUtilityMenu({ hubSlug, utility }) {
+export default function PublicUtilityMenu({ hubSlug, routeMode = "path", utility }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -53,7 +54,7 @@ export default function PublicUtilityMenu({ hubSlug, utility }) {
                     return;
                   }
 
-                  router.replace(redirectPath || `/${hubSlug}`);
+                  router.replace(redirectPath || buildHubRuntimeHref(hubSlug, "/", routeMode));
                   router.refresh();
                 } catch {
                   setError("Unable to sign out right now.");

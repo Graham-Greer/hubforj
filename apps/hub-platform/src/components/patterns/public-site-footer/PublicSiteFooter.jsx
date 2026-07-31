@@ -4,6 +4,7 @@ import SocialIcon from "@/components/ui/social-icon/SocialIcon";
 import PublicCookiePreferencesButton from "@/components/patterns/public-cookie-preferences/PublicCookiePreferencesButton";
 import { formatPublicAddress, formatPublicHours } from "@/lib/domain/public-site";
 import { buildPublicSocialItems } from "@/lib/domain/public-social-links";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import styles from "./PublicSiteFooter.module.css";
 
 const usefulLinks = [
@@ -12,7 +13,7 @@ const usefulLinks = [
   { label: "Cookies", path: "/cookies" },
 ];
 
-export default function PublicSiteFooter({ hubSlug, siteSettings, footerModel }) {
+export default function PublicSiteFooter({ hubSlug, routeMode = "path", siteSettings, footerModel }) {
   const variant = footerModel?.variants?.variant || "standard";
   const contentWidth = footerModel?.contentWidth || "default";
   const addressLines = formatPublicAddress(siteSettings.address);
@@ -68,7 +69,7 @@ export default function PublicSiteFooter({ hubSlug, siteSettings, footerModel })
             <ul className={styles.list}>
               {usefulLinks.map((item) => (
                 <li key={item.label}>
-                  <Link className={styles.link} href={`/${hubSlug}${item.path}`}>{item.label}</Link>
+                  <Link className={styles.link} href={buildHubRuntimeHref(hubSlug, item.path, routeMode)} prefetch={false}>{item.label}</Link>
                 </li>
               ))}
               <li>

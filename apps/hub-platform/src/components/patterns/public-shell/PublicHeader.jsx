@@ -14,7 +14,7 @@ import PublicShellNav from "./PublicShellNav";
 import PublicUtilityMenu from "./PublicUtilityMenu";
 import styles from "./PublicHeader.module.css";
 
-export default function PublicHeader({ hubSlug, headerModel }) {
+export default function PublicHeader({ hubSlug, routeMode = "path", headerModel }) {
   const mobilePanelId = useId();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const closeMobileNav = useCallback(() => {
@@ -153,7 +153,7 @@ export default function PublicHeader({ hubSlug, headerModel }) {
         ) : null}
 
         <HeaderContainer width={headerContainerWidth} className={styles.bar}>
-            <Link href={homeHref} className={styles.brandCluster}>
+            <Link href={homeHref} prefetch={false} className={styles.brandCluster}>
               <div className={hasLogo ? styles.brandLogo : styles.brandMark}>
                 {hasLogo ? (
                   <Image
@@ -180,20 +180,21 @@ export default function PublicHeader({ hubSlug, headerModel }) {
 
             <div className={styles.desktopActions}>
               {utility.viewerState === "anonymous" && utility.primaryAction?.href && headerCta?.key !== "join" ? (
-                <PublicAuthButton hubSlug={hubSlug} route="join" variant="ghost">
+                <PublicAuthButton hubSlug={hubSlug} route="join" routeMode={routeMode} variant="ghost">
                   {utility.primaryAction.label}
                 </PublicAuthButton>
               ) : null}
               {utility.viewerState === "anonymous" && utility.secondaryAction?.href ? (
-                <PublicAuthButton hubSlug={hubSlug} route="sign-in" variant="secondary">
+                <PublicAuthButton hubSlug={hubSlug} route="sign-in" routeMode={routeMode} variant="secondary">
                   {utility.secondaryAction.label}
                 </PublicAuthButton>
               ) : null}
-              {utility.viewerState !== "anonymous" ? <PublicUtilityMenu hubSlug={hubSlug} utility={utility} /> : null}
+              {utility.viewerState !== "anonymous" ? <PublicUtilityMenu hubSlug={hubSlug} routeMode={routeMode} utility={utility} /> : null}
               {headerCta?.kind === "auth" ? (
                 <PublicAuthButton
                   hubSlug={hubSlug}
                   route={headerCta.route}
+                  routeMode={routeMode}
                   variant="primary"
                   className={styles.headerCta}
                 >
@@ -201,7 +202,7 @@ export default function PublicHeader({ hubSlug, headerModel }) {
                 </PublicAuthButton>
               ) : null}
               {headerCta?.kind === "link" && headerCta.href ? (
-                <Button href={headerCta.href} className={styles.headerCta}>
+                <Button href={headerCta.href} prefetch={false} className={styles.headerCta}>
                   {headerCta.label}
                 </Button>
               ) : null}
@@ -212,6 +213,7 @@ export default function PublicHeader({ hubSlug, headerModel }) {
                 <PublicAuthButton
                   hubSlug={hubSlug}
                   route={headerCta.route}
+                  routeMode={routeMode}
                   variant="primary"
                   size="sm"
                   className={styles.mobileHeaderCta}
@@ -220,16 +222,16 @@ export default function PublicHeader({ hubSlug, headerModel }) {
                 </PublicAuthButton>
               ) : null}
               {headerCta?.kind === "link" && headerCta.href ? (
-                <Button href={headerCta.href} size="sm" className={[styles.headerCta, styles.mobileHeaderCta].join(" ")}>
+                <Button href={headerCta.href} prefetch={false} size="sm" className={[styles.headerCta, styles.mobileHeaderCta].join(" ")}>
                   {headerCta.label}
                 </Button>
               ) : null}
               {utility.viewerState === "anonymous" && utility.secondaryAction?.href ? (
-                <PublicAuthButton hubSlug={hubSlug} route="sign-in" variant="ghost" size="sm">
+                <PublicAuthButton hubSlug={hubSlug} route="sign-in" routeMode={routeMode} variant="ghost" size="sm">
                   {utility.secondaryAction.label}
                 </PublicAuthButton>
               ) : null}
-              {utility.viewerState !== "anonymous" ? <PublicUtilityMenu hubSlug={hubSlug} utility={utility} /> : null}
+              {utility.viewerState !== "anonymous" ? <PublicUtilityMenu hubSlug={hubSlug} routeMode={routeMode} utility={utility} /> : null}
               <NavToggleButton
                 open={mobileNavOpen}
                 onClick={() => setMobileNavOpen((current) => !current)}
@@ -243,6 +245,7 @@ export default function PublicHeader({ hubSlug, headerModel }) {
       <PublicMobileNav
         id={mobilePanelId}
         hubSlug={hubSlug}
+        routeMode={routeMode}
         navItems={navItems}
         utility={utility}
         cta={headerCta}

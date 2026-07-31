@@ -5,8 +5,8 @@ try {
 }
 
 import { headers } from "next/headers";
-import { requireHubBySlug } from "@/lib/data/hubs";
-import { getSiteSettingsByHub } from "@/lib/data/site-settings";
+import { requireHubCoreBySlug } from "@/lib/data/hubs";
+import { getCachedSiteSettingsByHub } from "@/lib/data/site-settings";
 import {
   getEventBySlugForHub,
   getVisibleEventBySlugForHub,
@@ -51,14 +51,13 @@ function canViewPublishedEventSeries(series, { isMember = false } = {}) {
 }
 
 export async function getPublicSiteContext(hubSlug) {
-  const hubRecord = await requireHubBySlug(hubSlug);
+  const hubRecord = await requireHubCoreBySlug(hubSlug);
   const requestHeaders = await headers();
   const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(requestHeaders));
-  const hub = { ...hubRecord, routeMode };
-  const siteSettings = await getSiteSettingsByHub(hub);
+  const siteSettings = await getCachedSiteSettingsByHub(hubRecord);
 
   return {
-    hub,
+    hub: { ...hubRecord, routeMode },
     siteSettings,
   };
 }

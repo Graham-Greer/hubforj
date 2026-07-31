@@ -7,6 +7,7 @@ import { buildHubAuthHref } from "@/lib/auth/hub-auth-redirects";
 export default function PublicAuthButton({
   hubSlug,
   route,
+  routeMode = "path",
   variant = "ghost",
   size = "md",
   children,
@@ -16,10 +17,10 @@ export default function PublicAuthButton({
   const searchParams = useSearchParams();
   const query = searchParams?.toString();
   const nextPath = query ? `${pathname}?${query}` : pathname;
-  const href = buildHubAuthHref(hubSlug, route, nextPath);
+  const href = buildHubAuthHref(hubSlug, route, nextPath, routeMode);
 
   return (
-    <Button href={href} variant={variant} size={size} className={className}>
+    <Button href={href} prefetch={false} variant={variant} size={size} className={className}>
       {children}
     </Button>
   );
