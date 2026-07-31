@@ -149,16 +149,29 @@
   z-index: 0;
 }
 
+.inverseHeader {
+  --section-header-title-color: var(--section-hero-overlay-title);
+  --section-header-description-color: var(--section-hero-overlay-description);
+  --section-header-eyebrow-color: var(--section-hero-overlay-eyebrow);
+}
+
 .inverseTitle,
 .inverseDescription {
+  --section-header-title-color: var(--section-hero-overlay-title);
+  --section-header-description-color: var(--section-hero-overlay-description);
+
   color: var(--section-hero-overlay-title);
 }
 
 .inverseEyebrow {
+  --section-header-eyebrow-color: var(--section-hero-overlay-eyebrow);
+
   color: var(--section-hero-overlay-eyebrow);
 }
 
 .inverseDescription {
+  --section-header-description-color: var(--section-hero-overlay-description);
+
   color: var(--section-hero-overlay-description);
 }
 

@@ -20,12 +20,23 @@
   width: 100%;
 }
 
+.inverseHeader {
+  --section-header-title-color: var(--text-inverse);
+  --section-header-description-color: var(--text-inverse);
+  --section-header-eyebrow-color: var(--section-inverse-eyebrow);
+}
+
 .inverseTitle,
 .inverseDescription {
+  --section-header-title-color: var(--text-inverse);
+  --section-header-description-color: var(--text-inverse);
+
   color: var(--text-inverse);
 }
 
 .inverseEyebrow {
+  --section-header-eyebrow-color: var(--section-inverse-eyebrow);
+
   color: var(--section-inverse-eyebrow);
 }
 

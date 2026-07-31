@@ -27,7 +27,7 @@
 
 .eyebrow {
   margin: 0;
-  color: var(--accent-primary);
+  color: var(--section-header-eyebrow-color, var(--accent-primary));
   font: var(--font-label-md);
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -35,6 +35,7 @@
 
 .title {
   margin: 0;
+  color: var(--section-header-title-color, inherit);
   letter-spacing: -0.04em;
   text-wrap: balance;
 }
@@ -53,7 +54,7 @@
 
 .description {
   margin: 0;
-  color: var(--text-secondary);
+  color: var(--section-header-description-color, var(--text-secondary));
   font: var(--font-body-lg);
   text-wrap: pretty;
 }
