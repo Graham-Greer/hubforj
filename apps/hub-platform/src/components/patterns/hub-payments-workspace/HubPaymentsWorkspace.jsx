@@ -64,6 +64,7 @@ function buildVisibleReportingSummary(
 
 export default function HubPaymentsWorkspace({
   hub,
+  adminBasePath = "",
   items,
   summary,
   view = "setup",
@@ -110,7 +111,8 @@ export default function HubPaymentsWorkspace({
   if (workspace.dateTo) {
     exportParams.set("date_to", workspace.dateTo);
   }
-  const exportHref = `/${hub.slug}/admin/payments/export${exportParams.toString() ? `?${exportParams.toString()}` : ""}`;
+  const paymentsBasePath = adminBasePath || `/${hub.slug}/admin/payments`;
+  const exportHref = `${paymentsBasePath}/export${exportParams.toString() ? `?${exportParams.toString()}` : ""}`;
 
   async function handleExportCsv() {
     setExportError("");
@@ -180,6 +182,7 @@ export default function HubPaymentsWorkspace({
       ) : view === "plans" ? (
         <MembershipPlanManager
           hub={hub}
+          adminBasePath={adminBasePath}
           membershipPlans={membershipPlans}
           pendingUpgradeRequests={pendingUpgradeRequests}
           paymentSetupState={paymentSetupState}

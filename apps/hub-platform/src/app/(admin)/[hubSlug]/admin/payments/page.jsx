@@ -3,7 +3,7 @@ import LockedFeatureState from "@/components/patterns/locked-feature-state/Locke
 import PageHeader from "@/components/patterns/page-header/PageHeader";
 import HubPaymentsWorkspace from "@/components/patterns/hub-payments-workspace/HubPaymentsWorkspace";
 import { getCurrentHubOperatorAccess } from "@/lib/auth/hub-access";
-import { requireHubBySlug } from "@/lib/data/hubs";
+import { requireHubCoreBySlug } from "@/lib/data/hubs";
 import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
 import { getHubPaymentLedgerSyncStatus } from "@/lib/data/payment-ledger-sync";
 import { getHubPaymentReconciliationReport } from "@/lib/data/payment-reconciliation";
@@ -12,7 +12,10 @@ import { listMembershipPlansByHub, listPendingMembershipUpgradeRequestsByHub } f
 import { getHubPaymentSetupState } from "@/lib/domain/hub-payment-configuration";
 import { hasHubCapability } from "@/lib/domain/package-guards";
 import { formatMoney } from "@/lib/domain/memberships";
+import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { getStripeConnectEnvironmentState } from "@/lib/server/stripe";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { approveMembershipUpgradeRequestAction } from "../members/[memberId]/actions";
 import {
@@ -85,7 +88,11 @@ function PaymentsWorkspaceFallback({ selectedView }) {
   );
 }
 
-async function PaymentsWorkspaceLoader({ hub, selectedView, success, error }) {
+function buildAdminHref(hubSlug, pathname, routeMode) {
+  return buildHubRuntimeHref(hubSlug, pathname, routeMode);
+}
+
+async function PaymentsWorkspaceLoader({ hub, routeMode, selectedView, success, error }) {
   const paymentsEnabled = hasHubCapability(hub, "paymentsEnabled");
   const shouldCheckSupportDiagnostics = selectedView === "setup";
   const access = shouldCheckSupportDiagnostics ? await getCurrentHubOperatorAccess(hub) : null;
@@ -103,7 +110,7 @@ async function PaymentsWorkspaceLoader({ hub, selectedView, success, error }) {
     paymentReconciliationReport,
   ] = await Promise.all([
     shouldLoadPaymentReport
-      ? getHubPaymentReportByHub(hub)
+      ? getHubPaymentReportByHub(hub, { routeMode })
       : Promise.resolve({
           items: [],
           summary: buildEmptyPaymentSummary(hub),
@@ -121,6 +128,7 @@ async function PaymentsWorkspaceLoader({ hub, selectedView, success, error }) {
     <HubPaymentsWorkspace
       key={`${selectedView}:${typeof success === "string" ? success : ""}:${typeof error === "string" ? error : ""}`}
       hub={hub}
+      adminBasePath={buildAdminHref(hub.slug, "/admin/payments", routeMode)}
       items={paymentReport.items}
       summary={paymentReport.summary}
       view={selectedView}
@@ -148,7 +156,9 @@ export default async function PaymentsPage({ params, searchParams }) {
   const { hubSlug } = await params;
   const { success = "", error = "", view = "setup" } = await searchParams;
   const selectedView = view === "plans" ? "plans" : view === "payments" ? "payments" : "setup";
-  const hub = await requireHubBySlug(hubSlug);
+  const headerStore = await headers();
+  const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
+  const hub = await requireHubCoreBySlug(hubSlug);
 
   if (!hub) {
     notFound();
@@ -167,7 +177,7 @@ export default async function PaymentsPage({ params, searchParams }) {
           "Complete embedded onboarding inside Hubforj",
           "Operate Stripe-backed member payments from one workspace",
         ]}
-        secondaryAction={{ href: `/${hub.slug}/admin/payments?view=plans`, label: "Open membership plans" }}
+        secondaryAction={{ href: buildAdminHref(hub.slug, "/admin/payments?view=plans", routeMode), label: "Open membership plans" }}
         rootOnboardingKey="payments-setup-locked-root"
         unlocksOnboardingKey="payments-setup-locked-unlocks"
         secondaryActionOnboardingKey="payments-setup-locked-action"
@@ -188,6 +198,7 @@ export default async function PaymentsPage({ params, searchParams }) {
       <Suspense fallback={<PaymentsWorkspaceFallback selectedView={selectedView} />}>
         <PaymentsWorkspaceLoader
           hub={hub}
+          routeMode={routeMode}
           selectedView={selectedView}
           success={success}
           error={error}
