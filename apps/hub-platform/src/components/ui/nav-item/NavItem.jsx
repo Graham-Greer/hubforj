@@ -4,10 +4,20 @@ import Link from "next/link";
 import Icon from "@/components/ui/icon/Icon";
 import styles from "./NavItem.module.css";
 
-export default function NavItem({ href, label, shortLabel, iconName = "", active = false, locked = false, onboardingKey = "" }) {
+export default function NavItem({
+  href,
+  label,
+  shortLabel,
+  iconName = "",
+  active = false,
+  locked = false,
+  onboardingKey = "",
+  prefetch = false,
+}) {
   return (
     <Link
       href={href}
+      prefetch={prefetch}
       className={[styles.root, active ? styles.active : "", locked ? styles.locked : ""].filter(Boolean).join(" ")}
       aria-current={active ? "page" : undefined}
       aria-label={locked ? `${label} (locked)` : label}

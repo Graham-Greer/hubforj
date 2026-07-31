@@ -14,6 +14,7 @@ export default function HubAdminTopbar({
   operatorSession = null,
   adminSession = null,
   supportMode = null,
+  publicSiteHref = "/",
   mobileNavOpen = false,
   onToggleMobileNav,
   mobileNavId,
@@ -36,7 +37,7 @@ export default function HubAdminTopbar({
             <span>Back to platform</span>
           </Button>
         ) : null}
-        <Button href={`/${hub.slug}`} variant="ghost">
+        <Button href={publicSiteHref} prefetch={false} variant="ghost">
           View public site
         </Button>
         <WorkspaceThemeToggle currentTheme={operatorTheme} />

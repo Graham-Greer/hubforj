@@ -7,7 +7,16 @@ import AdminMobileNav from "./AdminMobileNav";
 import HubAdminTopbar from "./HubAdminTopbar";
 import styles from "./HubAdminShell.module.css";
 
-export default function HubAdminShell({ hub, navGroups, operatorTheme, operatorSession, adminSession = null, supportMode = null, children }) {
+export default function HubAdminShell({
+  hub,
+  navGroups,
+  publicSiteHref,
+  operatorTheme,
+  operatorSession,
+  adminSession = null,
+  supportMode = null,
+  children,
+}) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [mobileNavTopOffset, setMobileNavTopOffset] = useState(88);
   const mobileNavId = useId();
@@ -59,6 +68,7 @@ export default function HubAdminShell({ hub, navGroups, operatorTheme, operatorS
             operatorSession={operatorSession}
             adminSession={adminSession}
             supportMode={supportMode}
+            publicSiteHref={publicSiteHref}
             mobileNavOpen={mobileNavOpen}
             onToggleMobileNav={() => setMobileNavOpen((current) => !current)}
             mobileNavId={mobileNavId}
@@ -72,6 +82,7 @@ export default function HubAdminShell({ hub, navGroups, operatorTheme, operatorS
       </div>
       <AdminMobileNav
         hubSlug={hub.slug}
+        publicSiteHref={publicSiteHref}
         title={hub.name}
         groups={navGroups}
         open={mobileNavOpen}
