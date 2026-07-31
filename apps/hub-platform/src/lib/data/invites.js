@@ -75,6 +75,11 @@ async function getFirestoreInviteById(hubId, inviteId) {
   return normalizeInviteRecord({ id: snapshot.id, ...snapshot.data() });
 }
 
+async function getQueryCount(query) {
+  const snapshot = await query.count().get();
+  return Number(snapshot.data().count || 0);
+}
+
 export async function listInvitesByHub(hubId) {
   const normalizedHubId = normalizeString(hubId);
   if (!normalizedHubId) {
@@ -90,14 +95,13 @@ export async function countPendingInvitesByHub(hubId) {
     return 0;
   }
 
-  const snapshot = await getFirebaseAdminDb()
+  return getQueryCount(
+    getFirebaseAdminDb()
     .collection("hubs")
     .doc(normalizedHubId)
     .collection("invites")
     .where("status", "==", "pending")
-    .get();
-
-  return snapshot.size;
+  );
 }
 
 export async function getInviteById(hubId, inviteId) {
