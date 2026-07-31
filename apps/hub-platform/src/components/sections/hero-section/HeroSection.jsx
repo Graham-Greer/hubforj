@@ -145,6 +145,7 @@ export default function HeroSection({
                   align={resolvedAlign}
                   width="wide"
                   headingLevel={headingLevel}
+                  className={hasMedia ? styles.inverseHeader : ""}
                   eyebrowClassName={hasMedia ? styles.inverseEyebrow : ""}
                   titleClassName={hasMedia ? styles.inverseTitle : ""}
                   descriptionClassName={hasMedia ? styles.inverseDescription : ""}
