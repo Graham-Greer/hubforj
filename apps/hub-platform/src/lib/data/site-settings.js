@@ -35,9 +35,9 @@ export async function getSiteSettingsByHubSlug(hubSlug) {
   return getSiteSettingsByHub(hub);
 }
 
-async function readSiteSettingsByHub(hub) {
+async function readSiteSettingsByHub(hub, options = {}) {
   const doc = await getFirebaseAdminDb().collection("hubs").doc(hub.id).collection("siteSettings").doc(SITE_SETTINGS_DOC).get();
-  const settings = normalizeSiteSettingsRecord(hub, doc.exists ? doc.data() : {});
+  const settings = normalizeSiteSettingsRecord(hub, doc.exists ? doc.data() : {}, { routeMode: options.routeMode });
 
   const pageHeroMediaEntries = Object.entries(settings.pages || {})
     .filter(([, page]) => page?.hero?.mediaAssetId)
@@ -86,7 +86,11 @@ async function readSiteSettingsByHub(hub) {
   };
 }
 
-export const getCachedSiteSettingsByHub = cache(readSiteSettingsByHub);
+const getCachedSiteSettingsByHubForRouteMode = cache(async (hub, routeMode) => readSiteSettingsByHub(hub, { routeMode }));
+
+export async function getCachedSiteSettingsByHub(hub, options = {}) {
+  return getCachedSiteSettingsByHubForRouteMode(hub, options.routeMode || "path");
+}
 
 export async function getSiteSettingsByHub(hub) {
   return readSiteSettingsByHub(hub);

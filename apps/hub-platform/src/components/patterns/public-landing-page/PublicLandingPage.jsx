@@ -1,8 +1,10 @@
+import { Suspense } from "react";
 import CTASection from "@/components/sections/cta-section/CTASection";
 import GridSection from "@/components/sections/grid-section/GridSection";
 import HeroSection from "@/components/sections/hero-section/HeroSection";
 import InfoSection from "@/components/sections/info-section/InfoSection";
 import TestimonialsSection from "@/components/sections/testimonials-section/TestimonialsSection";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { hasSectionRichTextContent } from "@/lib/domain/section-rich-text";
 import { getTemplateContentWidth, getTemplateLandingPageConfig } from "@/lib/templates/template-registry";
 import styles from "./PublicLandingPage.module.css";
@@ -32,7 +34,49 @@ function createInfoPlaceholderMedia(hubName) {
   };
 }
 
-export default function PublicLandingPage({ hub, siteSettings, testimonials, whatWeDoItems = [] }) {
+async function LandingDeferredSections({
+  deferredDataPromise,
+  sectionTemplate,
+  contentWidth,
+  whatWeDoEyebrow,
+  whatWeDoTitle,
+  whatWeDoDescription,
+  testimonialsEyebrow,
+  testimonialsTitle,
+  testimonialsDescription,
+}) {
+  const { testimonials = [], whatWeDoItems = [] } = await deferredDataPromise;
+  const shouldRenderWhatWeDoSection = Array.isArray(whatWeDoItems) && whatWeDoItems.length > 0;
+  const shouldRenderTestimonialsSection = Array.isArray(testimonials) && testimonials.length > 0;
+
+  return (
+    <>
+      {shouldRenderWhatWeDoSection ? (
+        <GridSection
+          eyebrow={whatWeDoEyebrow}
+          title={whatWeDoTitle}
+          description={whatWeDoDescription}
+          items={whatWeDoItems}
+          variant={sectionTemplate.whatWeDo.variant}
+          containerWidth={contentWidth}
+        />
+      ) : null}
+
+      {shouldRenderTestimonialsSection ? (
+        <TestimonialsSection
+          eyebrow={testimonialsEyebrow}
+          title={testimonialsTitle}
+          description={testimonialsDescription}
+          testimonials={testimonials}
+          variant={sectionTemplate.testimonials.variant}
+          containerWidth={contentWidth}
+        />
+      ) : null}
+    </>
+  );
+}
+
+export default function PublicLandingPage({ hub, siteSettings, deferredDataPromise }) {
   const sectionTemplate = getTemplateLandingPageConfig(hub.template);
   const contentWidth = getTemplateContentWidth(hub.template);
   const heroSettings = siteSettings.homePage?.hero || {};
@@ -66,8 +110,8 @@ export default function PublicLandingPage({ hub, siteSettings, testimonials, wha
       ? siteSettings.tagline || "A calm, trustworthy public surface for discovering events, courses, and community participation."
       : heroSettings.description || "";
   const heroActions = (!hasHeroConfig ? [
-    { label: "Join the hub", href: `/${hub.slug}/join`, variant: "secondary" },
-    { label: "Member sign in", href: `/${hub.slug}/sign-in`, variant: "primary" },
+    { label: "Join the hub", href: buildHubRuntimeHref(hub.slug, "/join", hub.routeMode), variant: "secondary" },
+    { label: "Member sign in", href: buildHubRuntimeHref(hub.slug, "/sign-in", hub.routeMode), variant: "primary" },
   ] : heroSettings.actions || []).map((action, index) => ({
     ...action,
     variant: action.variant || (index === 0 ? "secondary" : "primary"),
@@ -80,8 +124,8 @@ export default function PublicLandingPage({ hub, siteSettings, testimonials, wha
     ctaSettings.actions?.length
   );
   const resolvedCtaActions = (!hasCtaConfig ? [
-    { label: "Join the hub", href: `/${hub.slug}/join`, variant: "primary" },
-    { label: "Member sign in", href: `/${hub.slug}/sign-in`, variant: "secondary" },
+    { label: "Join the hub", href: buildHubRuntimeHref(hub.slug, "/join", hub.routeMode), variant: "primary" },
+    { label: "Member sign in", href: buildHubRuntimeHref(hub.slug, "/sign-in", hub.routeMode), variant: "secondary" },
   ] : ctaSettings.actions || []).map((action, index) => ({
     ...action,
     variant: action.variant || (index === 0 ? "primary" : "secondary"),
@@ -134,7 +178,6 @@ export default function PublicLandingPage({ hub, siteSettings, testimonials, wha
   const whatWeDoDescription = hasWhatWeDoConfig
     ? whatWeDoSettings.description || ""
     : "Use this section to highlight the kinds of experiences, support, or activities that help visitors understand what the community offers.";
-  const shouldRenderWhatWeDoSection = Array.isArray(whatWeDoItems) && whatWeDoItems.length > 0;
   const hasTestimonialsConfig = Boolean(
     testimonialsSettings.eyebrow ||
     testimonialsSettings.title ||
@@ -147,7 +190,6 @@ export default function PublicLandingPage({ hub, siteSettings, testimonials, wha
   const testimonialsDescription = hasTestimonialsConfig
     ? testimonialsSettings.description || ""
     : "Published testimonials help new visitors understand the experience of the community and feel more confident about joining.";
-  const shouldRenderTestimonialsSection = Array.isArray(testimonials) && testimonials.length > 0;
   return (
     <main className={styles.root}>
       <HeroSection
@@ -175,27 +217,19 @@ export default function PublicLandingPage({ hub, siteSettings, testimonials, wha
         />
       ) : null}
 
-      {shouldRenderWhatWeDoSection ? (
-        <GridSection
-          eyebrow={whatWeDoEyebrow}
-          title={whatWeDoTitle}
-          description={whatWeDoDescription}
-          items={whatWeDoItems}
-          variant={sectionTemplate.whatWeDo.variant}
-          containerWidth={contentWidth}
+      <Suspense fallback={null}>
+        <LandingDeferredSections
+          deferredDataPromise={deferredDataPromise}
+          sectionTemplate={sectionTemplate}
+          contentWidth={contentWidth}
+          whatWeDoEyebrow={whatWeDoEyebrow}
+          whatWeDoTitle={whatWeDoTitle}
+          whatWeDoDescription={whatWeDoDescription}
+          testimonialsEyebrow={testimonialsEyebrow}
+          testimonialsTitle={testimonialsTitle}
+          testimonialsDescription={testimonialsDescription}
         />
-      ) : null}
-
-      {shouldRenderTestimonialsSection ? (
-        <TestimonialsSection
-          eyebrow={testimonialsEyebrow}
-          title={testimonialsTitle}
-          description={testimonialsDescription}
-          testimonials={testimonials}
-          variant={sectionTemplate.testimonials.variant}
-          containerWidth={contentWidth}
-        />
-      ) : null}
+      </Suspense>
 
       <CTASection
         eyebrow={hasCtaConfig ? ctaSettings.eyebrow || "" : ""}

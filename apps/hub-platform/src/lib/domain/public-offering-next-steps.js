@@ -3,6 +3,7 @@ import {
   formatPublicCoursePriceLabel,
   getPublicCourseDeliveryLabel,
 } from "@/lib/domain/public-courses";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import {
   formatPublicEventPriceLabel,
 } from "@/lib/domain/public-events";
@@ -70,13 +71,13 @@ function buildBaseModel({
       : "Event booking";
   const offeringPath =
     kind === "course"
-      ? `/${hub.slug}/courses/${offering.slug}`
-      : `/${hub.slug}/events/${offering.slug}`;
-  const bookingsPath = `/${hub.slug}/account/bookings`;
+      ? buildHubRuntimeHref(hub.slug, `/courses/${offering.slug}`, hub.routeMode)
+      : buildHubRuntimeHref(hub.slug, `/events/${offering.slug}`, hub.routeMode);
+  const bookingsPath = buildHubRuntimeHref(hub.slug, "/account/bookings", hub.routeMode);
   const restartCheckoutPath =
     kind === "course"
-      ? `/${hub.slug}/courses/${offering.slug}/enrolment/restart-checkout`
-      : `/${hub.slug}/events/${offering.slug}/booking/restart-checkout`;
+      ? buildHubRuntimeHref(hub.slug, `/courses/${offering.slug}/enrolment/restart-checkout`, hub.routeMode)
+      : buildHubRuntimeHref(hub.slug, `/events/${offering.slug}/booking/restart-checkout`, hub.routeMode);
   const isWaitlisted = normalizeString(registration?.status) === "waitlisted";
   const pricingMode = normalizeString(offering?.pricingMode) || "free";
   const paymentProcessingMode = normalizeString(hub?.packagePaymentProcessingMode) || "none";

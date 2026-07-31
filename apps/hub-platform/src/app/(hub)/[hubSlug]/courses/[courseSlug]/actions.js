@@ -8,6 +8,7 @@ import { getCourseBySlug } from "@/lib/data/courses";
 import { createCourseRegistrationForMember, getCourseRegistrationByUser } from "@/lib/data/course-registrations";
 import { requireCurrentMemberSessionForHub } from "@/lib/auth/member-session";
 import { getRequestHostWithPortFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { startCourseRegistrationCheckout } from "@/lib/server/course-registration-checkout";
 import { queueInitialCourseRegistrationNotification } from "@/lib/server/booking-notification-outbox";
 
@@ -27,14 +28,19 @@ export async function enrolPublicCourseAction(formData) {
   const hubSlug = normalizeString(formData.get("hubSlug"));
   const courseId = normalizeString(formData.get("courseId"));
   const courseSlug = normalizeString(formData.get("courseSlug"));
+  const requestHeaders = await headers();
+  const requestHost = getRequestHostWithPortFromHeaders(requestHeaders);
+  const routeMode = resolveHubRuntimeRouteMode(requestHost);
 
   if (!hubSlug || !courseId || !courseSlug) {
-    redirect(hubSlug ? `/${hubSlug}/courses` : "/");
+    redirect(hubSlug ? buildHubRuntimeHref(hubSlug, "/courses", routeMode) : "/");
   }
 
   const hub = await requireHubBySlug(hubSlug);
-  const detailPath = `/${hub.slug}/courses/${courseSlug}`;
-  const nextStepsPath = `/${hub.slug}/courses/${courseSlug}/enrolment/next-steps`;
+  const detailPath = buildHubRuntimeHref(hub.slug, `/courses/${courseSlug}`, routeMode);
+  const nextStepsPath = buildHubRuntimeHref(hub.slug, `/courses/${courseSlug}/enrolment/next-steps`, routeMode);
+  const revalidateDetailPath = `/${hub.slug}/courses/${courseSlug}`;
+  const revalidateNextStepsPath = `/${hub.slug}/courses/${courseSlug}/enrolment/next-steps`;
   const memberSession = await requireCurrentMemberSessionForHub(hub, detailPath);
   const course = await getCourseBySlug(hub.slug, courseSlug);
 
@@ -64,9 +70,6 @@ export async function enrolPublicCourseAction(formData) {
     normalizeString(registration?.nativePaymentStatus) !== "checkout_open" &&
     normalizeString(registration?.nativePaymentStatus) !== "payment_received"
   ) {
-    const requestHeaders = await headers();
-    const requestHost = getRequestHostWithPortFromHeaders(requestHeaders);
-    const routeMode = resolveHubRuntimeRouteMode(requestHost);
     const checkout = await startCourseRegistrationCheckout({
       hub,
       course,
@@ -78,9 +81,9 @@ export async function enrolPublicCourseAction(formData) {
     });
 
     revalidatePath(`/${hub.slug}/courses`);
-    revalidatePath(detailPath);
+    revalidatePath(revalidateDetailPath);
     revalidatePath(`/${hub.slug}/account/bookings`);
-    revalidatePath(nextStepsPath);
+    revalidatePath(revalidateNextStepsPath);
     await queueInitialCourseRegistrationNotificationSafely({
       hub,
       course,
@@ -93,9 +96,9 @@ export async function enrolPublicCourseAction(formData) {
   }
 
   revalidatePath(`/${hub.slug}/courses`);
-  revalidatePath(detailPath);
+  revalidatePath(revalidateDetailPath);
   revalidatePath(`/${hub.slug}/account/bookings`);
-  revalidatePath(nextStepsPath);
+  revalidatePath(revalidateNextStepsPath);
   await queueInitialCourseRegistrationNotificationSafely({
     hub,
     course,

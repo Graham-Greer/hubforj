@@ -4,6 +4,7 @@ import { requireHubBySlug } from "@/lib/data/hubs";
 import { getEventBySlug } from "@/lib/data/events";
 import { getActiveOrWaitlistedEventBookingByBooker } from "@/lib/data/event-bookings";
 import { resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { startEventBookingCheckout } from "@/lib/server/event-booking-checkout";
 
 function normalizeString(value) {
@@ -13,13 +14,16 @@ function normalizeString(value) {
 export async function GET(request, { params }) {
   const { hubSlug, eventSlug } = await params;
   const hub = await requireHubBySlug(hubSlug);
-  const detailPath = `/${hub.slug}/events/${eventSlug}`;
-  const nextStepsPath = `/${hub.slug}/events/${eventSlug}/booking/next-steps`;
+  const requestHost = normalizeString(request.headers.get("x-forwarded-host") || request.headers.get("host"));
+  const routeMode = resolveHubRuntimeRouteMode(requestHost);
+  const detailPath = buildHubRuntimeHref(hub.slug, `/events/${eventSlug}`, routeMode);
+  const eventsPath = buildHubRuntimeHref(hub.slug, "/events", routeMode);
+  const nextStepsPath = buildHubRuntimeHref(hub.slug, `/events/${eventSlug}/booking/next-steps`, routeMode);
   const memberSession = await requireCurrentMemberSessionForHub(hub, detailPath);
   const event = await getEventBySlug(hub.slug, eventSlug);
 
   if (!event) {
-    return NextResponse.redirect(new URL(`/${hub.slug}/events`, request.url));
+    return NextResponse.redirect(new URL(eventsPath, request.url));
   }
 
   const booking = await getActiveOrWaitlistedEventBookingByBooker(hub.id, event.id, memberSession.user.id);
@@ -27,9 +31,6 @@ export async function GET(request, { params }) {
   if (!booking) {
     return NextResponse.redirect(new URL(detailPath, request.url));
   }
-
-  const requestHost = normalizeString(request.headers.get("x-forwarded-host") || request.headers.get("host"));
-  const routeMode = resolveHubRuntimeRouteMode(requestHost);
 
   try {
     const checkout = await startEventBookingCheckout({

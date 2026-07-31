@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Button from "@/components/ui/button/Button";
 import FormMessage from "@/components/ui/form-message/FormMessage";
 import Input from "@/components/ui/input/Input";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { getFirebaseClientAuth } from "@/lib/firebase/client";
 import styles from "./MemberJoinForm.module.css";
 
@@ -27,7 +28,7 @@ function mapAdminInviteError(error) {
   return "Unable to complete admin onboarding right now.";
 }
 
-export default function AdminInviteAcceptanceForm({ hubSlug, inviteToken, invitedEmail }) {
+export default function AdminInviteAcceptanceForm({ hubSlug, routeMode = "path", inviteToken, invitedEmail }) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -87,7 +88,7 @@ export default function AdminInviteAcceptanceForm({ hubSlug, inviteToken, invite
           return;
         }
 
-        router.replace(String(result.redirectTo || `/${hubSlug}/admin`));
+        router.replace(String(result.redirectTo || buildHubRuntimeHref(hubSlug, "/admin", routeMode)));
         router.refresh();
       } catch (acceptError) {
         setError(mapAdminInviteError(acceptError));

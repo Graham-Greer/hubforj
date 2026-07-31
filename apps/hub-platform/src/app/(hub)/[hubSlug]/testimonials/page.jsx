@@ -2,6 +2,7 @@ import CTASection from "@/components/sections/cta-section/CTASection";
 import HeroSection from "@/components/sections/hero-section/HeroSection";
 import TestimonialsSection from "@/components/sections/testimonials-section/TestimonialsSection";
 import { getPublicTestimonialsData } from "@/lib/data/public-site";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { getDefaultTestimonialsPageHero } from "@/lib/domain/public-testimonials";
 import {
   getTemplateLandingPageConfig,
@@ -46,8 +47,8 @@ export default async function TestimonialsPage({ params }) {
     : "Published testimonials help visitors understand the experience of the community and feel more confident about joining.";
   const resolvedCtaActions = (!hasCtaConfig
     ? [
-        { label: "Join the hub", href: `/${hub.slug}/join`, variant: "primary" },
-        { label: "Member sign in", href: `/${hub.slug}/sign-in`, variant: "secondary" },
+        { label: "Join the hub", href: buildHubRuntimeHref(hub.slug, "/join", hub.routeMode), variant: "primary" },
+        { label: "Member sign in", href: buildHubRuntimeHref(hub.slug, "/sign-in", hub.routeMode), variant: "secondary" },
       ]
     : ctaSettings.actions || []
   ).map((action, index) => ({

@@ -9,6 +9,7 @@ import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
 import Icon from "@/components/ui/icon/Icon";
 import { formatEventDateRange } from "@/lib/domain/events";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { getFallbackRegionalMarket } from "@/lib/domain/regional-markets";
 import {
   buildPublicEventBookingCta,
@@ -107,6 +108,7 @@ function BookingCard({
         ) : (
           <Button
             href={cta.href}
+            prefetch={false}
             size="lg"
             className={styles.bookingButton}
             target={cta.external ? "_blank" : undefined}
@@ -171,12 +173,12 @@ export default function EventDetailsSection({
   const occurrenceDateLabel = normalizeString(event?.occurrenceDate) || normalizeString(event?.startDate) || event.title;
   const breadcrumbItems = isRecurringOccurrence && normalizeString(event?.seriesSlugBase)
     ? [
-        { label: "Events", href: `/${hubSlug}/events` },
-        { label: event.title, href: `/${hubSlug}/events/${event.seriesSlugBase}` },
+        { label: "Events", href: buildHubRuntimeHref(hubSlug, "/events", routeMode) },
+        { label: event.title, href: buildHubRuntimeHref(hubSlug, `/events/${event.seriesSlugBase}`, routeMode) },
         { label: occurrenceDateLabel },
       ]
     : [
-        { label: "Events", href: `/${hubSlug}/events` },
+        { label: "Events", href: buildHubRuntimeHref(hubSlug, "/events", routeMode) },
         { label: event.title },
       ];
 

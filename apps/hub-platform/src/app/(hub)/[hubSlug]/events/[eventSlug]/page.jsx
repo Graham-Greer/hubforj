@@ -29,6 +29,7 @@ export default async function EventDetailPage({ params }) {
     return (
       <EventSeriesSelectionSection
         hubSlug={hub.slug}
+        routeMode={hub.routeMode}
         locale={hub.locale}
         series={series}
         occurrences={occurrences}

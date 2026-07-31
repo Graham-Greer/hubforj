@@ -1,14 +1,40 @@
+import { Suspense } from "react";
 import HeroSection from "@/components/sections/hero-section/HeroSection";
 import CoursesListingSection from "@/components/sections/courses-listing-section/CoursesListingSection";
-import { getPublicCoursesData } from "@/lib/data/public-site";
+import { getPublicCoursesDeferredData, getPublicCoursesShellData } from "@/lib/data/public-site";
 import FAQSection from "@/components/sections/faq-section/FAQSection";
 import { buildPublicCourseFaqItems } from "@/lib/domain/public-offering-faqs";
 import { getDefaultCoursesPageHero } from "@/lib/domain/public-courses";
 import { getTemplateContentWidth, getTemplateCoursesPageConfig } from "@/lib/templates/template-registry";
 
+async function CoursesDeferredContent({ deferredDataPromise, hub, pageTemplate, contentWidth, faqItems }) {
+  const { courses = [] } = await deferredDataPromise;
+
+  return (
+    <>
+      <CoursesListingSection
+        hubSlug={hub.slug}
+        routeMode={hub.routeMode}
+        locale={hub.locale}
+        courses={courses}
+        variant={pageTemplate.listing.variant}
+        containerWidth={contentWidth}
+      />
+      <FAQSection
+        eyebrow="Course enrolment FAQs"
+        title="Frequently asked questions"
+        description="Understand how course enrolment, waitlists, payment, and enrolment updates work before you continue."
+        items={faqItems}
+        containerWidth={contentWidth}
+      />
+    </>
+  );
+}
+
 export default async function CoursesPage({ params }) {
   const { hubSlug } = await params;
-  const { hub, siteSettings, courses } = await getPublicCoursesData(hubSlug);
+  const { hub, siteSettings } = await getPublicCoursesShellData(hubSlug);
+  const deferredDataPromise = getPublicCoursesDeferredData(hub);
   const pageTemplate = getTemplateCoursesPageConfig(hub.template);
   const contentWidth = getTemplateContentWidth(hub.template);
   const siteName = siteSettings.siteName || hub.name;
@@ -37,14 +63,15 @@ export default async function CoursesPage({ params }) {
         height={pageTemplate.hero.height}
         containerWidth={pageTemplate.hero.containerWidth}
       />
-      <CoursesListingSection hubSlug={hub.slug} locale={hub.locale} courses={courses} variant={pageTemplate.listing.variant} containerWidth={contentWidth} />
-      <FAQSection
-        eyebrow="Course enrolment FAQs"
-        title="Frequently asked questions"
-        description="Understand how course enrolment, waitlists, payment, and enrolment updates work before you continue."
-        items={faqItems}
-        containerWidth={contentWidth}
-      />
+      <Suspense fallback={null}>
+        <CoursesDeferredContent
+          deferredDataPromise={deferredDataPromise}
+          hub={hub}
+          pageTemplate={pageTemplate}
+          contentWidth={contentWidth}
+          faqItems={faqItems}
+        />
+      </Suspense>
     </>
   );
 }

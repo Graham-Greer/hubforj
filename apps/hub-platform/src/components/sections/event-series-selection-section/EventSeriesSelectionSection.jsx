@@ -9,6 +9,7 @@ import PublicBreadcrumbs from "@/components/patterns/public-breadcrumbs/PublicBr
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
 import Icon from "@/components/ui/icon/Icon";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { formatPublicEventListingDateTime } from "@/lib/domain/public-events";
 import { getFallbackRegionalMarket } from "@/lib/domain/regional-markets";
 import styles from "./EventSeriesSelectionSection.module.css";
@@ -54,11 +55,11 @@ function SeriesSummaryCard({ series, summary, occurrenceCount }) {
   );
 }
 
-function OccurrenceCard({ hubSlug, locale, occurrence }) {
+function OccurrenceCard({ hubSlug, routeMode = "path", locale, occurrence }) {
   const hasCurrentBooking = Boolean(occurrence?.currentBooking);
   const actionHref = hasCurrentBooking
-    ? `/${hubSlug}/events/${occurrence.slug}/booking/next-steps`
-    : `/${hubSlug}/events/${occurrence.slug}`;
+    ? buildHubRuntimeHref(hubSlug, `/events/${occurrence.slug}/booking/next-steps`, routeMode)
+    : buildHubRuntimeHref(hubSlug, `/events/${occurrence.slug}`, routeMode);
   const actionLabel = hasCurrentBooking ? "Manage booking" : "View";
 
   return (
@@ -66,7 +67,7 @@ function OccurrenceCard({ hubSlug, locale, occurrence }) {
       <SectionCardBody padding="compact" className={styles.cardBody}>
         <div className={styles.occurrenceRow}>
           <h2 className={styles.cardTitle}>{formatPublicEventListingDateTime(occurrence, locale)}</h2>
-          <Button href={actionHref} variant="ghost" className={styles.viewAction}>
+          <Button href={actionHref} prefetch={false} variant="ghost" className={styles.viewAction}>
             <Icon name="visibility" size="sm" />
             <span>{actionLabel}</span>
           </Button>
@@ -78,6 +79,7 @@ function OccurrenceCard({ hubSlug, locale, occurrence }) {
 
 export default function EventSeriesSelectionSection({
   hubSlug,
+  routeMode = "path",
   locale = fallbackRegionalMarket.defaultLocale,
   series,
   occurrences = [],
@@ -88,7 +90,7 @@ export default function EventSeriesSelectionSection({
   const summary = normalizeString(series?.summary);
   const resolvedVariant = ["editorial", "studio"].includes(variant) ? variant : "default";
   const breadcrumbItems = [
-    { label: "Events", href: `/${hubSlug}/events` },
+    { label: "Events", href: buildHubRuntimeHref(hubSlug, "/events", routeMode) },
     { label: series.title },
   ];
 
@@ -127,6 +129,7 @@ export default function EventSeriesSelectionSection({
                 <OccurrenceCard
                   key={occurrence.id}
                   hubSlug={hubSlug}
+                  routeMode={routeMode}
                   locale={locale}
                   occurrence={occurrence}
                 />

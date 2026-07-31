@@ -23,6 +23,7 @@ import {
   getPublicCourseSummary,
   getPublicCourseTypeOptions,
 } from "@/lib/domain/public-courses";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { getFallbackRegionalMarket } from "@/lib/domain/regional-markets";
 import styles from "./CoursesListingSection.module.css";
 
@@ -71,7 +72,7 @@ function CourseIdentity({ typeLabel, levelLabel }) {
   );
 }
 
-function CourseCard({ course, hubSlug, locale, featured = false, variant = "default" }) {
+function CourseCard({ course, hubSlug, routeMode = "path", locale, featured = false, variant = "default" }) {
   const description = getPublicCourseSummary(course);
   const { typeLabel, levelLabel } = getPublicCourseIdentity(course);
   const listingDateTime = formatPublicCourseListingDateTime(course, locale);
@@ -85,7 +86,8 @@ function CourseCard({ course, hubSlug, locale, featured = false, variant = "defa
   return (
     <SectionCard
       as={Link}
-      href={`/${hubSlug}/courses/${course.slug}`}
+      href={buildHubRuntimeHref(hubSlug, `/courses/${course.slug}`, routeMode)}
+      prefetch={false}
       padding="none"
       className={cardClassName}
     >
@@ -139,6 +141,7 @@ function EmptyStateCard({ title, description }) {
 export default function CoursesListingSection({
   id,
   hubSlug,
+  routeMode = "path",
   locale = fallbackRegionalMarket.defaultLocale,
   courses = [],
   variant = "default",
@@ -199,16 +202,16 @@ export default function CoursesListingSection({
             resolvedVariant === "editorial" ? (
               <SectionItemsGrid maxColumns={3} singleItemLayout="compact" className={styles.grid}>
                 {visibleCourses.map((course) => (
-                  <CourseCard key={course.id} course={course} hubSlug={hubSlug} locale={locale} variant="editorial" />
+                  <CourseCard key={course.id} course={course} hubSlug={hubSlug} routeMode={routeMode} locale={locale} variant="editorial" />
                 ))}
               </SectionItemsGrid>
             ) : resolvedVariant === "studio" ? (
               <div className={styles.studioLayout}>
-                <CourseCard course={featuredCourse} hubSlug={hubSlug} locale={locale} featured variant="studio" />
+                <CourseCard course={featuredCourse} hubSlug={hubSlug} routeMode={routeMode} locale={locale} featured variant="studio" />
                 {remainingCourses.length ? (
                   <SectionItemsGrid maxColumns={2} singleItemLayout="compact" className={styles.studioGrid}>
                     {remainingCourses.map((course) => (
-                      <CourseCard key={course.id} course={course} hubSlug={hubSlug} locale={locale} variant="studio" />
+                      <CourseCard key={course.id} course={course} hubSlug={hubSlug} routeMode={routeMode} locale={locale} variant="studio" />
                     ))}
                   </SectionItemsGrid>
                 ) : null}
@@ -216,7 +219,7 @@ export default function CoursesListingSection({
             ) : (
             <SectionItemsGrid maxColumns={3} singleItemLayout="compact" className={styles.grid}>
               {visibleCourses.map((course) => (
-                <CourseCard key={course.id} course={course} hubSlug={hubSlug} locale={locale} />
+                <CourseCard key={course.id} course={course} hubSlug={hubSlug} routeMode={routeMode} locale={locale} />
               ))}
             </SectionItemsGrid>
             )

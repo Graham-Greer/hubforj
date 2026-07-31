@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { requireCurrentMemberSessionForHub } from "@/lib/auth/member-session";
 import { requireHubBySlug } from "@/lib/data/hubs";
 import { getEventBySlug } from "@/lib/data/events";
+import { resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { finalizeEventBookingCheckoutReturn } from "@/lib/server/event-booking-checkout";
 
 function normalizeString(value) {
@@ -15,13 +17,15 @@ export async function GET(request, { params }) {
   const sessionId = normalizeString(url.searchParams.get("session_id"));
   const state = normalizeString(url.searchParams.get("state"));
   const hub = await requireHubBySlug(hubSlug);
+  const requestHost = normalizeString(request.headers.get("x-forwarded-host") || request.headers.get("host"));
+  const routeMode = resolveHubRuntimeRouteMode(requestHost);
   const event = await getEventBySlug(hub.slug, eventSlug);
 
   if (!event) {
-    return NextResponse.redirect(new URL(`/${hub.slug}/events`, request.url));
+    return NextResponse.redirect(new URL(buildHubRuntimeHref(hub.slug, "/events", routeMode), request.url));
   }
 
-  const nextStepsPath = `/${hub.slug}/events/${event.slug}/booking/next-steps`;
+  const nextStepsPath = buildHubRuntimeHref(hub.slug, `/events/${event.slug}/booking/next-steps`, routeMode);
 
   if (state === "cancelled") {
     return NextResponse.redirect(new URL(`${nextStepsPath}?success=checkoutCancelled`, request.url));
