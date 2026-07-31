@@ -66,7 +66,7 @@ export default function CTASection({
               align={resolvedAlign}
               width={variantHeaderWidth[resolvedVariant]}
               headingLevel={headingLevel}
-              className={styles.header}
+              className={[styles.header, isInverse ? styles.inverseHeader : ""].filter(Boolean).join(" ")}
               eyebrowClassName={isInverse ? styles.inverseEyebrow : ""}
               titleClassName={isInverse ? styles.inverseTitle : ""}
               descriptionClassName={isInverse ? styles.inverseDescription : ""}
