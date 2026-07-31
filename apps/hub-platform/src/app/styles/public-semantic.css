@@ -7,6 +7,8 @@
   --accent-primary-text: var(--text-inverse);
   --accent-secondary-hover: var(--accent-secondary);
   --accent-secondary-text: var(--text-inverse);
+  --public-contrast-on-accent: var(--color-white);
+  --public-contrast-on-image: var(--color-white);
 
   --field-bg: var(--surface-primary);
   --field-border: var(--public-control-border);
@@ -54,9 +56,9 @@
   --section-media-elevation-md: var(--shadow-md);
   --section-media-elevation-lg: var(--shadow-lg);
 
-  --section-hero-overlay-title: var(--palette-neutral-50);
-  --section-hero-overlay-description: var(--palette-neutral-50);
-  --section-hero-overlay-eyebrow: var(--palette-neutral-50);
+  --section-hero-overlay-title: var(--public-contrast-on-image);
+  --section-hero-overlay-description: var(--public-contrast-on-image);
+  --section-hero-overlay-eyebrow: var(--public-contrast-on-image);
   --section-inverse-eyebrow: var(--text-inverse);
 
   --section-card-radius: var(--radius-lg);
@@ -345,4 +347,8 @@
   --section-course-details-enrolment-gap: var(--space-5);
   --section-course-details-enrolment-summary-gap: var(--space-2);
   --section-course-details-placeholder-min-height: clamp(18rem, 42vw, 32rem);
+}
+
+:where(:root, [data-theme])[data-theme="dark"] {
+  --public-contrast-on-accent: var(--accent-primary-text);
 }

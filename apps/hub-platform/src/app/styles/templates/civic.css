@@ -13,8 +13,8 @@
   --public-nav-item-bg-active: var(--accent-primary);
   --public-nav-item-border-hover: var(--border-subtle);
   --public-nav-item-border-active: transparent;
-  --public-nav-item-text-active: var(--public-nav-item-text);
+  --public-nav-item-text-active: var(--public-contrast-on-accent);
   --public-mobile-nav-item-bg-active: var(--accent-primary);
   --public-mobile-nav-item-border-active: transparent;
-  --public-mobile-nav-item-text-active: var(--public-mobile-nav-item-text);
+  --public-mobile-nav-item-text-active: var(--public-contrast-on-accent);
 }
