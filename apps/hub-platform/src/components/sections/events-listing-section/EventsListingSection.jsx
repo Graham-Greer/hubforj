@@ -21,6 +21,7 @@ import {
   getPublicEventCategoryOptions,
   getPublicEventSummary,
 } from "@/lib/domain/public-events";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { getFallbackRegionalMarket } from "@/lib/domain/regional-markets";
 import styles from "./EventsListingSection.module.css";
 
@@ -65,7 +66,7 @@ function EventMetaRow({ icon, value }) {
   );
 }
 
-function EventCard({ event, hubSlug, locale, featured = false, variant = "default" }) {
+function EventCard({ event, hubSlug, routeMode = "path", locale, featured = false, variant = "default" }) {
   const description = getPublicEventSummary(event);
   const listingDateTime = event.displayDateLabel || formatPublicEventListingDateTime(event, locale);
   const isRecurringSeries = event.eventKind === "public_recurring_series";
@@ -79,7 +80,8 @@ function EventCard({ event, hubSlug, locale, featured = false, variant = "defaul
   return (
     <SectionCard
       as={Link}
-      href={`/${hubSlug}/events/${event.slug}`}
+      href={buildHubRuntimeHref(hubSlug, `/events/${event.slug}`, routeMode)}
+      prefetch={false}
       padding="none"
       className={cardClassName}
     >
@@ -130,6 +132,7 @@ function EmptyStateCard({ title, description }) {
 export default function EventsListingSection({
   id,
   hubSlug,
+  routeMode = "path",
   locale = fallbackRegionalMarket.defaultLocale,
   events = [],
   variant = "default",
@@ -193,33 +196,33 @@ export default function EventsListingSection({
             <>
               {resolvedVariant === "editorial" && featuredEvent ? (
                 <div className={styles.editorialLayout}>
-                  <EventCard event={featuredEvent} hubSlug={hubSlug} locale={locale} featured variant="editorial" />
+                  <EventCard event={featuredEvent} hubSlug={hubSlug} routeMode={routeMode} locale={locale} featured variant="editorial" />
                   {gridEvents.length ? (
                     <div className={styles.editorialRail}>
                       {gridEvents.map((event) => (
-                        <EventCard key={event.id} event={event} hubSlug={hubSlug} locale={locale} variant="editorial" />
+                        <EventCard key={event.id} event={event} hubSlug={hubSlug} routeMode={routeMode} locale={locale} variant="editorial" />
                       ))}
                     </div>
                   ) : null}
                 </div>
               ) : resolvedVariant === "studio" && featuredEvent ? (
                 <div className={styles.studioLayout}>
-                  <EventCard event={featuredEvent} hubSlug={hubSlug} locale={locale} featured variant="studio" />
+                  <EventCard event={featuredEvent} hubSlug={hubSlug} routeMode={routeMode} locale={locale} featured variant="studio" />
                   {gridEvents.length ? (
                     <SectionItemsGrid maxColumns={2} singleItemLayout="compact" className={styles.studioGrid}>
                       {gridEvents.map((event) => (
-                        <EventCard key={event.id} event={event} hubSlug={hubSlug} locale={locale} variant="studio" />
+                        <EventCard key={event.id} event={event} hubSlug={hubSlug} routeMode={routeMode} locale={locale} variant="studio" />
                       ))}
                     </SectionItemsGrid>
                   ) : null}
                 </div>
               ) : featuredEvent ? (
                 <div className={styles.featuredLayout}>
-                  <EventCard event={featuredEvent} hubSlug={hubSlug} locale={locale} featured />
+                  <EventCard event={featuredEvent} hubSlug={hubSlug} routeMode={routeMode} locale={locale} featured />
                   {gridEvents.length ? (
                     <SectionItemsGrid maxColumns={3} singleItemLayout="compact" className={styles.grid}>
                       {gridEvents.map((event) => (
-                        <EventCard key={event.id} event={event} hubSlug={hubSlug} locale={locale} />
+                        <EventCard key={event.id} event={event} hubSlug={hubSlug} routeMode={routeMode} locale={locale} />
                       ))}
                     </SectionItemsGrid>
                   ) : null}
@@ -231,7 +234,7 @@ export default function EventsListingSection({
                   className={resolvedVariant === "studio" ? styles.studioGrid : styles.grid}
                 >
                   {visibleEvents.map((event) => (
-                    <EventCard key={event.id} event={event} hubSlug={hubSlug} locale={locale} variant={resolvedVariant} />
+                    <EventCard key={event.id} event={event} hubSlug={hubSlug} routeMode={routeMode} locale={locale} variant={resolvedVariant} />
                   ))}
                 </SectionItemsGrid>
               )}

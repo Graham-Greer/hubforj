@@ -1,14 +1,40 @@
+import { Suspense } from "react";
 import HeroSection from "@/components/sections/hero-section/HeroSection";
 import EventsListingSection from "@/components/sections/events-listing-section/EventsListingSection";
 import FAQSection from "@/components/sections/faq-section/FAQSection";
-import { getPublicEventsData } from "@/lib/data/public-site";
+import { getPublicEventsDeferredData, getPublicEventsShellData } from "@/lib/data/public-site";
 import { buildPublicEventFaqItems } from "@/lib/domain/public-offering-faqs";
 import { getDefaultEventsPageHero } from "@/lib/domain/public-events";
 import { getTemplateContentWidth, getTemplateEventsPageConfig } from "@/lib/templates/template-registry";
 
+async function EventsDeferredContent({ deferredDataPromise, hub, pageTemplate, contentWidth, faqItems }) {
+  const { events = [] } = await deferredDataPromise;
+
+  return (
+    <>
+      <EventsListingSection
+        hubSlug={hub.slug}
+        routeMode={hub.routeMode}
+        locale={hub.locale}
+        events={events}
+        variant={pageTemplate.listing.variant}
+        containerWidth={contentWidth}
+      />
+      <FAQSection
+        eyebrow="Booking FAQs"
+        title="Frequently asked questions"
+        description="Understand how event booking, waitlists, payment, and booking updates work before you continue."
+        items={faqItems}
+        containerWidth={contentWidth}
+      />
+    </>
+  );
+}
+
 export default async function EventsPage({ params }) {
   const { hubSlug } = await params;
-  const { hub, siteSettings, events } = await getPublicEventsData(hubSlug);
+  const { hub, siteSettings } = await getPublicEventsShellData(hubSlug);
+  const deferredDataPromise = getPublicEventsDeferredData(hub);
   const pageTemplate = getTemplateEventsPageConfig(hub.template);
   const contentWidth = getTemplateContentWidth(hub.template);
   const siteName = siteSettings.siteName || hub.name;
@@ -37,14 +63,15 @@ export default async function EventsPage({ params }) {
         height={pageTemplate.hero.height}
         containerWidth={pageTemplate.hero.containerWidth}
       />
-      <EventsListingSection hubSlug={hub.slug} locale={hub.locale} events={events} variant={pageTemplate.listing.variant} containerWidth={contentWidth} />
-      <FAQSection
-        eyebrow="Booking FAQs"
-        title="Frequently asked questions"
-        description="Understand how event booking, waitlists, payment, and booking updates work before you continue."
-        items={faqItems}
-        containerWidth={contentWidth}
-      />
+      <Suspense fallback={null}>
+        <EventsDeferredContent
+          deferredDataPromise={deferredDataPromise}
+          hub={hub}
+          pageTemplate={pageTemplate}
+          contentWidth={contentWidth}
+          faqItems={faqItems}
+        />
+      </Suspense>
     </>
   );
 }

@@ -21,6 +21,7 @@ export default function SectionActions({ actions = [], align = "start", size = "
         <Button
           key={`${action.label}-${action.href || action.onClick || ""}`}
           href={action.href}
+          prefetch={action.href && !action.external ? false : undefined}
           onClick={action.onClick}
           variant={action.variant || "primary"}
           size={size}

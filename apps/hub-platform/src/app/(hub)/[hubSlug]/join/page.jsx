@@ -21,11 +21,12 @@ export default async function JoinPage({ params, searchParams }) {
   const { hubSlug } = await params;
   const hub = await requireHubBySlug(hubSlug);
   const resolvedSearchParams = await searchParams;
-  const nextPath = String(resolvedSearchParams?.next || `/${hub.slug}`).trim() || `/${hub.slug}`;
   const inviteToken = String(resolvedSearchParams?.invite || "").trim();
   const session = await getCurrentSession();
   const requestHeaders = await headers();
   const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(requestHeaders));
+  const defaultNextPath = routeMode === "host" ? "/" : `/${hub.slug}`;
+  const nextPath = String(resolvedSearchParams?.next || defaultNextPath).trim() || defaultNextPath;
 
   if (session && session.hubId === hub.id && (session.role === "member" || canAccessHubAdmin(session.role))) {
     redirect(resolveHubAuthRedirect(hub.slug, session.role, nextPath, routeMode));
@@ -76,14 +77,14 @@ export default async function JoinPage({ params, searchParams }) {
                 </p>
               </div>
             ) : inviteContext ? (
-              <AdminInviteAcceptanceForm hubSlug={hub.slug} inviteToken={inviteToken} invitedEmail={inviteContext.email} />
+              <AdminInviteAcceptanceForm hubSlug={hub.slug} routeMode={routeMode} inviteToken={inviteToken} invitedEmail={inviteContext.email} />
             ) : (
               <MemberJoinForm hubSlug={hub.slug} nextPath={nextPath} routeMode={routeMode} />
             )}
 
             <div className={styles.footer}>
               <p className={styles.footerCopy}>{inviteContext ? "Already set up your access?" : "Already have an account?"}</p>
-              <Button href={buildHubAuthHref(hub.slug, "sign-in", nextPath, routeMode)} variant="ghost">
+              <Button href={buildHubAuthHref(hub.slug, "sign-in", nextPath, routeMode)} prefetch={false} variant="ghost">
                 Sign in
               </Button>
             </div>

@@ -97,6 +97,7 @@ function EnrolmentCard({
         ) : (
           <Button
             href={cta.href}
+            prefetch={false}
             size="lg"
             className={styles.enrolmentButton}
             target={cta.external ? "_blank" : undefined}

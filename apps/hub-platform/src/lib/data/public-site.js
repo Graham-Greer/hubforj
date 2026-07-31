@@ -54,7 +54,7 @@ export async function getPublicSiteContext(hubSlug) {
   const hubRecord = await requireHubCoreBySlug(hubSlug);
   const requestHeaders = await headers();
   const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(requestHeaders));
-  const siteSettings = await getCachedSiteSettingsByHub(hubRecord);
+  const siteSettings = await getCachedSiteSettingsByHub(hubRecord, { routeMode });
 
   return {
     hub: { ...hubRecord, routeMode },
@@ -62,49 +62,76 @@ export async function getPublicSiteContext(hubSlug) {
   };
 }
 
-export async function getPublicLandingData(hubSlug) {
-  const context = await getPublicSiteContext(hubSlug);
+export async function getPublicLandingShellData(hubSlug) {
+  return getPublicSiteContext(hubSlug);
+}
+
+export async function getPublicLandingDeferredData(hub) {
   const [testimonials, whatWeDoItems] = await Promise.all([
-    listPublicTestimonialsByHub(context.hub),
-    listPublicWhatWeDoItemsByHub(context.hub),
+    listPublicTestimonialsByHub(hub),
+    listPublicWhatWeDoItemsByHub(hub),
   ]);
 
   return {
-    ...context,
     testimonials,
     whatWeDoItems,
   };
 }
 
-export async function getPublicEventsData(hubSlug) {
+export async function getPublicLandingData(hubSlug) {
   const context = await getPublicSiteContext(hubSlug);
-  const currentMemberSession = await getCurrentMemberSessionForHub(context.hub);
-  const isMember = Boolean(currentMemberSession);
-  const [events, eventSeries] = await Promise.all([
-    listVisibleEventsByHub(context.hub, { isMember }),
-    listEventSeriesByHub(context.hub),
-  ]);
+  const deferredData = await getPublicLandingDeferredData(context.hub);
 
   return {
     ...context,
+    ...deferredData,
+  };
+}
+
+export async function getPublicEventsShellData(hubSlug) {
+  return getPublicSiteContext(hubSlug);
+}
+
+export async function getPublicEventsDeferredData(hub) {
+  const currentMemberSession = await getCurrentMemberSessionForHub(hub);
+  const isMember = Boolean(currentMemberSession);
+  const [events, eventSeries] = await Promise.all([
+    listVisibleEventsByHub(hub, { isMember }),
+    listEventSeriesByHub(hub),
+  ]);
+
+  return {
     events: groupPublicEventListings(
       events,
       eventSeries.filter((series) => canViewPublishedEventSeries(series, { isMember })),
-      context.hub.locale
+      hub.locale
     ),
   };
 }
 
-export async function getPublicCoursesData(hubSlug) {
+export async function getPublicEventsData(hubSlug) {
   const context = await getPublicSiteContext(hubSlug);
-  const currentMemberSession = await getCurrentMemberSessionForHub(context.hub);
-  const courses = await listVisibleCoursesByHub(context.hub, {
+  const deferredData = await getPublicEventsDeferredData(context.hub);
+
+  return {
+    ...context,
+    ...deferredData,
+  };
+}
+
+export async function getPublicCoursesShellData(hubSlug) {
+  return getPublicSiteContext(hubSlug);
+}
+
+export async function getPublicCoursesDeferredData(hub) {
+  const currentMemberSession = await getCurrentMemberSessionForHub(hub);
+  const courses = await listVisibleCoursesByHub(hub, {
     isMember: Boolean(currentMemberSession),
   });
   const enrolledCounts = await Promise.all(
     courses.map(async (course) => ({
       courseId: course.id,
-      enrolledCount: await countEnrolledCourseRegistrations(context.hub.id, course.id),
+      enrolledCount: await countEnrolledCourseRegistrations(hub.id, course.id),
     }))
   );
   const enrolledCountByCourseId = new Map(
@@ -112,11 +139,20 @@ export async function getPublicCoursesData(hubSlug) {
   );
 
   return {
-    ...context,
     courses: courses.map((course) => ({
       ...course,
       enrolledCount: enrolledCountByCourseId.get(course.id) || 0,
     })),
+  };
+}
+
+export async function getPublicCoursesData(hubSlug) {
+  const context = await getPublicSiteContext(hubSlug);
+  const deferredData = await getPublicCoursesDeferredData(context.hub);
+
+  return {
+    ...context,
+    ...deferredData,
   };
 }
 

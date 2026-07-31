@@ -16,6 +16,7 @@ import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-config
 import { requireCurrentMemberSessionForHub } from "@/lib/auth/member-session";
 import { getEventBySlug } from "@/lib/data/events";
 import { getRequestHostWithPortFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { startEventBookingCheckout } from "@/lib/server/event-booking-checkout";
 import { queueInitialEventBookingNotification } from "@/lib/server/booking-notification-outbox";
 
@@ -62,14 +63,19 @@ async function submitPublicEventBooking(formData) {
   const hubSlug = normalizeString(formData.get("hubSlug"));
   const eventId = normalizeString(formData.get("eventId"));
   const eventSlug = normalizeString(formData.get("eventSlug"));
+  const requestHeaders = await headers();
+  const requestHost = getRequestHostWithPortFromHeaders(requestHeaders);
+  const routeMode = resolveHubRuntimeRouteMode(requestHost);
 
   if (!hubSlug || !eventId || !eventSlug) {
-    redirect(hubSlug ? `/${hubSlug}/events` : "/");
+    redirect(hubSlug ? buildHubRuntimeHref(hubSlug, "/events", routeMode) : "/");
   }
 
   const hub = await requireHubBySlug(hubSlug);
-  const detailPath = `/${hub.slug}/events/${eventSlug}`;
-  const nextStepsPath = `/${hub.slug}/events/${eventSlug}/booking/next-steps`;
+  const detailPath = buildHubRuntimeHref(hub.slug, `/events/${eventSlug}`, routeMode);
+  const nextStepsPath = buildHubRuntimeHref(hub.slug, `/events/${eventSlug}/booking/next-steps`, routeMode);
+  const revalidateDetailPath = `/${hub.slug}/events/${eventSlug}`;
+  const revalidateNextStepsPath = `/${hub.slug}/events/${eventSlug}/booking/next-steps`;
   const memberSession = await requireCurrentMemberSessionForHub(hub, detailPath);
   const event = await getEventBySlug(hub.slug, eventSlug);
 
@@ -131,9 +137,6 @@ async function submitPublicEventBooking(formData) {
     const paymentConfiguration = await getHubPaymentConfigurationByHubId(hub.id);
 
     if (paymentConfiguration?.isReady && normalizeString(paymentConfiguration?.stripeAccountId)) {
-      const requestHeaders = await headers();
-      const requestHost = getRequestHostWithPortFromHeaders(requestHeaders);
-      const routeMode = resolveHubRuntimeRouteMode(requestHost);
       const checkout = await startEventBookingCheckout({
         hub,
         event,
@@ -144,9 +147,9 @@ async function submitPublicEventBooking(formData) {
         routeMode,
       });
 
-      revalidatePath(detailPath);
+      revalidatePath(revalidateDetailPath);
       revalidatePath(`/${hub.slug}/account/bookings`);
-      revalidatePath(nextStepsPath);
+      revalidatePath(revalidateNextStepsPath);
       await queueInitialEventBookingNotificationSafely({
         hub,
         event,
@@ -159,9 +162,9 @@ async function submitPublicEventBooking(formData) {
     }
   }
 
-  revalidatePath(detailPath);
+  revalidatePath(revalidateDetailPath);
   revalidatePath(`/${hub.slug}/account/bookings`);
-  revalidatePath(nextStepsPath);
+  revalidatePath(revalidateNextStepsPath);
   await queueInitialEventBookingNotificationSafely({
     hub,
     event,
