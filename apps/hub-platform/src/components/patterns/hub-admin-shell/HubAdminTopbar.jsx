@@ -37,7 +37,7 @@ export default function HubAdminTopbar({
             <span>Back to platform</span>
           </Button>
         ) : null}
-        <Button href={publicSiteHref} prefetch={false} variant="ghost">
+        <Button href={publicSiteHref} prefetch={false} variant="ghost" target="_blank" rel="noreferrer">
           View public site
         </Button>
         <WorkspaceThemeToggle currentTheme={operatorTheme} />
