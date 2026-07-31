@@ -204,7 +204,8 @@ async function hasHubCollectionRecords(hubId, collectionName) {
   return !snapshot.empty;
 }
 
-export async function getAdminOnboardingState(hub, actorUserId, actorRole) {
+export async function getAdminOnboardingState(hub, actorUserId, actorRole, options = {}) {
+  const includeChecklist = options.includeChecklist !== false;
   const fallback = createDefaultAdminOnboardingState({
     hubId: hub.id,
     actorUserId,
@@ -218,11 +219,13 @@ export async function getAdminOnboardingState(hub, actorUserId, actorRole) {
   const [doc, paymentConfiguration, recordCounts] = await Promise.all([
     getDocRef(hub.id, actorUserId).get(),
     shouldLoadPaymentConfiguration ? getHubPaymentConfigurationByHubId(hub.id) : Promise.resolve(null),
-    getChecklistRecordCounts(hub, capabilities),
+    includeChecklist ? getChecklistRecordCounts(hub, capabilities) : Promise.resolve(null),
   ]);
   const persisted = normalizePersistedState(doc.exists ? doc.data() : null, fallback);
   const paymentSetupState = getHubPaymentSetupState(hub, paymentConfiguration);
-  const checklistItems = buildChecklistItemsFromFacts(persisted, hub, capabilities, paymentSetupState, recordCounts);
+  const checklistItems = includeChecklist
+    ? buildChecklistItemsFromFacts(persisted, hub, capabilities, paymentSetupState, recordCounts)
+    : persisted.checklist.items;
 
   return {
     ...persisted,
@@ -230,6 +233,7 @@ export async function getAdminOnboardingState(hub, actorUserId, actorRole) {
       ...persisted.checklist,
       items: checklistItems,
     },
+    checklistHydrated: includeChecklist,
     capabilities,
     packageTier: entitlements.packageTier,
     paymentProcessingMode: entitlements.paymentProcessingMode,

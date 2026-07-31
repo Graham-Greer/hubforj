@@ -36,6 +36,10 @@ function deriveAdminBasePath(pathname, hubSlug) {
   return normalizedPath.startsWith(sluggedBase) ? sluggedBase : "/admin";
 }
 
+function shouldHydrateChecklistForPath(pathname, adminBasePath) {
+  return normalizeString(pathname) === normalizeString(adminBasePath);
+}
+
 function cloneState(nextState) {
   return JSON.parse(JSON.stringify(nextState));
 }
@@ -82,6 +86,7 @@ export default function AdminOnboardingProvider({
   const searchParams = useSearchParams();
   const router = useRouter();
   const adminBasePath = useMemo(() => deriveAdminBasePath(pathname, hub.slug), [hub.slug, pathname]);
+  const shouldHydrateChecklist = shouldHydrateChecklistForPath(pathname, adminBasePath);
   const routeKey = `${pathname || ""}?${searchParams?.toString() || ""}`;
   const [state, setState] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -113,7 +118,8 @@ export default function AdminOnboardingProvider({
       }
 
       try {
-        const response = await fetch(`/api/admin/hubs/${hub.slug}/onboarding`, {
+        const scopeQuery = shouldHydrateChecklist ? "" : "?scope=route";
+        const response = await fetch(`/api/admin/hubs/${hub.slug}/onboarding${scopeQuery}`, {
           method: "GET",
           cache: "no-store",
         });
@@ -142,7 +148,7 @@ export default function AdminOnboardingProvider({
     return () => {
       cancelled = true;
     };
-  }, [hub.slug, routeKey]);
+  }, [hub.slug, routeKey, shouldHydrateChecklist]);
 
   useEffect(() => {
     if (!pathname) {
@@ -153,8 +159,8 @@ export default function AdminOnboardingProvider({
       return;
     }
 
-    loadStateRef.current({ silent: true, routeKey });
-  }, [loading, pathname, routeKey]);
+    loadStateRef.current({ silent: !shouldHydrateChecklist, routeKey });
+  }, [loading, pathname, routeKey, shouldHydrateChecklist]);
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
