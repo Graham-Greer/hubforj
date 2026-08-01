@@ -9,7 +9,7 @@ function normalizeString(value) {
 }
 
 export async function openBillingPortalAction() {
-  const accountContext = await requireCommercialAccountContext();
+  const accountContext = await requireCommercialAccountContext({ refreshSubscription: true });
   const { account, currentHub } = accountContext;
 
   try {
@@ -35,7 +35,7 @@ export async function openBillingPortalAction() {
 }
 
 export async function cancelScheduledPackageChangeFromBillingAction() {
-  const accountContext = await requireCommercialAccountContext();
+  const accountContext = await requireCommercialAccountContext({ refreshSubscription: true });
   const { account, currentHub } = accountContext;
 
   try {

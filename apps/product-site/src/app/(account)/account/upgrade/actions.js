@@ -82,7 +82,7 @@ function hasScheduledPackageChange(account) {
 }
 
 export async function startPackageCheckoutAction(formData) {
-  const accountContext = await requireCommercialAccountContext();
+  const accountContext = await requireCommercialAccountContext({ refreshSubscription: true });
   const { account, currentHub } = accountContext;
   const targetTier = normalizeTier(formData.get("targetTier"));
   const stripeEnvironment = getStripeBillingEnvironmentState();
@@ -132,7 +132,7 @@ export async function startPackageCheckoutAction(formData) {
 }
 
 export async function openPackageBillingPortalAction(formData) {
-  const accountContext = await requireCommercialAccountContext();
+  const accountContext = await requireCommercialAccountContext({ refreshSubscription: true });
   const { account, currentHub } = accountContext;
   const targetTier = normalizeTier(formData.get("targetTier"));
 
@@ -165,7 +165,7 @@ export async function openPackageBillingPortalAction(formData) {
 }
 
 export async function applyPackageUpgradeAction(formData) {
-  const accountContext = await requireCommercialAccountContext();
+  const accountContext = await requireCommercialAccountContext({ refreshSubscription: true });
   const { account, currentHub } = accountContext;
   const targetTier = normalizeTier(formData.get("targetTier"));
   const stripeEnvironment = getStripeBillingEnvironmentState();
@@ -211,7 +211,7 @@ export async function applyPackageUpgradeAction(formData) {
 }
 
 export async function schedulePackageDowngradeAction(formData) {
-  const accountContext = await requireCommercialAccountContext();
+  const accountContext = await requireCommercialAccountContext({ refreshSubscription: true });
   const { account, currentHub } = accountContext;
   const targetTier = normalizeTier(formData.get("targetTier"));
   const stripeEnvironment = getStripeBillingEnvironmentState();
@@ -257,7 +257,7 @@ export async function schedulePackageDowngradeAction(formData) {
 }
 
 export async function schedulePackageTierChangeAction(formData) {
-  const accountContext = await requireCommercialAccountContext();
+  const accountContext = await requireCommercialAccountContext({ refreshSubscription: true });
   const { account, currentHub } = accountContext;
   const targetTier = normalizeTier(formData.get("targetTier"));
   const stripeEnvironment = getStripeBillingEnvironmentState();
@@ -305,7 +305,7 @@ export async function schedulePackageTierChangeAction(formData) {
 }
 
 export async function cancelScheduledPackageChangeAction(formData) {
-  const accountContext = await requireCommercialAccountContext();
+  const accountContext = await requireCommercialAccountContext({ refreshSubscription: true });
   const { account, currentHub } = accountContext;
   const targetTier = normalizeTier(formData.get("targetTier"));
 

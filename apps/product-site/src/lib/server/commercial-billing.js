@@ -684,8 +684,9 @@ export async function createOrResolveStripeCustomer({ account, currentHub }) {
 export async function getLatestCommercialCheckoutState({ account } = {}) {
   const stripeEnvironment = getStripeBillingEnvironmentState();
   const checkoutSessionId = normalizeString(account?.stripeLastCheckoutSessionId);
+  const pendingPackageStatus = normalizeString(account?.pendingPackageStatus).toLowerCase();
 
-  if (!stripeEnvironment.configuredForCheckout || !checkoutSessionId) {
+  if (!stripeEnvironment.configuredForCheckout || !checkoutSessionId || pendingPackageStatus !== "checkout_pending") {
     return null;
   }
 
