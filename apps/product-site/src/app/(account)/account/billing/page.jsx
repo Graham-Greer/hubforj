@@ -1,4 +1,6 @@
-import AccountShell from "@/components/patterns/account-shell/AccountShell";
+import { Suspense } from "react";
+import AccountRouteShell from "@/components/patterns/account-route-shell/AccountRouteShell";
+import { AccountBillingPanelsSkeleton } from "@/components/patterns/account-loading/AccountPanelSkeletons";
 import {
   AccountStatusBanner,
 } from "@/components/patterns/account-surfaces/AccountSurfaces";
@@ -8,6 +10,7 @@ import { buildCommercialAccountModel, getPackageCatalogItem } from "@/lib/domain
 import { getLatestCommercialCheckoutState } from "@/lib/server/commercial-billing";
 import { requireCommercialAccountContext } from "@/lib/server/commercial-account-context";
 import { getStripeBillingEnvironmentState } from "@/lib/server/stripe";
+import { accountRouteCopy } from "@/lib/navigation/account-route-copy";
 import { cancelScheduledPackageChangeFromBillingAction, openBillingPortalAction } from "./actions";
 import BillingRouteStateNotice from "./BillingRouteStateNotice";
 import PackageChangeConfirmAction from "../upgrade/PackageChangeConfirmAction";
@@ -62,7 +65,17 @@ function buildCancelScheduledChangeConfirmation({ snapshot, billing, scheduledDa
   };
 }
 
-export default async function AccountBillingPage({ searchParams }) {
+export default function AccountBillingPage({ searchParams }) {
+  return (
+    <AccountRouteShell {...accountRouteCopy.billing}>
+      <Suspense fallback={<AccountBillingPanelsSkeleton />}>
+        <AccountBillingPanels searchParams={searchParams} />
+      </Suspense>
+    </AccountRouteShell>
+  );
+}
+
+async function AccountBillingPanels({ searchParams }) {
   const accountContext = await requireCommercialAccountContext();
   await searchParams;
   const { account, currentHub } = accountContext;
@@ -158,12 +171,7 @@ export default async function AccountBillingPage({ searchParams }) {
       : null;
 
   return (
-    <AccountShell
-      accountContext={accountContext}
-      eyebrow="Billing"
-      title="Billing"
-      description="Manage your plan payments here. Member payments inside your community stay in your admin area."
-    >
+    <>
       <div className="content-stack">
         <BillingRouteStateNotice />
         {topBanner ? (
@@ -266,6 +274,6 @@ export default async function AccountBillingPage({ searchParams }) {
           </aside>
         </section>
       </div>
-    </AccountShell>
+    </>
   );
 }

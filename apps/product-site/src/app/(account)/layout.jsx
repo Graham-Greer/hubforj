@@ -1,6 +1,3 @@
-import { requireCommercialAccountSession } from "@/lib/server/account-session";
-
-export default async function CommercialAccountLayout({ children }) {
-  await requireCommercialAccountSession();
+export default function CommercialAccountLayout({ children }) {
   return children;
 }

@@ -1,4 +1,6 @@
-import AccountShell from "@/components/patterns/account-shell/AccountShell";
+import { Suspense } from "react";
+import AccountRouteShell from "@/components/patterns/account-route-shell/AccountRouteShell";
+import { AccountPackagePanelsSkeleton } from "@/components/patterns/account-loading/AccountPanelSkeletons";
 import {
   AccountActionPanel,
 } from "@/components/patterns/account-surfaces/AccountSurfaces";
@@ -7,6 +9,7 @@ import Link from "next/link";
 import { buildCommercialAccountModel } from "@/lib/domain/package-catalog";
 import { getLatestCommercialCheckoutState } from "@/lib/server/commercial-billing";
 import { requireCommercialAccountContext } from "@/lib/server/commercial-account-context";
+import { accountRouteCopy } from "@/lib/navigation/account-route-copy";
 
 const productSiteBillingLocale = "en-GB";
 
@@ -32,7 +35,17 @@ function formatDateLabel(value, locale = productSiteBillingLocale) {
   }
 }
 
-export default async function AccountPackagePage() {
+export default function AccountPackagePage() {
+  return (
+    <AccountRouteShell {...accountRouteCopy.package}>
+      <Suspense fallback={<AccountPackagePanelsSkeleton />}>
+        <AccountPackagePanels />
+      </Suspense>
+    </AccountRouteShell>
+  );
+}
+
+async function AccountPackagePanels() {
   const accountContext = await requireCommercialAccountContext();
   const { account, currentHub } = accountContext;
   const locale = productSiteBillingLocale;
@@ -49,12 +62,7 @@ export default async function AccountPackagePage() {
   const scheduledDateLabel = formatDateLabel(snapshot.scheduledCancellationDate, locale);
 
   return (
-    <AccountShell
-      accountContext={accountContext}
-      eyebrow="Package"
-      title="Package"
-      description="See what is included in your current package and compare it with the next options as your community grows."
-    >
+    <>
       <div className="content-stack">
         <AccountActionPanel
           title={snapshot.currentDisplayTitle}
@@ -133,6 +141,6 @@ export default async function AccountPackagePage() {
           </article>
         ) : null}
       </div>
-    </AccountShell>
+    </>
   );
 }

@@ -1,4 +1,6 @@
-import AccountShell from "@/components/patterns/account-shell/AccountShell";
+import { Suspense } from "react";
+import AccountRouteShell from "@/components/patterns/account-route-shell/AccountRouteShell";
+import { AccountOverviewPanelsSkeleton } from "@/components/patterns/account-loading/AccountPanelSkeletons";
 import {
   AccountStatusBanner,
 } from "@/components/patterns/account-surfaces/AccountSurfaces";
@@ -8,7 +10,8 @@ import { buildCommercialBillingModel } from "@/lib/domain/commercial-billing";
 import { requireCommercialAccountContext } from "@/lib/server/commercial-account-context";
 import { getStripeBillingEnvironmentState } from "@/lib/server/stripe";
 import { getLatestCommercialCheckoutState } from "@/lib/server/commercial-billing";
-import { activateHubAdminAccessAction, resendCommercialAccountVerificationEmailAction } from "./actions";
+import { accountRouteCopy } from "@/lib/navigation/account-route-copy";
+import { resendCommercialAccountVerificationEmailAction } from "./actions";
 
 const productSiteBillingLocale = "en-GB";
 
@@ -34,7 +37,17 @@ function formatDateLabel(value, locale = productSiteBillingLocale) {
   }
 }
 
-export default async function AccountOverviewPage({ searchParams }) {
+export default function AccountOverviewPage({ searchParams }) {
+  return (
+    <AccountRouteShell {...accountRouteCopy.overview}>
+      <Suspense fallback={<AccountOverviewPanelsSkeleton />}>
+        <AccountOverviewPanels searchParams={searchParams} />
+      </Suspense>
+    </AccountRouteShell>
+  );
+}
+
+async function AccountOverviewPanels({ searchParams }) {
   const accountContext = await requireCommercialAccountContext();
   const params = await searchParams;
   const verification = String(params?.verification || "");
@@ -101,11 +114,9 @@ export default async function AccountOverviewPage({ searchParams }) {
         title: "Open your admin area",
         description: `Your email is verified. You can now open the admin area for ${currentHub.name || "this community"} using the same email and password you already created.`,
         actions: (
-          <form action={activateHubAdminAccessAction} target="_blank" rel="noopener noreferrer">
-            <button type="submit" className="button-link" data-variant="primary">
-              Open admin area
-            </button>
-          </form>
+          <a href="/account/admin" target="_blank" rel="noopener noreferrer" className="button-link" data-variant="primary">
+            Open admin area
+          </a>
         ),
         messages: (
           <>
@@ -117,12 +128,7 @@ export default async function AccountOverviewPage({ searchParams }) {
       };
 
   return (
-    <AccountShell
-      accountContext={accountContext}
-      eyebrow="Your account"
-      title="Account overview"
-      description="See your package, billing, and next steps as your community grows."
-    >
+    <>
       <div className="content-stack">
         {primaryBanner ? (
           <AccountStatusBanner
@@ -253,6 +259,6 @@ export default async function AccountOverviewPage({ searchParams }) {
           </aside>
         </section>
       </div>
-    </AccountShell>
+    </>
   );
 }
