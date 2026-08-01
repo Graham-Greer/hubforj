@@ -25,7 +25,7 @@ function formatPackageSourceLabel(source) {
     .join(" ");
 }
 
-export async function requireCommercialAccountContext() {
+export async function requireCommercialAccountContext({ refreshSubscription = false } = {}) {
   const session = await requireCommercialAccountSession();
   const account =
     (session.accountId ? await getCommercialAccountById(session.accountId) : null) ||
@@ -36,7 +36,9 @@ export async function requireCommercialAccountContext() {
   }
 
   const verifiedAccount = account.authUid ? await syncCommercialAccountVerificationState({ account }) : account;
-  const syncedAccount = await refreshCommercialAccountSubscriptionState(verifiedAccount);
+  const syncedAccount = refreshSubscription
+    ? await refreshCommercialAccountSubscriptionState(verifiedAccount)
+    : verifiedAccount;
   const ownedHubs = await listCommercialAccountHubs(syncedAccount.id);
   const currentOwnedHub =
     ownedHubs.find((hub) => hub.hubId === session.hubId) ||

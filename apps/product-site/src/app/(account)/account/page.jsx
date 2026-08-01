@@ -101,7 +101,7 @@ export default async function AccountOverviewPage({ searchParams }) {
         title: "Open your admin area",
         description: `Your email is verified. You can now open the admin area for ${currentHub.name || "this community"} using the same email and password you already created.`,
         actions: (
-          <form action={activateHubAdminAccessAction}>
+          <form action={activateHubAdminAccessAction} target="_blank" rel="noopener noreferrer">
             <button type="submit" className="button-link" data-variant="primary">
               Open admin area
             </button>
