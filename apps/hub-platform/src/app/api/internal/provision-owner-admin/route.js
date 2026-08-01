@@ -92,13 +92,8 @@ export async function POST(request) {
       });
     }
 
-    const existingByUid = await getFirebaseAdminDb().collection("users").doc(payload.authUid).get();
-
-    if (existingByUid.exists) {
-      throw new Error("This authenticated owner is already linked to another hub user record.");
-    }
-
     const now = new Date().toISOString();
+    const userRef = getFirebaseAdminDb().collection("users").doc();
     const userRecord = {
       uid: payload.authUid,
       hubId: hub.id,
@@ -112,11 +107,12 @@ export async function POST(request) {
       profileRevision: crypto.randomUUID().slice(0, 12),
     };
 
-    await getFirebaseAdminDb().collection("users").doc(payload.authUid).create(userRecord);
+    await userRef.create(userRecord);
 
     console.info("Owner admin provisioned", {
       hubId: hub.id,
       hubSlug: hub.slug,
+      userId: userRef.id,
       authUid: payload.authUid,
       ownerEmail: payload.ownerEmail,
     });
@@ -125,6 +121,7 @@ export async function POST(request) {
       status: "provisioned",
       hubId: hub.id,
       hubSlug: hub.slug,
+      userId: userRef.id,
       signInPath: buildAdminSignInHref(hub.slug, payload.ownerEmail),
     });
   } catch (error) {
