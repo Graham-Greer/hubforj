@@ -126,6 +126,14 @@ export async function provisionOwnerAdminFromProductSite(payload) {
   }
 
   if (!response.ok) {
+    console.error("Product-site owner admin activation failed", {
+      status: response.status,
+      hubId: normalizeString(payload?.hubId),
+      hubSlug: normalizeString(payload?.hubSlug),
+      ownerEmail: normalizeString(payload?.ownerEmail),
+      error: String(data?.error || "Unable to activate hub admin access."),
+    });
+
     throw new Error(String(data?.error || "Unable to activate hub admin access."));
   }
 

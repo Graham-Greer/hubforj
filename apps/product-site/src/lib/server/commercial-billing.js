@@ -1637,7 +1637,8 @@ async function syncAccountFromStripeSubscription({ account, subscription, event 
     });
   }
 
-  const hubId = normalizeString(account?.lastHubId || account?.primaryHubId);
+  const metadata = getAccountStripeLookupMetadata(subscription);
+  const hubId = normalizeString(account?.lastHubId || account?.primaryHubId || metadata.hubId);
 
   if (hubId) {
     await updateHubPackageAuthorityFromProductSite({
@@ -1661,6 +1662,7 @@ async function syncAccountFromStripeSubscription({ account, subscription, event 
       packageTier,
       packageStatus,
       stripeSubscriptionStatus: normalizeString(subscription?.status),
+      hubId,
     },
   });
 

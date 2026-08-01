@@ -2,6 +2,33 @@ function normalizeBaseUrl(value) {
   return String(value || "").trim().replace(/\/+$/, "");
 }
 
+function normalizeFirebaseAdminPrivateKey(value) {
+  let normalized = String(value || "").trim();
+
+  if (
+    (normalized.startsWith('"') && normalized.endsWith('"')) ||
+    (normalized.startsWith("'") && normalized.endsWith("'"))
+  ) {
+    normalized = normalized.slice(1, -1).trim();
+  }
+
+  normalized = normalized.replace(/\\r\\n/g, "\n").replace(/\\n/g, "\n").replace(/\\r/g, "\n");
+
+  if (!normalized.includes("-----BEGIN") && normalized) {
+    try {
+      const decoded = Buffer.from(normalized, "base64").toString("utf8").trim();
+
+      if (decoded.includes("-----BEGIN")) {
+        normalized = decoded;
+      }
+    } catch {
+      // Keep the original value so Firebase Admin reports the credential issue.
+    }
+  }
+
+  return normalized;
+}
+
 const publicEnv = {
   firebaseApiKey: String(process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "").trim(),
   firebaseAuthDomain: String(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "").trim(),
@@ -65,7 +92,7 @@ export function assertPublicEnv() {
 export function getServerEnv() {
   return {
     ...serverEnv,
-    firebaseAdminPrivateKey: serverEnv.firebaseAdminPrivateKey.replace(/\\n/g, "\n"),
+    firebaseAdminPrivateKey: normalizeFirebaseAdminPrivateKey(serverEnv.firebaseAdminPrivateKey),
   };
 }
 

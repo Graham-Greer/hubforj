@@ -29,6 +29,10 @@ export async function POST(request) {
   try {
     event = stripe.webhooks.constructEvent(body, signature, stripeWebhookSecret);
   } catch (error) {
+    console.error("Product-site Stripe webhook signature verification failed", {
+      error: String(error?.message || error || "Unknown webhook signature error"),
+    });
+
     return NextResponse.json(
       {
         error: String(error?.message || "Unable to verify Stripe webhook signature."),
@@ -39,11 +43,23 @@ export async function POST(request) {
 
   try {
     const result = await processStripeWebhookEvent(event);
+    console.info("Product-site Stripe webhook processed", {
+      eventId: event?.id,
+      eventType: event?.type,
+      result,
+    });
+
     return NextResponse.json({
       ok: true,
       result,
     });
   } catch (error) {
+    console.error("Product-site Stripe webhook processing failed", {
+      eventId: event?.id,
+      eventType: event?.type,
+      error: String(error?.message || error || "Unknown webhook processing error"),
+    });
+
     return NextResponse.json(
       {
         error: String(error?.message || "Unable to process Stripe webhook event."),

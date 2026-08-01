@@ -17,13 +17,13 @@ async function getExistingHubUser(hubId, authUid, ownerEmail) {
   const db = getFirebaseAdminDb();
   const [byUidSnapshot, byEmailSnapshot] = await Promise.all([
     db.collection("users").doc(authUid).get(),
-    db.collection("users").where("hubId", "==", hubId).where("email", "==", ownerEmail).limit(1).get(),
+    db.collection("users").where("email", "==", ownerEmail).limit(10).get(),
   ]);
 
   const byUid = byUidSnapshot.exists ? normalizeUserRecord({ id: byUidSnapshot.id, ...byUidSnapshot.data() }) : null;
-  const byEmail = byEmailSnapshot.empty
-    ? null
-    : normalizeUserRecord({ id: byEmailSnapshot.docs[0].id, ...byEmailSnapshot.docs[0].data() });
+  const byEmail = byEmailSnapshot.docs
+    .map((doc) => normalizeUserRecord({ id: doc.id, ...doc.data() }))
+    .find((user) => user?.hubId === hubId) || null;
 
   if (byUid?.hubId === hubId) {
     return byUid;
@@ -44,6 +44,12 @@ export async function POST(request) {
   const auth = getInternalAutomationAuthorizationState(request);
 
   if (!auth.authorized) {
+    console.warn("Owner admin provisioning rejected authorization", {
+      status: auth.status,
+      configured: auth.configured,
+      error: auth.error,
+    });
+
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
@@ -108,6 +114,13 @@ export async function POST(request) {
 
     await getFirebaseAdminDb().collection("users").doc(payload.authUid).create(userRecord);
 
+    console.info("Owner admin provisioned", {
+      hubId: hub.id,
+      hubSlug: hub.slug,
+      authUid: payload.authUid,
+      ownerEmail: payload.ownerEmail,
+    });
+
     return NextResponse.json({
       status: "provisioned",
       hubId: hub.id,
@@ -115,6 +128,14 @@ export async function POST(request) {
       signInPath: buildAdminSignInHref(hub.slug, payload.ownerEmail),
     });
   } catch (error) {
+    console.error("Owner admin provisioning failed", {
+      hubId: normalizeString(body?.hubId),
+      hubSlug: normalizeString(body?.hubSlug),
+      ownerEmail: normalizeString(body?.ownerEmail),
+      authUid: normalizeString(body?.authUid),
+      error: String(error?.message || error || "Unknown owner admin provisioning error"),
+    });
+
     return NextResponse.json(
       {
         error: String(error?.message || "Unable to provision the owner admin account."),
