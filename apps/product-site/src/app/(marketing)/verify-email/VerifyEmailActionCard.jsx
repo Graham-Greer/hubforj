@@ -135,11 +135,11 @@ export default function VerifyEmailActionCard({ mode = "", oobCode = "", continu
           </p>
         </div>
         <div className="button-row">
-          <Link href={continuePath} className="button-link" data-variant="primary">
+          <Link href={continuePath} prefetch={false} className="button-link" data-variant="primary">
             {hasAccountSession ? "Open your account" : "Continue to sign in"}
           </Link>
           {!hasAccountSession ? (
-            <Link href="/account" className="button-link" data-variant="secondary">
+            <Link href="/account" prefetch={false} className="button-link" data-variant="secondary">
               Open your account
             </Link>
           ) : null}
@@ -157,11 +157,11 @@ export default function VerifyEmailActionCard({ mode = "", oobCode = "", continu
           <p className="section-copy">{setupErrorMessage}</p>
         </div>
         <div className="button-row">
-          <Link href={hasAccountSession ? "/account" : "/sign-in"} className="button-link" data-variant="primary">
+          <Link href={hasAccountSession ? "/account" : "/sign-in"} prefetch={false} className="button-link" data-variant="primary">
             {hasAccountSession ? "Open your account" : "Continue to sign in"}
           </Link>
           {!hasAccountSession ? (
-            <Link href="/account" className="button-link" data-variant="secondary">
+            <Link href="/account" prefetch={false} className="button-link" data-variant="secondary">
               Open your account
             </Link>
           ) : null}
@@ -178,11 +178,11 @@ export default function VerifyEmailActionCard({ mode = "", oobCode = "", continu
         <p className="section-copy">{errorMessage}</p>
       </div>
       <div className="button-row">
-        <Link href={hasAccountSession ? "/account" : "/sign-in"} className="button-link" data-variant="primary">
+        <Link href={hasAccountSession ? "/account" : "/sign-in"} prefetch={false} className="button-link" data-variant="primary">
           {hasAccountSession ? "Open your account" : "Continue to sign in"}
         </Link>
         {!hasAccountSession ? (
-          <Link href="/account" className="button-link" data-variant="secondary">
+          <Link href="/account" prefetch={false} className="button-link" data-variant="secondary">
             Open your account
           </Link>
         ) : null}

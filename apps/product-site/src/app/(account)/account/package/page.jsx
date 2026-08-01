@@ -68,7 +68,12 @@ export default async function AccountPackagePage() {
             </span>,
           ]}
           actions={
-            <Link href={snapshot.hasPendingPackageIntent ? `/account/upgrade?tier=${encodeURIComponent(snapshot.pendingPackageTier)}` : "/account/upgrade"} className="button-link" data-variant="primary">
+            <Link
+              href={snapshot.hasPendingPackageIntent ? `/account/upgrade?tier=${encodeURIComponent(snapshot.pendingPackageTier)}` : "/account/upgrade"}
+              prefetch={false}
+              className="button-link"
+              data-variant="primary"
+            >
               {snapshot.hasPendingPackageIntent
                 ? isScheduledPackageChange
                   ? "Manage scheduled change"
@@ -120,7 +125,7 @@ export default async function AccountPackagePage() {
             </p>
             {!snapshot.hasPendingPackageIntent ? (
               <div className="button-row">
-                <Link href="/account/upgrade" className="button-link" data-variant="primary">
+                <Link href="/account/upgrade" prefetch={false} className="button-link" data-variant="primary">
                   Review upgrade options
                 </Link>
               </div>

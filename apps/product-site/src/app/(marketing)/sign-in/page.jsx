@@ -25,7 +25,7 @@ export default async function SignInPage({ searchParams }) {
             <h1 className="headline headline--section">Return to your account.</h1>
             <p className="subcopy">Manage your package, billing, and next steps without starting from scratch.</p>
             <div className="button-row">
-              <Link href="/signup" className="button-link" data-variant="secondary">
+              <Link href="/signup" prefetch={false} className="button-link" data-variant="secondary">
                 Create a new community
               </Link>
             </div>

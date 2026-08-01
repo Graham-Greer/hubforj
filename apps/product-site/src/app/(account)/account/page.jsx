@@ -79,7 +79,7 @@ export default async function AccountOverviewPage({ searchParams }) {
                 Resend verification email
               </button>
             </form>
-            <Link href="/sign-in" className="button-link" data-variant="secondary">
+            <Link href="/sign-in" prefetch={false} className="button-link" data-variant="secondary">
               Return to sign in
             </Link>
           </>
@@ -198,10 +198,10 @@ export default async function AccountOverviewPage({ searchParams }) {
                 </div>
               </div>
               <div className="button-row">
-                <Link href="/account/package" className="button-link" data-variant="secondary">
+                <Link href="/account/package" prefetch={false} className="button-link" data-variant="secondary">
                   View package
                 </Link>
-                <Link href="/account/billing" className="button-link" data-variant="secondary">
+                <Link href="/account/billing" prefetch={false} className="button-link" data-variant="secondary">
                   View billing
                 </Link>
               </div>
@@ -226,12 +226,13 @@ export default async function AccountOverviewPage({ searchParams }) {
               </div>
               <div className="button-row">
                 {!snapshot.hasPendingPackageIntent ? (
-                  <Link href="/account/upgrade" className="button-link" data-variant="primary">
+                  <Link href="/account/upgrade" prefetch={false} className="button-link" data-variant="primary">
                     Review upgrade options
                   </Link>
                 ) : isScheduledPackageChange ? (
                   <Link
                     href={`/account/upgrade?tier=${encodeURIComponent(snapshot.pendingPackageTier)}`}
+                    prefetch={false}
                     className="button-link"
                     data-variant="primary"
                   >
@@ -240,6 +241,7 @@ export default async function AccountOverviewPage({ searchParams }) {
                 ) : (
                   <Link
                     href={`/account/upgrade?tier=${encodeURIComponent(snapshot.pendingPackageTier)}`}
+                    prefetch={false}
                     className="button-link"
                     data-variant="primary"
                   >

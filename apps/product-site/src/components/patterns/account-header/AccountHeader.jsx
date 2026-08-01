@@ -98,7 +98,7 @@ export default function AccountHeader({ ownerName, signOutAction }) {
   return (
     <>
       <div ref={headerRef} className="account-topbar">
-        <Link href="/" className="site-mark">
+        <Link href="/" prefetch={false} className="site-mark">
           <SiteMark />
         </Link>
         <div className="account-topbar-nav">

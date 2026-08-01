@@ -25,16 +25,16 @@ export default async function MarketingShell({ children }) {
           </div>
           <div className="marketing-footer-column">
             <h3>Platform</h3>
-            <Link href="/pricing">Pricing</Link>
+            <Link href="/pricing" prefetch={false}>Pricing</Link>
             {hasAccountSession ? (
               <>
-                <Link href="/account">Account overview</Link>
-                <Link href="/account/package">Manage package</Link>
+                <Link href="/account" prefetch={false}>Account overview</Link>
+                <Link href="/account/package" prefetch={false}>Manage package</Link>
               </>
             ) : (
               <>
-                <Link href="/">Overview</Link>
-                <Link href="/signup">Start your community</Link>
+                <Link href="/" prefetch={false}>Overview</Link>
+                <Link href="/signup" prefetch={false}>Start your community</Link>
               </>
             )}
           </div>
@@ -42,15 +42,15 @@ export default async function MarketingShell({ children }) {
             <h3>{hasAccountSession ? "Your account" : "Get started"}</h3>
             {hasAccountSession ? (
               <>
-                <Link href="/account">Account overview</Link>
-                <Link href="/account/package">Package management</Link>
-                <Link href="/account/billing">Billing</Link>
+                <Link href="/account" prefetch={false}>Account overview</Link>
+                <Link href="/account/package" prefetch={false}>Package management</Link>
+                <Link href="/account/billing" prefetch={false}>Billing</Link>
               </>
             ) : (
               <>
-                <Link href="/pricing">View pricing</Link>
-                <Link href="/signup">Create your community</Link>
-                <Link href="/sign-in">Sign in</Link>
+                <Link href="/pricing" prefetch={false}>View pricing</Link>
+                <Link href="/signup" prefetch={false}>Create your community</Link>
+                <Link href="/sign-in" prefetch={false}>Sign in</Link>
               </>
             )}
           </div>

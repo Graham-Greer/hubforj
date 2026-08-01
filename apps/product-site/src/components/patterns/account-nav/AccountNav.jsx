@@ -13,7 +13,7 @@ export default function AccountNav() {
         const isActive = item.match.test(pathname);
 
         return (
-          <Link key={item.href} href={item.href} className="subnav-link" data-active={isActive ? "true" : "false"}>
+          <Link key={item.href} href={item.href} prefetch={false} className="subnav-link" data-active={isActive ? "true" : "false"}>
             {item.label}
           </Link>
         );

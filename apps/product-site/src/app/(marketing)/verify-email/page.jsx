@@ -56,7 +56,7 @@ export default async function VerifyEmailPage({ searchParams }) {
                 {" "}and request a fresh verification email there.
               </p>
               <div className="button-row">
-                <Link href={hasAccountSession ? "/account" : "/sign-in"} className="button-link" data-variant="secondary">
+                <Link href={hasAccountSession ? "/account" : "/sign-in"} prefetch={false} className="button-link" data-variant="secondary">
                   {hasAccountSession ? "Open your account" : "Go to sign in"}
                 </Link>
               </div>

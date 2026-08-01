@@ -63,7 +63,7 @@ export default async function SignupNextStepsPage({ searchParams }) {
               <h2>Verification email needs attention</h2>
               <p>We could not confirm email delivery from this environment. Open your account and resend the verification email before activating your Hubforj workspace.</p>
               <div className="button-row">
-                <Link href="/account" className="button-link" data-variant="primary">
+                <Link href="/account" prefetch={false} className="button-link" data-variant="primary">
                   Open your account
                 </Link>
               </div>

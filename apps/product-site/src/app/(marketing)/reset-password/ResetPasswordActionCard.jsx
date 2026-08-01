@@ -161,10 +161,10 @@ export default function ResetPasswordActionCard({ mode = "", oobCode = "", conti
           <p className="section-copy">Sign in with your new password to get back into your Hubforj account.</p>
         </div>
         <div className="button-row">
-          <Link href={continuePath} className="button-link" data-variant="primary">
+          <Link href={continuePath} prefetch={false} className="button-link" data-variant="primary">
             Continue to sign in
           </Link>
-          <Link href="/forgot-password" className="button-link" data-variant="secondary">
+          <Link href="/forgot-password" prefetch={false} className="button-link" data-variant="secondary">
             Request another reset email
           </Link>
         </div>
@@ -181,10 +181,10 @@ export default function ResetPasswordActionCard({ mode = "", oobCode = "", conti
           <p className="section-copy">{setupErrorMessage || errorMessage}</p>
         </div>
         <div className="button-row">
-          <Link href="/forgot-password" className="button-link" data-variant="primary">
+          <Link href="/forgot-password" prefetch={false} className="button-link" data-variant="primary">
             Request another reset email
           </Link>
-          <Link href="/sign-in" className="button-link" data-variant="secondary">
+          <Link href="/sign-in" prefetch={false} className="button-link" data-variant="secondary">
             Return to sign in
           </Link>
         </div>

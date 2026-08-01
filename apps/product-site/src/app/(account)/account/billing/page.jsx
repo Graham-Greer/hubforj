@@ -116,7 +116,7 @@ export default async function AccountBillingPage({ searchParams }) {
                 </button>
               </form>
             ) : null}
-            <Link href="/account/upgrade" className="button-link" data-variant="secondary">
+            <Link href="/account/upgrade" prefetch={false} className="button-link" data-variant="secondary">
               View package options
             </Link>
           </>
@@ -135,12 +135,13 @@ export default async function AccountBillingPage({ searchParams }) {
                     ? `/account/upgrade?tier=${encodeURIComponent(snapshot.pendingPackageTier)}`
                     : "/account/upgrade"
                 }
+                prefetch={false}
                 className="button-link"
                 data-variant="primary"
               >
                 {snapshot.hasPendingPackageIntent ? "Continue secure checkout" : "Review paid packages"}
               </Link>
-              <Link href="/account/package" className="button-link" data-variant="secondary">
+              <Link href="/account/package" prefetch={false} className="button-link" data-variant="secondary">
                 View package details
               </Link>
             </>
@@ -222,7 +223,7 @@ export default async function AccountBillingPage({ searchParams }) {
                     </button>
                   </form>
                 ) : null}
-                <Link href="/account/package" className="button-link" data-variant="secondary">
+                <Link href="/account/package" prefetch={false} className="button-link" data-variant="secondary">
                   View package details
                 </Link>
               </div>

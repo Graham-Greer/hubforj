@@ -31,10 +31,10 @@ export default async function SignupSuccessPage({ searchParams }) {
             {hubId ? <span className="status-chip">{hubId}</span> : null}
           </div>
           <div className="button-row">
-            <Link href="/account" className="button-link" data-variant="primary">
+            <Link href="/account" prefetch={false} className="button-link" data-variant="primary">
               Open your account
             </Link>
-            <Link href="/sign-in" className="button-link" data-variant="secondary">
+            <Link href="/sign-in" prefetch={false} className="button-link" data-variant="secondary">
               Return to sign in
             </Link>
           </div>
@@ -72,7 +72,7 @@ export default async function SignupSuccessPage({ searchParams }) {
               Your community website is already available while you finish verifying your account and opening the admin area.
             </p>
             <div className="button-row">
-              <Link href={handoff.publicHref} className="button-link" data-variant="secondary">
+              <Link href={handoff.publicHref} prefetch={false} className="button-link" data-variant="secondary">
                 Open public site
               </Link>
             </div>

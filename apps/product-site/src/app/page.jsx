@@ -27,10 +27,10 @@ export default async function HomePage() {
                 Hubforj brings your website, memberships, events, courses, and admin operations into one clean system so you can grow with more confidence and less friction.
               </p>
               <div className="hero-actions">
-                <Link href="/signup" className="button-link" data-variant="primary">
+                <Link href="/signup" prefetch={false} className="button-link" data-variant="primary">
                   Start your community
                 </Link>
-                <Link href="/pricing" className="button-link" data-variant="secondary">
+                <Link href="/pricing" prefetch={false} className="button-link" data-variant="secondary">
                   View pricing
                 </Link>
               </div>

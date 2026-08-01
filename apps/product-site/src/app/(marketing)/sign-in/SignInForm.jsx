@@ -92,7 +92,12 @@ export default function SignInForm({ nextPath = "/account" }) {
         <button type="submit" className="button-link" data-variant="primary" disabled={isPending}>
           {isPending ? "Signing in..." : "Sign in"}
         </button>
-        <Link href={`/forgot-password${email ? `?email=${encodeURIComponent(email)}` : ""}`} className="button-link" data-variant="secondary">
+        <Link
+          href={`/forgot-password${email ? `?email=${encodeURIComponent(email)}` : ""}`}
+          prefetch={false}
+          className="button-link"
+          data-variant="secondary"
+        >
           Forgot password
         </Link>
       </div>

@@ -35,7 +35,10 @@ export async function requireCommercialAccountContext({ refreshSubscription = fa
     redirect("/signup");
   }
 
-  const verifiedAccount = account.authUid ? await syncCommercialAccountVerificationState({ account }) : account;
+  const shouldSyncVerificationState = Boolean(account.authUid && !account.emailVerified);
+  const verifiedAccount = shouldSyncVerificationState
+    ? await syncCommercialAccountVerificationState({ account })
+    : account;
   const syncedAccount = refreshSubscription
     ? await refreshCommercialAccountSubscriptionState(verifiedAccount)
     : verifiedAccount;

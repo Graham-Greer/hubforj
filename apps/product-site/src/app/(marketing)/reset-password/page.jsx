@@ -50,7 +50,7 @@ export default async function ResetPasswordPage({ searchParams }) {
               <h2>Need a new link?</h2>
               <p>If this reset link has expired or has already been used, request a fresh password reset email and we’ll send you a new one.</p>
               <div className="button-row">
-                <Link href="/forgot-password" className="button-link" data-variant="secondary">
+                <Link href="/forgot-password" prefetch={false} className="button-link" data-variant="secondary">
                   Request another reset email
                 </Link>
               </div>
