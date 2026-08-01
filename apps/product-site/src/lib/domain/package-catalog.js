@@ -186,15 +186,20 @@ export function buildCommercialPackageSnapshot({
     currentTier: currentPackage.tier,
   });
   const scheduledPackageEffectiveAt = normalizeString(account?.pendingPackageEffectiveAt);
-  const scheduledCancellationDate =
-    pendingStatus === "scheduled_downgrade"
-      ? scheduledPackageEffectiveAt || normalizeString(account?.stripeCurrentPeriodEnd)
-      : normalizeString(account?.stripeCancelAt) || normalizeString(account?.stripeCurrentPeriodEnd);
-  const scheduledDateLabel = formatDateLabel(scheduledCancellationDate, locale);
+  const cancelAtPeriodEnd = account?.stripeCancelAtPeriodEnd === true;
+  const cancelAt = normalizeString(account?.stripeCancelAt);
+  const currentPeriodEnd = normalizeString(account?.stripeCurrentPeriodEnd);
   const hasScheduledCancellation =
     currentPackage.tier !== "free" &&
     pendingStatus !== "scheduled_downgrade" &&
-    (account?.stripeCancelAtPeriodEnd === true || Boolean(scheduledCancellationDate));
+    (cancelAtPeriodEnd || Boolean(cancelAt));
+  const scheduledCancellationDate =
+    pendingStatus === "scheduled_downgrade"
+      ? scheduledPackageEffectiveAt || currentPeriodEnd
+      : hasScheduledCancellation
+        ? cancelAt || currentPeriodEnd
+        : "";
+  const scheduledDateLabel = formatDateLabel(scheduledCancellationDate, locale);
 
   const statusLabel = hasPendingPackageIntent
     ? pendingStatus === "scheduled_downgrade"
