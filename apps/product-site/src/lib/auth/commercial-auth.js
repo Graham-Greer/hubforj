@@ -17,6 +17,17 @@ function normalizeEmail(value) {
   return normalizeString(value).toLowerCase();
 }
 
+function normalizeEmailVerified(value) {
+  return value === true;
+}
+
+function buildAuthUserFromDecodedToken(decodedToken) {
+  return {
+    uid: normalizeString(decodedToken?.uid),
+    emailVerified: normalizeEmailVerified(decodedToken?.email_verified),
+  };
+}
+
 export async function ensureCommercialAccountAuthUser({ account, password }) {
   const normalizedPassword = String(password || "");
 
@@ -116,11 +127,22 @@ export async function syncCommercialAccountVerificationState({ account, authUser
     resolvedAuthUser.emailVerified && !account.emailVerified
       ? new Date().toISOString()
       : account.emailVerifiedAt || "";
+  const emailVerified = Boolean(resolvedAuthUser.emailVerified);
+  const emailVerifiedAt = emailVerified ? verifiedAt : "";
+  const verificationEmailSentAt = account.verificationEmailSentAt || "";
+
+  if (
+    Boolean(account.emailVerified) === emailVerified &&
+    normalizeString(account.emailVerifiedAt) === normalizeString(emailVerifiedAt) &&
+    normalizeString(account.verificationEmailSentAt) === normalizeString(verificationEmailSentAt)
+  ) {
+    return account;
+  }
 
   return updateCommercialAccountVerificationState(account.id, {
-    emailVerified: Boolean(resolvedAuthUser.emailVerified),
-    emailVerifiedAt: verifiedAt,
-    verificationEmailSentAt: account.verificationEmailSentAt || "",
+    emailVerified,
+    emailVerifiedAt,
+    verificationEmailSentAt,
   });
 }
 
@@ -133,7 +155,7 @@ export async function resolveCommercialAccountFromIdToken(idToken) {
 
   const auth = getFirebaseAdminAuth(getFirebaseAdminApp());
   const decodedToken = await auth.verifyIdToken(normalizedIdToken, true);
-  const authUser = await auth.getUser(decodedToken.uid);
+  const authUser = buildAuthUserFromDecodedToken(decodedToken);
   const byUid = await getCommercialAccountByAuthUid(decodedToken.uid);
 
   if (byUid) {

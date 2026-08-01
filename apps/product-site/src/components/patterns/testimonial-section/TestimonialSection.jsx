@@ -76,10 +76,10 @@ export default function TestimonialSection({
             <h2>Choose the right package, then start building with confidence.</h2>
             <p>Pick the package that fits today, then move straight into setting up your community with a clear next step.</p>
             <div className="button-row">
-              <Link href="/signup" className="button-link" data-variant="primary">
+              <Link href="/signup" prefetch={false} className="button-link" data-variant="primary">
                 Start your community
               </Link>
-              <Link href="/pricing" className="button-link" data-variant="secondary">
+              <Link href="/pricing" prefetch={false} className="button-link" data-variant="secondary">
                 Compare packages
               </Link>
             </div>

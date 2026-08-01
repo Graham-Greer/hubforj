@@ -93,7 +93,7 @@ export default function PackageCatalog({ items = [], mode = "marketing", current
                   Current package
                 </span>
               ) : (
-                <Link href={action.href} className="button-link" data-variant={buttonVariant}>
+                <Link href={action.href} prefetch={false} className="button-link" data-variant={buttonVariant}>
                   {action.label}
                 </Link>
               )}

@@ -79,7 +79,7 @@ export default async function SignupPage({ searchParams }) {
             <h1 className="headline headline--section"><span className="gradient-text">Launch your community</span> with a platform that looks credible and runs cleanly from day one.</h1>
             <p className="subcopy">Choose your package, create your workspace, and move straight into setting up the community experience you want people to join.</p>
             <div className="button-row">
-              <Link href="/pricing" className="button-link" data-variant="secondary">
+              <Link href="/pricing" prefetch={false} className="button-link" data-variant="secondary">
                 Compare packages
               </Link>
             </div>

@@ -50,6 +50,7 @@ export default async function PricingPage() {
             <div className="button-row">
               <Link
                 href={primarySignupHref}
+                prefetch={false}
                 className="button-link"
                 data-variant="primary"
               >

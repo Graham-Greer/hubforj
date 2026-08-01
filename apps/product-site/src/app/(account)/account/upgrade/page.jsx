@@ -205,10 +205,10 @@ export default async function AccountUpgradePage({ searchParams }) {
             tone="warning"
             actions={
               <>
-                <Link href="/account/billing" className="button-link" data-variant="primary">
+                <Link href="/account/billing" prefetch={false} className="button-link" data-variant="primary">
                   Open billing
                 </Link>
-                <Link href="/account/package" className="button-link" data-variant="secondary">
+                <Link href="/account/package" prefetch={false} className="button-link" data-variant="secondary">
                   View package details
                 </Link>
               </>
@@ -263,7 +263,7 @@ export default async function AccountUpgradePage({ searchParams }) {
                 {...packageChangeConfirmation}
                 triggerLabel={packageChange.actionLabel}
               />
-              <Link href="/account/billing" className="button-link" data-variant="secondary">
+              <Link href="/account/billing" prefetch={false} className="button-link" data-variant="secondary">
                 View billing
               </Link>
             </div>
@@ -275,7 +275,7 @@ export default async function AccountUpgradePage({ searchParams }) {
                 <button type="submit" className="button-link" data-variant="primary">
                   {packageChange.actionLabel}
                 </button>
-                <Link href="/account/billing" className="button-link" data-variant="secondary">
+                <Link href="/account/billing" prefetch={false} className="button-link" data-variant="secondary">
                   View billing
                 </Link>
               </div>
@@ -289,7 +289,7 @@ export default async function AccountUpgradePage({ searchParams }) {
                 {...packageChangeConfirmation}
                 triggerLabel={packageChange.actionLabel}
               />
-              <Link href="/account/billing" className="button-link" data-variant="secondary">
+              <Link href="/account/billing" prefetch={false} className="button-link" data-variant="secondary">
                 View billing
               </Link>
             </div>
@@ -302,14 +302,14 @@ export default async function AccountUpgradePage({ searchParams }) {
                 {...packageChangeConfirmation}
                 triggerLabel={packageChange.actionLabel}
               />
-              <Link href="/account/billing" className="button-link" data-variant="secondary">
+              <Link href="/account/billing" prefetch={false} className="button-link" data-variant="secondary">
                 View billing
               </Link>
             </div>
           ) : null}
           {packageChange.actionKind === "current" ? (
             <div className="button-row">
-              <Link href="/account/package" className="button-link" data-variant="secondary">
+              <Link href="/account/package" prefetch={false} className="button-link" data-variant="secondary">
                 View package details
               </Link>
             </div>
@@ -322,14 +322,14 @@ export default async function AccountUpgradePage({ searchParams }) {
                 triggerLabel="Cancel scheduled change"
                 {...cancelScheduledChangeConfirmation}
               />
-              <Link href="/account/package" className="button-link" data-variant="secondary">
+              <Link href="/account/package" prefetch={false} className="button-link" data-variant="secondary">
                 View package details
               </Link>
             </div>
           ) : null}
           {packageChange.actionKind === "unavailable" ? (
             <div className="button-row">
-              <Link href="/account/billing" className="button-link" data-variant="secondary">
+              <Link href="/account/billing" prefetch={false} className="button-link" data-variant="secondary">
                 View billing status
               </Link>
             </div>

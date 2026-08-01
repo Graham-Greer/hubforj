@@ -112,7 +112,7 @@ export default function MarketingNav({ hasAccountSession = false }) {
         aria-label="Product site"
         className="site-nav"
       >
-        <Link href="/" className="site-mark">
+        <Link href="/" prefetch={false} className="site-mark">
           <SiteMark />
         </Link>
         <div className="site-nav-links">
@@ -120,7 +120,7 @@ export default function MarketingNav({ hasAccountSession = false }) {
             const isActive = pathname === item.href;
 
             return (
-              <Link key={item.href} href={item.href} className="site-nav-link" data-active={isActive ? "true" : "false"}>
+              <Link key={item.href} href={item.href} prefetch={false} className="site-nav-link" data-active={isActive ? "true" : "false"}>
                 {item.label}
               </Link>
             );
@@ -166,6 +166,7 @@ export default function MarketingNav({ hasAccountSession = false }) {
                         <Link
                           key={item.href}
                           href={item.href}
+                          prefetch={false}
                           className="site-nav-mobile-link"
                           data-active={isActive ? "true" : "false"}
                           onClick={() => setMobileNavPath("")}

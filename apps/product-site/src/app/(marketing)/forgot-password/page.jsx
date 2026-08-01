@@ -14,7 +14,7 @@ export default async function ForgotPasswordPage({ searchParams }) {
             <h1 className="headline headline--section">Reset your account password.</h1>
             <p className="subcopy">We’ll send you a secure link so you can get back into your account quickly.</p>
             <div className="button-row">
-              <Link href="/sign-in" className="button-link" data-variant="secondary">
+              <Link href="/sign-in" prefetch={false} className="button-link" data-variant="secondary">
                 Back to sign in
               </Link>
             </div>
