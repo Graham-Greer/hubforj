@@ -1,4 +1,6 @@
-import AccountShell from "@/components/patterns/account-shell/AccountShell";
+import { Suspense } from "react";
+import AccountRouteShell from "@/components/patterns/account-route-shell/AccountRouteShell";
+import { AccountUpgradePanelsSkeleton } from "@/components/patterns/account-loading/AccountPanelSkeletons";
 import Link from "next/link";
 import PackageCatalog from "@/components/patterns/package-catalog/PackageCatalog";
 import {
@@ -10,6 +12,7 @@ import { getPackageCatalogItem, buildCommercialAccountModel } from "@/lib/domain
 import { getLatestCommercialCheckoutState } from "@/lib/server/commercial-billing";
 import { requireCommercialAccountContext } from "@/lib/server/commercial-account-context";
 import { getStripeBillingEnvironmentState } from "@/lib/server/stripe";
+import { accountRouteCopy } from "@/lib/navigation/account-route-copy";
 import PackageChangeConfirmAction from "./PackageChangeConfirmAction";
 import {
   applyPackageUpgradeAction,
@@ -142,7 +145,17 @@ function getScheduledChangeCancellationConfirmation({ snapshot, selectedPackage,
   };
 }
 
-export default async function AccountUpgradePage({ searchParams }) {
+export default function AccountUpgradePage({ searchParams }) {
+  return (
+    <AccountRouteShell {...accountRouteCopy.upgrade}>
+      <Suspense fallback={<AccountUpgradePanelsSkeleton />}>
+        <AccountUpgradePanels searchParams={searchParams} />
+      </Suspense>
+    </AccountRouteShell>
+  );
+}
+
+async function AccountUpgradePanels({ searchParams }) {
   const accountContext = await requireCommercialAccountContext();
   const params = await searchParams;
   const { account, currentHub } = accountContext;
@@ -190,12 +203,7 @@ export default async function AccountUpgradePage({ searchParams }) {
   });
 
   return (
-    <AccountShell
-      accountContext={accountContext}
-      eyebrow="Upgrade"
-      title="Upgrade or change package"
-      description="Review your options, then upgrade directly here or use billing for subscription management when needed."
-    >
+    <>
       <div className="content-stack">
         <UpgradeRouteStateNotice />
         {billing.requiresPaymentAction ? (
@@ -363,6 +371,6 @@ export default async function AccountUpgradePage({ searchParams }) {
         />
         <PackageCatalog items={packages} mode="account" currentTier={snapshot.currentTier} />
       </div>
-    </AccountShell>
+    </>
   );
 }

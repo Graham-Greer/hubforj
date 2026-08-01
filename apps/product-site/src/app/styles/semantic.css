@@ -217,6 +217,139 @@
   font: var(--font-body-lg);
 }
 
+.skeleton-block {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  min-width: 1rem;
+  border-radius: var(--radius-xs);
+  background: color-mix(in srgb, var(--text-primary) 11%, transparent);
+}
+
+.skeleton-block::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--text-primary) 11%, transparent), transparent);
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.skeleton-text {
+  display: grid;
+  gap: var(--space-2);
+  width: min(100%, 42rem);
+}
+
+.skeleton-text-line {
+  width: 100%;
+  height: 0.8rem;
+}
+
+.skeleton-text-line[data-line="2"] {
+  width: 88%;
+}
+
+.skeleton-text-line[data-line="3"] {
+  width: 74%;
+}
+
+.skeleton-text-line[data-line="4"],
+.skeleton-text-line[data-line="6"] {
+  width: 82%;
+}
+
+.skeleton-text-line[data-line="5"] {
+  width: 68%;
+}
+
+.skeleton-label {
+  width: 6.5rem;
+  height: 0.7rem;
+}
+
+.skeleton-title-line {
+  width: min(19rem, 72%);
+  height: 1.45rem;
+}
+
+.skeleton-strong-line {
+  width: min(12rem, 82%);
+  height: 1rem;
+}
+
+.skeleton-price-line {
+  width: 8rem;
+  height: 1.7rem;
+}
+
+.skeleton-status-row,
+.skeleton-action-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.skeleton-chip {
+  width: 7.75rem;
+  height: 2rem;
+  border-radius: 999px;
+}
+
+.skeleton-button {
+  width: 10.5rem;
+  height: 2.75rem;
+  border-radius: 999px;
+}
+
+.skeleton-card {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.skeleton-metric-strip,
+.skeleton-side-list {
+  width: 100%;
+}
+
+.skeleton-metric-item {
+  min-height: 6.5rem;
+}
+
+.skeleton-side-list > span {
+  display: grid;
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.skeleton-side-list > span:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.skeleton-package-card {
+  display: grid;
+  min-height: 30rem;
+}
+
+.skeleton-package-card .package-action-row {
+  min-height: 4.5rem;
+}
+
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-block::after {
+    animation: none;
+  }
+}
+
 .section-title {
   margin: 0;
   max-width: none;
