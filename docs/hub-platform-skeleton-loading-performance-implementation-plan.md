@@ -479,6 +479,17 @@ These routes have enough anatomy detail in this plan to begin skeleton implement
 - `/(admin)/[hubSlug]/admin/what-we-do/[itemId]`
 - `/(admin)/[hubSlug]/admin/testimonials/create`
 - `/(admin)/[hubSlug]/admin/testimonials/[testimonialId]`
+- `/(admin)/[hubSlug]/admin/admins/invite`
+- `/(admin)/[hubSlug]/admin/events/[eventId]/attendance`
+- `/(admin)/[hubSlug]/admin/events/[eventId]/registrations`
+- `/(admin)/[hubSlug]/admin/courses/[courseId]/attendance`
+- `/(admin)/[hubSlug]/admin/courses/[courseId]/registrations`
+- `/(admin)/[hubSlug]/admin/members/[memberId]`
+- `/(admin)/[hubSlug]/admin/payments/[paymentItemId]`
+- `/(admin)/[hubSlug]/admin/settings/pages/home`
+- `/(admin)/[hubSlug]/admin/settings/pages/events`
+- `/(admin)/[hubSlug]/admin/settings/pages/courses`
+- `/(admin)/[hubSlug]/admin/settings/pages/testimonials`
 
 ### Identified But Not Fully Audited
 
@@ -541,6 +552,8 @@ Current admin examples:
 - `/admin/events/[eventId]` and `/admin/courses/[courseId]` must not have segment `loading.jsx` files because they own attendance and registration child routes
 - `/admin/settings` and `/admin/settings/pages` must not have segment `loading.jsx` files because they own child editor routes
 - `/admin/events/create`, `/admin/courses/create`, `/admin/settings/branding`, `/admin/settings/site`, `/admin/settings/legal`, `/admin/settings/account`, `/admin/what-we-do/create`, `/admin/what-we-do/[itemId]`, `/admin/testimonials/create`, and `/admin/testimonials/[testimonialId]` may use leaf `loading.jsx` files because their skeletons match the exact route segment
+- `/admin/admins/invite`, `/admin/events/[eventId]/registrations`, `/admin/courses/[courseId]/registrations`, `/admin/members/[memberId]`, `/admin/payments/[paymentItemId]`, `/admin/settings/pages/home`, `/admin/settings/pages/events`, `/admin/settings/pages/courses`, and `/admin/settings/pages/testimonials` may use leaf `loading.jsx` files because their skeletons match the exact route segment
+- `/admin/events/[eventId]/attendance` and `/admin/courses/[courseId]/attendance` must use page-level `Suspense` fallbacks because each owns an export child route
 
 ## First Slice Route Anatomy Audit
 
@@ -1450,6 +1463,67 @@ Use this checklist during implementation and review for the audited admin routes
 - fallback reserves page title/status/back area, content card heading/copy, author image area, quote textarea, attribution fields, status/featured controls, media row, and footer actions
 - resolved detail content reveals as one coherent editor region
 - loading component must not import testimonial or media repositories
+
+### `/admin/admins/invite`
+
+- route loading mirrors the framed Invite admin workspace
+- fallback reserves email field, role select, helper text, and submit action
+- permission-gated no-invite state remains inside the resolved content path
+- loading component must not import access, user-domain, or hub repositories
+
+### Event And Course Operational Tables
+
+Routes:
+
+- `/admin/events/[eventId]/registrations`
+- `/admin/events/[eventId]/attendance`
+- `/admin/courses/[courseId]/registrations`
+- `/admin/courses/[courseId]/attendance`
+
+Acceptance criteria:
+
+- route loading mirrors the operational dashboard: title, four stat cards, framed activity/list workspace, search, filters, pagination, and table rows
+- attendance pages use page-level `Suspense` rather than segment `loading.jsx` because they own export child routes
+- generic title copy is acceptable until the event/course record resolves because the final description includes the entity title
+- table row skeletons reserve identity columns, status/payment/progress badges, menu buttons, dates, and pagination controls
+- event booking and attendance variants use the same operational-table fallback with route-specific copy
+- course registration and attendance variants use the same operational-table fallback with route-specific copy
+- loading components must not import event, course, booking, registration, attendance, or hub repositories
+
+### `/admin/members/[memberId]`
+
+- route loading mirrors the member detail dashboard
+- generic member title is acceptable until the member record resolves because the final title is entity-derived
+- fallback reserves header actions, identity/status panel, three stat cards, member state/admin controls, current membership panel, participation/payment context sections
+- resolved member detail content reveals as one coherent dashboard region
+- loading component must not import member-detail, membership, hub, header, or action repositories
+
+### `/admin/payments/[paymentItemId]`
+
+- route loading mirrors the payment detail page
+- generic payment title is acceptable until the payment record resolves
+- fallback reserves back action, payment summary card, amount area, status/type badges, four fact cards, primary member action, and linked-record context panel
+- resolved payment detail content reveals as one coherent detail region
+- loading component must not import payment, hub-host, runtime-path, header, or repository modules
+
+### Page Settings Editors
+
+Routes:
+
+- `/admin/settings/pages/home`
+- `/admin/settings/pages/events`
+- `/admin/settings/pages/courses`
+- `/admin/settings/pages/testimonials`
+
+Acceptance criteria:
+
+- route loading mirrors the framed page-settings editor workspace
+- page header/back action renders from hub core data before site-settings and media library datasets resolve
+- homepage and testimonials fallbacks reserve the tab strip before the form fields
+- events and courses fallbacks reserve the single hero editor form
+- form skeleton reserves media selector, alt text, hero eyebrow/title, hero description textarea, CTA fields where present, and footer save action
+- dirty-form runtime and media picker behavior remain unchanged
+- loading components must not import site-settings, media, or hub repositories
 
 ## Measurement And Network Verification
 

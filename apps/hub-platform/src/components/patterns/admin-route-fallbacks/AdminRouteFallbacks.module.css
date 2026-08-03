@@ -278,7 +278,12 @@
 .wizardForm,
 .settingsEditor,
 .contentEditor,
-.testimonialEditor {
+.testimonialEditor,
+.inviteForm,
+.operationalWorkspace,
+.memberIdentityPanel,
+.paymentDetailPanel,
+.pageSettingsEditor {
   gap: var(--space-6);
 }
 
@@ -369,6 +374,25 @@
   border-block-end: 1px solid var(--admin-surface-muted-border, var(--border-subtle));
 }
 
+.operationalHeader,
+.operationalToolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.paymentDetailPanel,
+.memberIdentityPanel {
+  display: grid;
+}
+
+.amountBlock {
+  display: grid;
+  justify-items: end;
+  gap: var(--space-2);
+}
+
 .mediaContent {
   align-items: flex-start;
 }
@@ -443,12 +467,15 @@
   .adminAccessRow,
   .detailHeader,
   .detailActions,
-  .mediaSelectorRow {
+  .mediaSelectorRow,
+  .operationalHeader,
+  .operationalToolbar {
     display: grid;
   }
 
   .adminAccessMeta,
-  .formFooter {
+  .formFooter,
+  .amountBlock {
     justify-items: start;
     justify-content: flex-start;
   }

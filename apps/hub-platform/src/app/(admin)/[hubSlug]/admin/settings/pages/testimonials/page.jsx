@@ -1,20 +1,35 @@
+import { Suspense } from "react";
 import AdminDirtyAwareBackButton from "@/components/patterns/admin-form-runtime/AdminDirtyAwareBackButton";
 import { AdminFormRuntimeProvider } from "@/components/patterns/admin-form-runtime/AdminFormRuntime";
+import { AdminPublicPageSettingsFallback } from "@/components/patterns/admin-route-fallbacks/AdminRouteFallbacks";
 import WorkspaceSection from "@/components/patterns/workspace-section/WorkspaceSection";
 import TestimonialsPageSettingsForm from "./TestimonialsPageSettingsForm";
-import { requireHubBySlug } from "@/lib/data/hubs";
+import { requireHubBySlug, requireHubCoreBySlug } from "@/lib/data/hubs";
 import { getTestimonialsPageSettingsFormValuesByHub } from "@/lib/data/site-settings";
 import { listMediaAssetsByHubId, listMediaFoldersByHubId } from "@/lib/data/media";
 import styles from "../../settings.module.css";
 
-export default async function TestimonialsPageSettingsPage({ params }) {
-  const { hubSlug } = await params;
+async function TestimonialsPageSettingsWorkspace({ hubSlug }) {
   const hub = await requireHubBySlug(hubSlug);
   const [initialValues, mediaAssets, mediaFolders] = await Promise.all([
     getTestimonialsPageSettingsFormValuesByHub(hub),
     listMediaAssetsByHubId(hub.id),
     listMediaFoldersByHubId(hub.id),
   ]);
+
+  return (
+    <TestimonialsPageSettingsForm
+      hub={hub}
+      initialValues={initialValues}
+      mediaAssets={mediaAssets}
+      mediaFolders={mediaFolders}
+    />
+  );
+}
+
+export default async function TestimonialsPageSettingsPage({ params }) {
+  const { hubSlug } = await params;
+  const hub = await requireHubCoreBySlug(hubSlug);
 
   return (
     <AdminFormRuntimeProvider>
@@ -30,12 +45,9 @@ export default async function TestimonialsPageSettingsPage({ params }) {
             />
           }
         >
-          <TestimonialsPageSettingsForm
-            hub={hub}
-            initialValues={initialValues}
-            mediaAssets={mediaAssets}
-            mediaFolders={mediaFolders}
-          />
+          <Suspense fallback={<AdminPublicPageSettingsFallback tabs={2} cta />}>
+            <TestimonialsPageSettingsWorkspace hubSlug={hubSlug} />
+          </Suspense>
         </WorkspaceSection>
       </div>
     </AdminFormRuntimeProvider>
