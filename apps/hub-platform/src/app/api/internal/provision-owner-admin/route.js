@@ -7,6 +7,7 @@ import {
   normalizeProvisionOwnerAdminAutomationRequestBody,
 } from "@/lib/domain/internal-automation";
 import { getHubCoreById } from "@/lib/data/hubs";
+import { isHubRegionalSetupComplete } from "@/lib/domain/hub-regional-setup";
 import { normalizeUserRecord } from "@/lib/data/user-shared";
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
 
@@ -33,8 +34,12 @@ async function getExistingHubUser(hubId, authUid, ownerEmail) {
   return byEmail;
 }
 
-function buildAdminSignInHref(hubSlug, ownerEmail) {
-  const nextPath = `/${hubSlug}/admin`;
+function getOwnerAdminDestinationPath(hub) {
+  return isHubRegionalSetupComplete(hub) ? "/admin" : "/admin/onboarding";
+}
+
+function buildAdminSignInHref(hubSlug, ownerEmail, destinationPath = "/admin") {
+  const nextPath = `/${hubSlug}${destinationPath}`;
   const signInHref = buildHubAuthHref(hubSlug, "sign-in", nextPath);
   const separator = signInHref.includes("?") ? "&" : "?";
 
@@ -74,6 +79,7 @@ export async function POST(request) {
       throw new Error("Hub slug does not match the requested hub.");
     }
 
+    const handoffDestinationPath = getOwnerAdminDestinationPath(hub);
     const existingUser = await getExistingHubUser(hub.id, payload.authUid, payload.ownerEmail);
 
     if (existingUser) {
@@ -89,6 +95,7 @@ export async function POST(request) {
         hub,
         user: existingUser,
         ownerEmail: payload.ownerEmail,
+        destinationPath: handoffDestinationPath,
       });
 
       return NextResponse.json({
@@ -96,8 +103,9 @@ export async function POST(request) {
         hubId: hub.id,
         hubSlug: hub.slug,
         handoffPath: handoff.handoffPath,
+        handoffDestinationPath: handoff.destinationPath,
         handoffExpiresAtEpochSeconds: handoff.expiresAtEpochSeconds,
-        signInPath: buildAdminSignInHref(hub.slug, payload.ownerEmail),
+        signInPath: buildAdminSignInHref(hub.slug, payload.ownerEmail, handoffDestinationPath),
       });
     }
 
@@ -122,6 +130,7 @@ export async function POST(request) {
       hub,
       user: createdUser,
       ownerEmail: payload.ownerEmail,
+      destinationPath: handoffDestinationPath,
     });
 
     console.info("Owner admin provisioned", {
@@ -138,8 +147,9 @@ export async function POST(request) {
       hubSlug: hub.slug,
       userId: userRef.id,
       handoffPath: handoff.handoffPath,
+      handoffDestinationPath: handoff.destinationPath,
       handoffExpiresAtEpochSeconds: handoff.expiresAtEpochSeconds,
-      signInPath: buildAdminSignInHref(hub.slug, payload.ownerEmail),
+      signInPath: buildAdminSignInHref(hub.slug, payload.ownerEmail, handoffDestinationPath),
     });
   } catch (error) {
     console.error("Owner admin provisioning failed", {

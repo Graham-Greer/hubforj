@@ -1,0 +1,99 @@
+.layout {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.header {
+  display: grid;
+  max-width: 48rem;
+  gap: var(--space-3);
+}
+
+.summary,
+.workspace {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.summary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.workspace {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.card,
+.cardCompact {
+  display: grid;
+  gap: var(--space-3);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--panel-radius);
+  background: var(--panel-bg);
+  box-shadow: var(--shadow-sm);
+}
+
+.card {
+  min-height: 16rem;
+  padding: var(--space-5);
+}
+
+.cardCompact {
+  min-height: 8rem;
+  padding: var(--space-4);
+}
+
+.line {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  min-width: 3rem;
+  height: 0.875rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-primary) 10%, transparent);
+}
+
+.header .line:first-child {
+  height: 0.75rem;
+}
+
+.header .line:nth-child(2) {
+  height: 2.1rem;
+}
+
+.line::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--text-primary) 12%, transparent), transparent);
+  animation: admin-loading-shimmer 1.4s ease-in-out infinite;
+}
+
+.statusText {
+  color: var(--text-secondary);
+  font: var(--font-body-sm);
+}
+
+@keyframes admin-loading-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .line::after {
+    animation: none;
+  }
+}
+
+@media (max-width: 52rem) {
+  .summary,
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .cardCompact {
+    min-height: 6.5rem;
+  }
+}

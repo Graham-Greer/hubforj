@@ -18,6 +18,7 @@ import { normalizeUserRecord } from "@/lib/data/user-shared";
 const handoffCollectionName = "ownerAdminHandoffs";
 const handoffTokenBytes = 32;
 const handoffTtlSeconds = 5 * 60;
+const defaultDestinationPath = "/admin";
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -50,6 +51,20 @@ function buildHandoffPath(hubSlug, handoffId, token) {
   });
 
   return `/api/auth/owner-handoff?${params.toString()}`;
+}
+
+function sanitizeDestinationPath(value) {
+  const normalizedPath = normalizeString(value) || defaultDestinationPath;
+
+  if (normalizedPath !== "/admin" && !normalizedPath.startsWith("/admin/")) {
+    return defaultDestinationPath;
+  }
+
+  if (normalizedPath.startsWith("//") || normalizedPath.includes("://")) {
+    return defaultDestinationPath;
+  }
+
+  return normalizedPath;
 }
 
 function assertPendingHandoff(handoff, token, nowEpochSeconds) {
@@ -89,7 +104,7 @@ function assertActiveOwnerUser(user, handoff) {
   }
 }
 
-export async function createOwnerAdminHandoff({ hub, user, ownerEmail }) {
+export async function createOwnerAdminHandoff({ hub, user, ownerEmail, destinationPath = defaultDestinationPath }) {
   const hubId = normalizeString(hub?.id);
   const hubSlug = normalizeString(hub?.slug);
   const userId = normalizeString(user?.id);
@@ -104,6 +119,7 @@ export async function createOwnerAdminHandoff({ hub, user, ownerEmail }) {
   const now = new Date();
   const nowIso = now.toISOString();
   const expiresAtEpochSeconds = getExpiresAtEpochSeconds(now.getTime());
+  const sanitizedDestinationPath = sanitizeDestinationPath(destinationPath);
 
   await handoffRef.create({
     status: "pending",
@@ -113,6 +129,7 @@ export async function createOwnerAdminHandoff({ hub, user, ownerEmail }) {
     userId,
     authUid: normalizeString(user?.uid),
     ownerEmail: normalizeString(ownerEmail || user?.email).toLowerCase(),
+    destinationPath: sanitizedDestinationPath,
     createdAt: nowIso,
     expiresAt: Timestamp.fromMillis(expiresAtEpochSeconds * 1000),
     expiresAtIso: new Date(expiresAtEpochSeconds * 1000).toISOString(),
@@ -123,6 +140,7 @@ export async function createOwnerAdminHandoff({ hub, user, ownerEmail }) {
     handoffId: handoffRef.id,
     expiresAtEpochSeconds,
     handoffPath: buildHandoffPath(hubSlug, handoffRef.id, token),
+    destinationPath: sanitizedDestinationPath,
   };
 }
 
@@ -164,6 +182,7 @@ export async function consumeOwnerAdminHandoff({ handoffId, token, requestHost =
       userId: user.id,
       hubId: normalizeString(handoff.hubId),
       hubSlug: normalizeString(handoff.hubSlug),
+      destinationPath: sanitizeDestinationPath(handoff.destinationPath),
       role: user.role,
       email: user.email,
       name: user.name,

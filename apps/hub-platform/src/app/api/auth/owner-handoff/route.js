@@ -29,7 +29,7 @@ export async function GET(request) {
       token,
       requestHost,
     });
-    const redirectPath = buildHubRuntimeHref(session.hubSlug, "/admin", routeMode);
+    const redirectPath = buildHubRuntimeHref(session.hubSlug, session.destinationPath || "/admin", routeMode);
     const response = buildRedirectResponse(request, redirectPath);
 
     response.cookies.set(sessionCookieName, session.sessionValue, buildSessionCookieOptions());
