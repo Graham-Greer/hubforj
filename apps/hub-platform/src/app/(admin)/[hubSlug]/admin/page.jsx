@@ -9,6 +9,7 @@ import {
   getHubAdminDashboardDeferredOverviewBySlug,
   getHubAdminDashboardSummaryBySlug,
 } from "@/lib/data/hub-admin";
+import { requireHubCoreBySlug } from "@/lib/data/hubs";
 import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
 import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { isHubRegionalSetupComplete } from "@/lib/domain/hub-regional-setup";
@@ -191,12 +192,14 @@ export default async function HubAdminPage({ params, searchParams }) {
   const { success = "" } = await searchParams;
   const headerStore = await headers();
   const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
+  const coreHub = await requireHubCoreBySlug(hubSlug);
+
+  if (!isHubRegionalSetupComplete(coreHub)) {
+    redirect(buildAdminHref(coreHub.slug, "/admin/onboarding", routeMode));
+  }
+
   const summary = await getHubAdminDashboardSummaryBySlug(hubSlug);
   const hub = summary?.hub || null;
-
-  if (hub && !isHubRegionalSetupComplete(hub)) {
-    redirect(buildAdminHref(hub.slug, "/admin/onboarding", routeMode));
-  }
 
   const packageInfo = summary?.package || null;
   const deferredOverviewPromise = hub

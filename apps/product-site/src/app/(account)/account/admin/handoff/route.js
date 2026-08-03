@@ -4,24 +4,31 @@ import { provisionOwnerAdminFromProductSite } from "@/lib/server/provision-owner
 
 export const dynamic = "force-dynamic";
 
-function buildAccountRedirect(request, state) {
-  return NextResponse.redirect(new URL(`/account?adminActivation=${encodeURIComponent(state)}`, request.url));
+function buildErrorResponse(state, status = 400) {
+  return NextResponse.json(
+    {
+      ok: false,
+      state,
+      redirectTo: `/account?adminActivation=${encodeURIComponent(state)}`,
+    },
+    { status }
+  );
 }
 
-export async function GET(request) {
+export async function POST() {
   const accountContext = await requireCommercialAccountContext();
   const { account, currentHub } = accountContext;
 
   if (!account.emailVerified) {
-    return buildAccountRedirect(request, "verification-required");
+    return buildErrorResponse("verification-required");
   }
 
   if (!account.authUid) {
-    return buildAccountRedirect(request, "missing-auth");
+    return buildErrorResponse("missing-auth");
   }
 
   if (!currentHub.id || !currentHub.slug) {
-    return buildAccountRedirect(request, "missing-hub");
+    return buildErrorResponse("missing-hub");
   }
 
   try {
@@ -33,8 +40,18 @@ export async function GET(request) {
       ownerFullName: account.ownerFullName,
     });
 
-    return NextResponse.redirect(handoff.adminHandoffHref || handoff.signInHref);
+    return NextResponse.json(
+      {
+        ok: true,
+        redirectTo: handoff.adminHandoffHref || handoff.signInHref,
+      },
+      {
+        headers: {
+          "cache-control": "no-store",
+        },
+      }
+    );
   } catch {
-    return buildAccountRedirect(request, "error");
+    return buildErrorResponse("error", 500);
   }
 }
