@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import CourseDetailWorkspace from "@/components/patterns/course-detail-workspace/CourseDetailWorkspace";
+import { AdminProgrammeDetailFallback } from "@/components/patterns/admin-route-fallbacks/AdminRouteFallbacks";
 import EditCourseForm from "./EditCourseForm";
 import { requireHubBySlug } from "@/lib/data/hubs";
 import { getCourseById } from "@/lib/data/courses";
@@ -9,9 +11,7 @@ import { getHubPaymentSetupState } from "@/lib/domain/hub-payment-configuration"
 import { listMediaAssetsByHubId, listMediaFoldersByHubId } from "@/lib/data/media";
 import { notFound } from "next/navigation";
 
-export default async function CourseDetailPage({ params, searchParams }) {
-  const { hubSlug, courseId } = await params;
-  const query = await searchParams;
+async function CourseDetailContent({ hubSlug, courseId, query }) {
   const coursesSearchParams = new URLSearchParams();
 
   ["q", "status", "pricing", "format"].forEach((key) => {
@@ -56,5 +56,16 @@ export default async function CourseDetailPage({ params, searchParams }) {
       hasAttendanceRegistrations={registrations.length > 0}
       editForm={<EditCourseForm hub={hub} course={course} mediaAssets={mediaAssets} mediaFolders={mediaFolders} paymentSetupState={paymentSetupState} />}
     />
+  );
+}
+
+export default async function CourseDetailPage({ params, searchParams }) {
+  const { hubSlug, courseId } = await params;
+  const query = await searchParams;
+
+  return (
+    <Suspense fallback={<AdminProgrammeDetailFallback kind="course" />}>
+      <CourseDetailContent hubSlug={hubSlug} courseId={courseId} query={query} />
+    </Suspense>
   );
 }

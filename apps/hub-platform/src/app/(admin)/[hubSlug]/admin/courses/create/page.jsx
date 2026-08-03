@@ -1,15 +1,16 @@
+import { Suspense } from "react";
 import Button from "@/components/ui/button/Button";
+import { AdminWizardFormFallback } from "@/components/patterns/admin-route-fallbacks/AdminRouteFallbacks";
 import WorkflowGuidance from "@/components/patterns/workflow-guidance/WorkflowGuidance";
 import WorkspaceSection from "@/components/patterns/workspace-section/WorkspaceSection";
-import { requireHubBySlug } from "@/lib/data/hubs";
+import { requireHubBySlug, requireHubCoreBySlug } from "@/lib/data/hubs";
 import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
 import { listMediaAssetsByHubId, listMediaFoldersByHubId } from "@/lib/data/media";
 import { getHubPaymentSetupState } from "@/lib/domain/hub-payment-configuration";
 import CreateCourseForm from "./CreateCourseForm";
 import styles from "./page.module.css";
 
-export default async function CreateCoursePage({ params }) {
-  const { hubSlug } = await params;
+async function CreateCourseWorkspace({ hubSlug }) {
   const hub = await requireHubBySlug(hubSlug);
   const [mediaAssets, mediaFolders, paymentConfiguration] = await Promise.all([
     listMediaAssetsByHubId(hub.id),
@@ -17,6 +18,15 @@ export default async function CreateCoursePage({ params }) {
     getHubPaymentConfigurationByHubId(hub.id),
   ]);
   const paymentSetupState = getHubPaymentSetupState(hub, paymentConfiguration);
+
+  return (
+    <CreateCourseForm hub={hub} mediaAssets={mediaAssets} mediaFolders={mediaFolders} paymentSetupState={paymentSetupState} />
+  );
+}
+
+export default async function CreateCoursePage({ params }) {
+  const { hubSlug } = await params;
+  const hub = await requireHubCoreBySlug(hubSlug);
 
   return (
     <div className={styles.layout}>
@@ -30,7 +40,9 @@ export default async function CreateCoursePage({ params }) {
           </Button>
         }
       >
-        <CreateCourseForm hub={hub} mediaAssets={mediaAssets} mediaFolders={mediaFolders} paymentSetupState={paymentSetupState} />
+        <Suspense fallback={<AdminWizardFormFallback steps={5} fields={6} />}>
+          <CreateCourseWorkspace hubSlug={hubSlug} />
+        </Suspense>
       </WorkspaceSection>
       <WorkflowGuidance
         eyebrow="Publishing guidance"

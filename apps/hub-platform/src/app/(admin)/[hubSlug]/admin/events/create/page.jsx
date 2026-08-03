@@ -1,9 +1,11 @@
+import { Suspense } from "react";
 import Button from "@/components/ui/button/Button";
+import { AdminWizardFormFallback } from "@/components/patterns/admin-route-fallbacks/AdminRouteFallbacks";
 import PackageUpgradeNotice from "@/components/patterns/package-upgrade-notice/PackageUpgradeNotice";
 import WorkflowGuidance from "@/components/patterns/workflow-guidance/WorkflowGuidance";
 import WorkspaceSection from "@/components/patterns/workspace-section/WorkspaceSection";
 import { countActiveUpcomingPublishedEventsByHub } from "@/lib/data/events";
-import { requireHubBySlug } from "@/lib/data/hubs";
+import { requireHubBySlug, requireHubCoreBySlug } from "@/lib/data/hubs";
 import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
 import { listMediaAssetsByHubId, listMediaFoldersByHubId } from "@/lib/data/media";
 import { resolveHubPackageEntitlements } from "@/lib/domain/hub-package";
@@ -11,8 +13,7 @@ import { getHubPaymentSetupState } from "@/lib/domain/hub-payment-configuration"
 import CreateEventForm from "./CreateEventForm";
 import styles from "./page.module.css";
 
-export default async function CreateEventPage({ params }) {
-  const { hubSlug } = await params;
+async function CreateEventWorkspace({ hubSlug }) {
   const hub = await requireHubBySlug(hubSlug);
   const entitlements = resolveHubPackageEntitlements(hub);
   const activeUpcomingEventsLimit = entitlements.limits?.activeUpcomingEvents;
@@ -22,30 +23,17 @@ export default async function CreateEventPage({ params }) {
 
   if (limitReached) {
     return (
-      <div className={styles.layout}>
-        <WorkspaceSection
-          eyebrow="Events"
-          title="Create event"
-          description="Your current package is already using all available active upcoming event slots."
-          actions={
-            <Button href={`/${hub.slug}/admin/events`} variant="secondary">
-              Back to events
-            </Button>
-          }
-        >
-          <PackageUpgradeNotice
-            title="Active event limit reached"
-            description="This hub has filled its active upcoming event allowance. Upgrade to publish more events without waiting for existing ones to pass."
-            currentUsage={activeUpcomingPublishedEventCount}
-            limit={activeUpcomingEventsLimit}
-            unlocks={[
-              "Unlimited active upcoming events",
-              "Paid event capability",
-              "Access to broader monetisation features",
-            ]}
-          />
-        </WorkspaceSection>
-      </div>
+      <PackageUpgradeNotice
+        title="Active event limit reached"
+        description="This hub has filled its active upcoming event allowance. Upgrade to publish more events without waiting for existing ones to pass."
+        currentUsage={activeUpcomingPublishedEventCount}
+        limit={activeUpcomingEventsLimit}
+        unlocks={[
+          "Unlimited active upcoming events",
+          "Paid event capability",
+          "Access to broader monetisation features",
+        ]}
+      />
     );
   }
 
@@ -55,6 +43,15 @@ export default async function CreateEventPage({ params }) {
     getHubPaymentConfigurationByHubId(hub.id),
   ]);
   const paymentSetupState = getHubPaymentSetupState(hub, paymentConfiguration);
+
+  return (
+    <CreateEventForm hub={hub} mediaAssets={mediaAssets} mediaFolders={mediaFolders} paymentSetupState={paymentSetupState} />
+  );
+}
+
+export default async function CreateEventPage({ params }) {
+  const { hubSlug } = await params;
+  const hub = await requireHubCoreBySlug(hubSlug);
 
   return (
     <div className={styles.layout}>
@@ -68,7 +65,9 @@ export default async function CreateEventPage({ params }) {
           </Button>
         }
       >
-        <CreateEventForm hub={hub} mediaAssets={mediaAssets} mediaFolders={mediaFolders} paymentSetupState={paymentSetupState} />
+        <Suspense fallback={<AdminWizardFormFallback steps={4} fields={6} />}>
+          <CreateEventWorkspace hubSlug={hubSlug} />
+        </Suspense>
       </WorkspaceSection>
       <WorkflowGuidance
         eyebrow="Publishing guidance"
