@@ -281,7 +281,7 @@ Route examples:
 - `/account/membership`
 - `/account/billing`
 - `/account/bookings`
-- `/account/courses`
+- `/account/courses` compatibility redirect to `/account/bookings`
 
 Fast shell expectation:
 
@@ -295,7 +295,6 @@ Skeleton families needed:
 - membership status skeleton
 - billing records skeleton
 - bookings list skeleton
-- enrolled courses list skeleton
 
 Implementation rules for the audited member account slice:
 
@@ -314,15 +313,15 @@ Audited member account route anatomy:
 - `/account/membership`: title `Membership`; data-rich skeleton covers current membership panel, status badges, fact tiles, and available upgrade plan card.
 - `/account/billing`: title `Billing`; data-rich skeleton covers three payment summary cards, a full-width search input plus separate filter trigger, result count, and public-surface billing item cards.
 - `/account/profile`: title `Profile`; data-rich skeleton covers the identity card, avatar area, edit action position, badges, and detail rows.
+- `/account/courses`: legacy compatibility route; redirects to `/account/bookings` because course enrolments are now part of the unified bookings journey.
 
 Priority member routes:
 
 1. `/account`
 2. `/account/membership`
 3. `/account/bookings`
-4. `/account/courses`
-5. `/account/billing`
-6. `/account/profile`
+4. `/account/billing`
+5. `/account/profile`
 
 ### Platform Operator Routes
 
@@ -530,7 +529,6 @@ These routes are recognized in the route-family audit but still need detailed DO
 - `/(hub)/[hubSlug]/terms`
 - `/(hub)/[hubSlug]/privacy`
 - `/(hub)/[hubSlug]/cookies`
-- `/(hub)/[hubSlug]/account/courses`
 - `/(platform)/platform`
 - `/(platform)/platform/hubs`
 - `/(platform)/platform/hubs/[hubId]`

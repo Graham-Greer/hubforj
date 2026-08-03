@@ -21,7 +21,6 @@ function normalizeString(value) {
 function revalidateMemberBookingPaths(hubSlug, bookingHref = "") {
   revalidatePath(`/${hubSlug}/account`);
   revalidatePath(`/${hubSlug}/account/bookings`);
-  revalidatePath(`/${hubSlug}/account/courses`);
 
   if (bookingHref) {
     revalidatePath(bookingHref);
