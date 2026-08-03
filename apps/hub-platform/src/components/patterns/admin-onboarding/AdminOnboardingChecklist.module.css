@@ -116,6 +116,104 @@
   justify-content: space-between;
 }
 
+.skeletonEyebrow,
+.skeletonTitle,
+.skeletonBody,
+.skeletonProgressValue,
+.skeletonProgressLabel,
+.skeletonProgressBar,
+.skeletonItemTitle,
+.skeletonItemStatus,
+.skeletonButton {
+  background: color-mix(in srgb, var(--text-primary) 10%, transparent);
+  border-radius: 999px;
+  display: block;
+  overflow: hidden;
+  position: relative;
+}
+
+.skeletonEyebrow::after,
+.skeletonTitle::after,
+.skeletonBody::after,
+.skeletonProgressValue::after,
+.skeletonProgressLabel::after,
+.skeletonProgressBar::after,
+.skeletonItemTitle::after,
+.skeletonItemStatus::after,
+.skeletonButton::after {
+  animation: checklist-skeleton-shimmer 1.4s ease-in-out infinite;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--text-primary) 12%, transparent), transparent);
+  content: "";
+  inset: 0;
+  position: absolute;
+  transform: translateX(-100%);
+}
+
+.skeletonEyebrow {
+  block-size: 0.75rem;
+  inline-size: 7rem;
+}
+
+.skeletonTitle {
+  block-size: 1.1rem;
+  inline-size: min(100%, 24rem);
+}
+
+.skeletonBody {
+  block-size: 0.875rem;
+  inline-size: min(100%, 34rem);
+}
+
+.skeletonProgressValue {
+  block-size: 1.25rem;
+  inline-size: 3.5rem;
+}
+
+.skeletonProgressLabel {
+  block-size: 0.75rem;
+  inline-size: 5rem;
+}
+
+.skeletonProgressBar {
+  block-size: 0.5rem;
+  inline-size: 100%;
+}
+
+.skeletonItemTitle {
+  block-size: 0.9rem;
+  inline-size: min(100%, 18rem);
+}
+
+.skeletonItemStatus {
+  block-size: 0.75rem;
+  inline-size: 6rem;
+}
+
+.skeletonButton {
+  block-size: 2.5rem;
+  inline-size: 5.5rem;
+}
+
+@keyframes checklist-skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeletonEyebrow::after,
+  .skeletonTitle::after,
+  .skeletonBody::after,
+  .skeletonProgressValue::after,
+  .skeletonProgressLabel::after,
+  .skeletonProgressBar::after,
+  .skeletonItemTitle::after,
+  .skeletonItemStatus::after,
+  .skeletonButton::after {
+    animation: none;
+  }
+}
+
 @media (max-width: 48rem) {
   .header,
   .item {

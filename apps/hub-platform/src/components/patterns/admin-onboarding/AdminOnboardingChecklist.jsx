@@ -18,8 +18,42 @@ function getProgress(checklistItems) {
   };
 }
 
+function ChecklistSkeleton() {
+  return (
+    <Surface padding="md" className={styles.card} aria-hidden="true">
+      <div className={styles.header}>
+        <div className={styles.copy}>
+          <span className={styles.skeletonEyebrow} />
+          <span className={styles.skeletonTitle} />
+          <span className={styles.skeletonBody} />
+        </div>
+        <div className={styles.progress}>
+          <span className={styles.skeletonProgressValue} />
+          <span className={styles.skeletonProgressLabel} />
+        </div>
+      </div>
+      <div className={styles.skeletonProgressBar} />
+      <div className={styles.items}>
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className={styles.item}>
+            <div className={styles.itemCopy}>
+              <span className={styles.skeletonItemTitle} />
+              <span className={styles.skeletonItemStatus} />
+            </div>
+            <span className={styles.skeletonButton} />
+          </div>
+        ))}
+      </div>
+    </Surface>
+  );
+}
+
 export default function AdminOnboardingChecklist() {
   const onboarding = useAdminOnboarding();
+
+  if (onboarding?.checklistHydrating) {
+    return <ChecklistSkeleton />;
+  }
 
   if (!onboarding || onboarding.loading || !onboarding.state || onboarding.state.checklist?.dismissed) {
     return null;

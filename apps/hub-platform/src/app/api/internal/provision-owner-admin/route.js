@@ -98,6 +98,15 @@ export async function POST(request) {
         destinationPath: handoffDestinationPath,
       });
 
+      console.info("Owner admin handoff prepared", {
+        status: "existing",
+        hubId: hub.id,
+        hubSlug: hub.slug,
+        userId: existingUser.id,
+        handoffDestinationPath: handoff.destinationPath,
+        regionalSetupStatus: hub.regionalSetupStatus,
+      });
+
       return NextResponse.json({
         status: "existing",
         hubId: hub.id,
@@ -139,6 +148,8 @@ export async function POST(request) {
       userId: userRef.id,
       authUid: payload.authUid,
       ownerEmail: payload.ownerEmail,
+      handoffDestinationPath: handoff.destinationPath,
+      regionalSetupStatus: hub.regionalSetupStatus,
     });
 
     return NextResponse.json({
