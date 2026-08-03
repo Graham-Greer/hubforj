@@ -1,6 +1,9 @@
+import { Suspense } from "react";
 import EmptyState from "@/components/patterns/empty-state/EmptyState";
 import Button from "@/components/ui/button/Button";
 import FormMessage from "@/components/ui/form-message/FormMessage";
+import { SkeletonBlock } from "@/components/patterns/loading-skeleton";
+import { AdminAccessFallback } from "@/components/patterns/admin-route-fallbacks/AdminRouteFallbacks";
 import InviteLifecycleList from "@/components/patterns/invite-lifecycle-list/InviteLifecycleList";
 import PageHeader from "@/components/patterns/page-header/PageHeader";
 import WorkspaceSection from "@/components/patterns/workspace-section/WorkspaceSection";
@@ -9,7 +12,7 @@ import { createAdminInviteToken } from "@/lib/auth/admin-invite-token";
 import { getServerEnv } from "@/lib/config/env";
 import { buildHubAdminInviteAcceptUrl } from "@/lib/domain/admin-invite-links";
 import { canManageHubAdmins, isHubOperatorRole } from "@/lib/domain/users";
-import { requireHubBySlug } from "@/lib/data/hubs";
+import { requireHubBySlug, requireHubCoreBySlug } from "@/lib/data/hubs";
 import { listInvitesByHub } from "@/lib/data/invites";
 import { listUsersByHub } from "@/lib/data/users";
 import AdminAccessList from "./AdminAccessList";
@@ -22,9 +25,18 @@ import {
 } from "./actions";
 import styles from "./page.module.css";
 
-export default async function AdminsPage({ params, searchParams }) {
-  const { hubSlug } = await params;
-  const { success = "", error = "" } = await searchParams;
+async function AdminInviteAction({ hub }) {
+  const access = await getCurrentHubOperatorAccess(hub);
+  const canManageAdminAccess = Boolean(access && canManageHubAdmins(access.actorRole));
+
+  return canManageAdminAccess ? (
+    <Button href={`/${hub.slug}/admin/admins/invite`} data-onboarding="admins-invite-button">
+      Invite admin
+    </Button>
+  ) : null;
+}
+
+async function AdminsAccessContent({ hubSlug, success, error }) {
   const hub = await requireHubBySlug(hubSlug);
   const access = await getCurrentHubOperatorAccess(hub);
   const canManageAdminAccess = Boolean(access && canManageHubAdmins(access.actorRole));
@@ -57,19 +69,7 @@ export default async function AdminsPage({ params, searchParams }) {
   );
 
   return (
-    <div className={styles.layout}>
-      <PageHeader
-        eyebrow="Admins"
-        title="Manage admin access"
-        description="Review who has admin access, keep pending invites visible, and make access changes deliberately."
-        actions={
-          canManageAdminAccess ? (
-            <Button href={`/${hubSlug}/admin/admins/invite`} data-onboarding="admins-invite-button">
-              Invite admin
-            </Button>
-          ) : null
-        }
-      />
+    <>
       {error ? <FormMessage tone="danger">{error}</FormMessage> : null}
       {success === "inviteRevoked" ? <FormMessage tone="success">Invite revoked.</FormMessage> : null}
       {success === "inviteResent" ? <FormMessage tone="success">Invite email sent again and expiry extended.</FormMessage> : null}
@@ -119,6 +119,30 @@ export default async function AdminsPage({ params, searchParams }) {
           />
         </div>
       )}
+    </>
+  );
+}
+
+export default async function AdminsPage({ params, searchParams }) {
+  const { hubSlug } = await params;
+  const { success = "", error = "" } = await searchParams;
+  const hub = await requireHubCoreBySlug(hubSlug);
+
+  return (
+    <div className={styles.layout}>
+      <PageHeader
+        eyebrow="Admins"
+        title="Manage admin access"
+        description="Review who has admin access, keep pending invites visible, and make access changes deliberately."
+        actions={
+          <Suspense fallback={<SkeletonBlock variant="button" width="8rem" />}>
+            <AdminInviteAction hub={hub} />
+          </Suspense>
+        }
+      />
+      <Suspense fallback={<AdminAccessFallback />}>
+        <AdminsAccessContent hubSlug={hubSlug} success={success} error={error} />
+      </Suspense>
     </div>
   );
 }

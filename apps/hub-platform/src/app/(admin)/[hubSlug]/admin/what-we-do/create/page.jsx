@@ -1,12 +1,12 @@
 import Button from "@/components/ui/button/Button";
 import WorkspaceSection from "@/components/patterns/workspace-section/WorkspaceSection";
-import { requireHubBySlug } from "@/lib/data/hubs";
+import { requireHubCoreBySlug } from "@/lib/data/hubs";
 import CreateWhatWeDoForm from "./CreateWhatWeDoForm";
 import styles from "./page.module.css";
 
 export default async function CreateWhatWeDoPage({ params }) {
   const { hubSlug } = await params;
-  const hub = await requireHubBySlug(hubSlug);
+  const hub = await requireHubCoreBySlug(hubSlug);
 
   return (
     <div className={styles.layout}>

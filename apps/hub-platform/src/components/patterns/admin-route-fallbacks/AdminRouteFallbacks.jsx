@@ -356,3 +356,295 @@ export function AdminAccountSettingsFallback() {
     </section>
   );
 }
+
+export function AdminAccessFallback() {
+  return (
+    <section className={styles.stack} aria-busy="true" aria-label="Loading admin access">
+      <article className={styles.adminAccessRow} aria-hidden="true">
+        <div className={styles.identityCopy}>
+          <SkeletonBlock variant="heading" width="13rem" />
+          <SkeletonBlock width="14rem" compact />
+        </div>
+        <div className={styles.adminAccessMeta}>
+          <div className={styles.badges}>
+            <SkeletonBlock variant="pill" width="4.5rem" />
+            <SkeletonBlock variant="pill" width="5rem" />
+          </div>
+          <SkeletonBlock width="18rem" compact />
+        </div>
+      </article>
+      <SkeletonPanel title={false} rows={0}>
+        <div className={styles.emptyPanel} aria-hidden="true">
+          <SkeletonBlock variant="eyebrow" width="8rem" />
+          <SkeletonBlock variant="heading" width="18rem" />
+          <SkeletonText lines={2} widths={["min(34rem, 100%)", "min(24rem, 72%)"]} />
+          <SkeletonButtonRow count={2} />
+        </div>
+      </SkeletonPanel>
+    </section>
+  );
+}
+
+export function AdminWizardFormFallback({ steps = 4, fields = 6 }) {
+  const stepCount = toCount(steps, 4);
+  const fieldCount = toCount(fields, 6);
+
+  return (
+    <div className={styles.wizardForm} aria-busy="true" aria-label="Loading editor form">
+      <div className={styles.stepper} aria-hidden="true">
+        {Array.from({ length: stepCount }).map((_, index) => (
+          <div className={styles.step} key={index}>
+            <SkeletonBlock variant="pill" width="2.5rem" />
+            <SkeletonBlock width={index === 0 ? "8rem" : "10rem"} />
+          </div>
+        ))}
+      </div>
+      <div className={styles.formIntro} aria-hidden="true">
+        <SkeletonBlock width="5rem" compact />
+        <SkeletonBlock variant="heading" width="12rem" />
+        <SkeletonText lines={2} widths={["min(42rem, 100%)", "min(30rem, 70%)"]} />
+      </div>
+      <div className={styles.formGrid} aria-hidden="true">
+        <div className={styles.mediaField}>
+          <SkeletonBlock variant="eyebrow" width="7rem" />
+          <div className={styles.mediaSelectorRow}>
+            <SkeletonBlock variant="input" />
+            <SkeletonBlock variant="button" width="11rem" />
+          </div>
+          <SkeletonBlock width="18rem" compact />
+        </div>
+        <div className={styles.field}>
+          <SkeletonBlock variant="eyebrow" width="5rem" />
+          <SkeletonBlock variant="input" />
+          <SkeletonBlock width="20rem" compact />
+        </div>
+        {Array.from({ length: fieldCount }).map((_, index) => (
+          <div className={styles.field} key={index}>
+            <SkeletonBlock variant="eyebrow" width={index % 2 === 0 ? "8rem" : "6rem"} />
+            <SkeletonBlock variant="input" />
+            <SkeletonBlock width={index % 2 === 0 ? "18rem" : "22rem"} compact />
+          </div>
+        ))}
+        <div className={styles.fullField}>
+          <SkeletonBlock variant="eyebrow" width="7rem" />
+          <SkeletonBlock variant="input" />
+          <SkeletonBlock width="24rem" compact />
+        </div>
+        <div className={styles.fullField}>
+          <SkeletonBlock variant="eyebrow" width="8rem" />
+          <SkeletonBlock variant="input" height="12rem" />
+        </div>
+      </div>
+      <div className={styles.formFooter} aria-hidden="true">
+        <SkeletonButtonRow count={2} />
+      </div>
+    </div>
+  );
+}
+
+export function AdminProgrammeDetailFallback({ kind = "event" }) {
+  const actionCount = kind === "course" ? 4 : 4;
+
+  return (
+    <section className={styles.stack} aria-busy="true" aria-label={`Loading ${kind} detail`}>
+      <div className={styles.detailHeader} aria-hidden="true">
+        <div className={styles.legalHeaderCopy}>
+          <SkeletonBlock variant="eyebrow" width={kind === "course" ? "5rem" : "4rem"} />
+          <SkeletonBlock variant="title" width="min(34rem, 82%)" />
+          <SkeletonText lines={2} widths={["min(42rem, 100%)", "min(32rem, 72%)"]} />
+        </div>
+        <SkeletonBlock variant="button" width={kind === "course" ? "8rem" : "7rem"} />
+      </div>
+      <SkeletonPanel title={false} rows={0}>
+        <div className={styles.programmeDetail} aria-hidden="true">
+          <div className={styles.detailActions}>
+            <div className={styles.badges}>
+              <SkeletonBlock variant="pill" width="6rem" />
+              {kind === "course" ? <SkeletonBlock variant="pill" width="7rem" /> : null}
+            </div>
+            <SkeletonButtonRow count={actionCount} />
+          </div>
+          <div className={styles.programmeDetailGrid}>
+            <SkeletonBlock className={styles.detailMedia} variant="media" />
+            <div className={styles.factGrid}>
+              {Array.from({ length: 4 }).map((_, index) => (
+                <article className={styles.factCard} key={index}>
+                  <SkeletonBlock variant="eyebrow" width={index % 2 === 0 ? "5rem" : "6rem"} />
+                  <SkeletonBlock variant="heading" width={index % 2 === 0 ? "16rem" : "12rem"} />
+                </article>
+              ))}
+            </div>
+          </div>
+          <SkeletonText lines={2} widths={["min(70rem, 100%)", "min(52rem, 76%)"]} />
+          <div className={styles.metadataGrid}>
+            {Array.from({ length: kind === "course" ? 6 : 6 }).map((_, index) => (
+              <div className={styles.metadataItem} key={index}>
+                <SkeletonBlock variant="eyebrow" width="6rem" />
+                <SkeletonBlock width={index % 2 === 0 ? "10rem" : "7rem"} />
+              </div>
+            ))}
+          </div>
+          <SkeletonText lines={3} widths={["100%", "92%", "76%"]} />
+        </div>
+      </SkeletonPanel>
+    </section>
+  );
+}
+
+export function AdminSettingsEditorFallback({ variant = "site" }) {
+  const isBranding = variant === "branding";
+
+  return (
+    <div className={styles.settingsEditor} aria-busy="true" aria-label={`Loading ${variant} settings form`}>
+      {isBranding ? (
+        <>
+          <SkeletonBlock variant="heading" width="6rem" />
+          <div className={styles.formGrid} aria-hidden="true">
+            <div className={styles.mediaField}>
+              <SkeletonBlock variant="eyebrow" width="7rem" />
+              <div className={styles.mediaSelectorRow}>
+                <SkeletonBlock variant="media" width="7rem" />
+                <SkeletonText lines={2} widths={["14rem", "7rem"]} compact />
+              </div>
+            </div>
+            <div className={styles.field}>
+              <SkeletonBlock variant="eyebrow" width="5rem" />
+              <SkeletonBlock variant="input" />
+            </div>
+          </div>
+          <SkeletonBlock variant="heading" width="9rem" />
+          <div className={styles.formGrid} aria-hidden="true">
+            {Array.from({ length: 2 }).map((_, index) => (
+              <div className={styles.field} key={index}>
+                <SkeletonBlock variant="eyebrow" width={index === 0 ? "8rem" : "9rem"} />
+                <SkeletonBlock variant="input" />
+                <SkeletonBlock width="22rem" compact />
+              </div>
+            ))}
+          </div>
+          <SkeletonBlock variant="heading" width="9rem" />
+          <div className={styles.formGrid} aria-hidden="true">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div className={styles.field} key={index}>
+                <SkeletonBlock variant="eyebrow" width={index % 2 === 0 ? "9rem" : "10rem"} />
+                <SkeletonBlock variant="input" />
+                <SkeletonBlock width="24rem" compact />
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          <SkeletonBlock variant="heading" width="12rem" />
+          <div className={styles.formGrid} aria-hidden="true">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div className={styles.field} key={index}>
+                <SkeletonBlock variant="eyebrow" width={index % 2 === 0 ? "8rem" : "7rem"} />
+                <SkeletonBlock variant="input" />
+                <SkeletonBlock width={index % 2 === 0 ? "24rem" : "20rem"} compact />
+              </div>
+            ))}
+          </div>
+          <SkeletonBlock variant="heading" width="12rem" />
+          <div className={styles.formGrid} aria-hidden="true">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div className={styles.field} key={index}>
+                <SkeletonBlock variant="eyebrow" width={index % 2 === 0 ? "6rem" : "9rem"} />
+                <SkeletonBlock variant="input" />
+                <SkeletonBlock width="26rem" compact />
+              </div>
+            ))}
+          </div>
+          <SkeletonPanel title={false} rows={0}>
+            <SkeletonText lines={2} widths={["min(52rem, 100%)", "min(36rem, 70%)"]} />
+          </SkeletonPanel>
+        </>
+      )}
+      <div className={styles.formFooter} aria-hidden="true">
+        <SkeletonButtonRow count={2} />
+      </div>
+    </div>
+  );
+}
+
+export function AdminContentItemFormFallback({ detail = false }) {
+  return (
+    <div className={styles.contentEditor} aria-busy="true" aria-label="Loading content editor">
+      {detail ? (
+        <div className={styles.formIntro} aria-hidden="true">
+          <SkeletonBlock variant="heading" width="13rem" />
+          <SkeletonText lines={2} widths={["min(42rem, 100%)", "min(32rem, 72%)"]} />
+        </div>
+      ) : null}
+      <div className={styles.formGrid} aria-hidden="true">
+        <div className={styles.field}>
+          <SkeletonBlock variant="eyebrow" width="4rem" />
+          <SkeletonBlock variant="input" />
+          <SkeletonBlock width="22rem" compact />
+        </div>
+        <div className={styles.field}>
+          <SkeletonBlock variant="eyebrow" width="6rem" />
+          <SkeletonBlock variant="input" />
+          <SkeletonBlock width="18rem" compact />
+        </div>
+        <div className={styles.field}>
+          <SkeletonBlock variant="eyebrow" width="5rem" />
+          <SkeletonBlock variant="input" />
+          <SkeletonBlock width="20rem" compact />
+        </div>
+        <div />
+        <div className={styles.fullField}>
+          <SkeletonBlock variant="eyebrow" width="7rem" />
+          <SkeletonBlock variant="input" height="8rem" />
+          <SkeletonBlock width="24rem" compact />
+        </div>
+      </div>
+      <div className={styles.formFooter} aria-hidden="true">
+        <SkeletonButtonRow count={detail ? 2 : 1} />
+      </div>
+    </div>
+  );
+}
+
+export function AdminTestimonialFormFallback({ detail = false }) {
+  return (
+    <div className={styles.testimonialEditor} aria-busy="true" aria-label="Loading testimonial editor">
+      {detail ? (
+        <div className={styles.formIntro} aria-hidden="true">
+          <SkeletonBlock variant="heading" width="17rem" />
+          <SkeletonText lines={2} widths={["min(42rem, 100%)", "min(30rem, 72%)"]} />
+          <SkeletonBlock className={styles.avatar} variant="media" width="6rem" />
+        </div>
+      ) : null}
+      <div className={styles.fullField} aria-hidden="true">
+        <SkeletonBlock variant="eyebrow" width="5rem" />
+        <SkeletonBlock variant="input" height="8rem" />
+        <SkeletonBlock width="26rem" compact />
+      </div>
+      <div className={styles.formGrid} aria-hidden="true">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div className={styles.field} key={index}>
+            <SkeletonBlock variant="eyebrow" width={index % 2 === 0 ? "8rem" : "7rem"} />
+            <SkeletonBlock variant={index === 5 ? "pill" : "input"} width={index === 5 ? "3.25rem" : "100%"} />
+            <SkeletonBlock width={index % 2 === 0 ? "22rem" : "18rem"} compact />
+          </div>
+        ))}
+        <div className={styles.mediaField}>
+          <SkeletonBlock variant="eyebrow" width="8rem" />
+          <div className={styles.mediaSelectorRow}>
+            <SkeletonBlock variant="input" />
+            <SkeletonBlock variant="button" width="11rem" />
+          </div>
+          <SkeletonBlock width="20rem" compact />
+        </div>
+        <div className={styles.field}>
+          <SkeletonBlock variant="eyebrow" width="5rem" />
+          <SkeletonBlock variant="input" />
+        </div>
+      </div>
+      <div className={styles.formFooter} aria-hidden="true">
+        <SkeletonButtonRow count={detail ? 2 : 1} />
+      </div>
+    </div>
+  );
+}

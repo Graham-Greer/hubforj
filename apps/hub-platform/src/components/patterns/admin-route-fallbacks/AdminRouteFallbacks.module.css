@@ -169,7 +169,11 @@
 
 .settingsCardGrid,
 .legalContentGrid,
-.accountDomainGrid {
+.accountDomainGrid,
+.formGrid,
+.programmeDetailGrid,
+.factGrid,
+.metadataGrid {
   display: grid;
   gap: var(--space-4);
 }
@@ -182,7 +186,9 @@
 .legalShell,
 .legalEditor,
 .legalGuidance,
-.accountDomainPanel {
+.accountDomainPanel,
+.adminAccessRow,
+.factCard {
   border: 1px solid var(--admin-surface-muted-border, var(--border-subtle));
   border-radius: var(--panel-radius);
   background: var(--admin-surface-default-fill, var(--surface-primary));
@@ -196,7 +202,16 @@
 .accountPackage,
 .accountDomain,
 .accountCopy,
-.accountDomainPanel {
+.accountDomainPanel,
+.emptyPanel,
+.wizardForm,
+.formIntro,
+.field,
+.fullField,
+.settingsEditor,
+.contentEditor,
+.testimonialEditor,
+.programmeDetail {
   display: grid;
   gap: var(--space-4);
 }
@@ -243,6 +258,115 @@
 
 .accountDomainGrid {
   grid-template-columns: minmax(0, 1fr) minmax(20rem, 0.95fr);
+}
+
+.adminAccessRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-block-size: 5.25rem;
+  padding: var(--space-4);
+}
+
+.adminAccessMeta {
+  display: grid;
+  justify-items: end;
+  gap: var(--space-2);
+}
+
+.wizardForm,
+.settingsEditor,
+.contentEditor,
+.testimonialEditor {
+  gap: var(--space-6);
+}
+
+.stepper {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.step {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.formGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.fullField {
+  grid-column: 1 / -1;
+}
+
+.mediaField {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.mediaSelectorRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.formFooter {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.detailHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.programmeDetail {
+  gap: var(--space-5);
+}
+
+.detailActions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.programmeDetailGrid {
+  grid-template-columns: minmax(12rem, 0.65fr) minmax(0, 1.85fr);
+  align-items: start;
+}
+
+.detailMedia {
+  inline-size: 100%;
+}
+
+.factGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.factCard {
+  display: grid;
+  gap: var(--space-2);
+  min-block-size: 4.5rem;
+  padding: var(--space-3);
+}
+
+.metadataGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.metadataItem {
+  display: grid;
+  gap: var(--space-2);
+  padding-block: var(--space-3);
+  border-block-end: 1px solid var(--admin-surface-muted-border, var(--border-subtle));
 }
 
 .mediaContent {
@@ -299,7 +423,11 @@
 
   .settingsCardGrid,
   .legalContentGrid,
-  .accountDomainGrid {
+  .accountDomainGrid,
+  .formGrid,
+  .programmeDetailGrid,
+  .factGrid,
+  .metadataGrid {
     grid-template-columns: 1fr;
   }
 
@@ -311,7 +439,17 @@
     display: grid;
   }
 
-  .planRow {
+  .planRow,
+  .adminAccessRow,
+  .detailHeader,
+  .detailActions,
+  .mediaSelectorRow {
     display: grid;
+  }
+
+  .adminAccessMeta,
+  .formFooter {
+    justify-items: start;
+    justify-content: flex-start;
   }
 }

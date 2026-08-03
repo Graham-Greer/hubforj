@@ -468,11 +468,6 @@ These routes have enough anatomy detail in this plan to begin skeleton implement
 - `/(admin)/[hubSlug]/admin/settings/pages`
 - `/(admin)/[hubSlug]/admin/settings/legal`
 - `/(admin)/[hubSlug]/admin/settings/account`
-
-### Identified But Not Fully Audited
-
-These routes are recognized in the route-family audit but still need detailed DOM/layout anatomy before implementation:
-
 - `/(admin)/[hubSlug]/admin/admins`
 - `/(admin)/[hubSlug]/admin/events/create`
 - `/(admin)/[hubSlug]/admin/events/[eventId]`
@@ -484,6 +479,11 @@ These routes are recognized in the route-family audit but still need detailed DO
 - `/(admin)/[hubSlug]/admin/what-we-do/[itemId]`
 - `/(admin)/[hubSlug]/admin/testimonials/create`
 - `/(admin)/[hubSlug]/admin/testimonials/[testimonialId]`
+
+### Identified But Not Fully Audited
+
+These routes are recognized in the route-family audit but still need detailed DOM/layout anatomy before implementation:
+
 - `/(hub)/[hubSlug]`
 - `/(hub)/[hubSlug]/about`
 - `/(hub)/[hubSlug]/events`
@@ -521,6 +521,26 @@ Before adding skeletons to any route in the not-fully-audited list, add:
 - mobile layout shape
 - layout-shift risks
 - final acceptance criteria
+
+## Route Loading Boundary Rules
+
+Next.js route loading boundaries are segment-scoped. Treat every `loading.jsx` as visible to child routes unless the segment is a true leaf.
+
+Rules:
+
+- parent admin loading boundaries must stay route-neutral and shell-shaped
+- route-specific skeletons belong in leaf routes when the segment has no children
+- list pages that have child routes must use page-level `Suspense` fallbacks instead of parent segment `loading.jsx`
+- detail pages that have child operational routes must use page-level `Suspense` fallbacks instead of `[id]/loading.jsx`
+- never place a list skeleton in a segment that also owns create, detail, attendance, registration, invite, export, or other child routes
+- before adding any new `loading.jsx`, audit the route tree below that segment and document whether the loader can leak into child routes
+
+Current admin examples:
+
+- `/admin/events`, `/admin/courses`, `/admin/what-we-do`, `/admin/testimonials`, `/admin/admins`, `/admin/members`, and `/admin/payments` must not have broad segment `loading.jsx` files because they own child routes
+- `/admin/events/[eventId]` and `/admin/courses/[courseId]` must not have segment `loading.jsx` files because they own attendance and registration child routes
+- `/admin/settings` and `/admin/settings/pages` must not have segment `loading.jsx` files because they own child editor routes
+- `/admin/events/create`, `/admin/courses/create`, `/admin/settings/branding`, `/admin/settings/site`, `/admin/settings/legal`, `/admin/settings/account`, `/admin/what-we-do/create`, `/admin/what-we-do/[itemId]`, `/admin/testimonials/create`, and `/admin/testimonials/[testimonialId]` may use leaf `loading.jsx` files because their skeletons match the exact route segment
 
 ## First Slice Route Anatomy Audit
 
@@ -1338,6 +1358,98 @@ Use this checklist during implementation and review for the audited admin routes
 - fallback reserves package action, package badges, usage cards, hosted address card, domain status panel, and domain setup form panel
 - resolved package/domain content reveals as one account workspace body below the title
 - existing package-management and domain form actions remain unchanged
+
+### `/admin/admins`
+
+- route title should appear before admin user and invite lists resolve
+- invite action should reserve its button slot while access permissions resolve
+- admin access skeleton mirrors at least one admin row with role/status badges and timestamp metadata
+- pending access skeleton mirrors the framed pending-invites/empty-state panel below the admin list
+- resolved admin access and pending invite regions should reveal as one access workspace below the title
+- loading component must not import invite-token, env, users, invites, or access repositories
+
+### `/admin/events/create`
+
+- route loading and page fallback mirror the framed event creation workspace, not the event-list skeleton
+- title/back action renders from hub core data before media library and payment configuration resolve
+- form skeleton reserves the event wizard stepper, current-step copy, media selector row, two-column fields, full-width summary/description fields, and footer actions
+- limit-reached package notice remains inside the resolved content path and must not flash as an empty state before the limit check resolves
+- publishing guidance may load after the main form, but the main editor should reveal as one complete region
+- loading component must not import media, payment, event count, or package repositories
+
+### `/admin/events/[eventId]`
+
+- route loading mirrors the event detail workspace, not the event-list skeleton
+- generic event-detail skeleton is acceptable until the event record resolves because the final title is entity-derived
+- fallback reserves title/back area, status badges, management action buttons, media preview, fact tiles, metadata rows, and description copy
+- edit mode should use the same route-specific detail/editor skeleton while the event, media, payment, and attendance datasets resolve
+- resolved detail content reveals as one coherent workspace; no mixed real/skeleton fact rows
+- loading component must not import event, media, payment, attendance, or package repositories
+
+### `/admin/courses/create`
+
+- route loading and page fallback mirror the framed course creation workspace, not the course-list skeleton
+- title/back action renders from hub core data before media library and payment configuration resolve
+- form skeleton reserves the five-step course wizard, current-step copy, media selector row, two-column course fields, full-width summary/description fields, and footer actions
+- publishing guidance may load after the main form, but the main editor should reveal as one complete region
+- loading component must not import media, payment, or package repositories
+
+### `/admin/courses/[courseId]`
+
+- route loading mirrors the course detail workspace, not the course-list skeleton
+- generic course-detail skeleton is acceptable until the course record resolves because the final title is entity-derived
+- fallback reserves title/back area, status/type badges, management action buttons, media preview, schedule/delivery/pricing/capacity fact tiles, metadata rows, and description copy
+- edit mode should use the same route-specific detail/editor skeleton while the course, media, payment, and registration datasets resolve
+- resolved detail content reveals as one coherent workspace; no mixed real/skeleton fact rows
+- loading component must not import course, media, payment, registration, or package repositories
+
+### `/admin/settings/branding`
+
+- route loading and page fallback mirror the framed Brand and appearance workspace
+- title/back action renders from hub core data before branding values and media library resolve
+- form skeleton reserves logo media field, alt text field, presentation selects, brand color fields, header CTA fields, and footer actions
+- existing dirty-form runtime and media picker behavior remain unchanged
+- loading component must not import site-settings or media repositories
+
+### `/admin/settings/site`
+
+- route loading and page fallback mirror the framed Site details workspace
+- title/back action renders from hub core data before site defaults and payment configuration resolve
+- form skeleton reserves identity/contact fields, regional default selects, Stripe setup notice space, SEO/contact sections, and footer actions
+- country-lock and Stripe setup notice logic remains in the resolved content path
+- loading component must not import site-settings or payment repositories
+
+### `/admin/what-we-do/create`
+
+- route loading mirrors the framed New item workspace
+- form skeleton reserves title/sort-order two-column row, status select, large description textarea, and footer create action
+- route should use core hub data only; no full operational hub hydration is required just to render the create form
+- resolved form should replace the skeleton as one compact editor region
+
+### `/admin/what-we-do/[itemId]`
+
+- route loading mirrors the What we do detail editor, not the What we do list skeleton
+- generic item-detail skeleton is acceptable until the item record resolves because the final title/status badge is entity-derived
+- fallback reserves page title/status/back area and the framed item content editor
+- form skeleton reserves title/sort-order row, status select, description textarea, cancel/save actions
+- resolved detail content reveals as one coherent editor region
+- loading component must not import What we do repositories
+
+### `/admin/testimonials/create`
+
+- route loading and page fallback mirror the framed New testimonial workspace
+- title/back action renders from hub core data before media library resolves
+- form skeleton reserves quote textarea, author fields, status/featured controls, author image media row, alt text, and footer actions
+- existing media picker behavior remains unchanged
+- loading component must not import media repositories
+
+### `/admin/testimonials/[testimonialId]`
+
+- route loading mirrors the testimonial detail editor, not the testimonial list skeleton
+- generic testimonial-detail skeleton is acceptable until the testimonial record resolves because the final title/status badges are entity-derived
+- fallback reserves page title/status/back area, content card heading/copy, author image area, quote textarea, attribution fields, status/featured controls, media row, and footer actions
+- resolved detail content reveals as one coherent editor region
+- loading component must not import testimonial or media repositories
 
 ## Measurement And Network Verification
 

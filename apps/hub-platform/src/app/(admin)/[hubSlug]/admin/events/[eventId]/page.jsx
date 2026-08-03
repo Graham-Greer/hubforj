@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import EventDetailWorkspace from "@/components/patterns/event-detail-workspace/EventDetailWorkspace";
+import { AdminProgrammeDetailFallback } from "@/components/patterns/admin-route-fallbacks/AdminRouteFallbacks";
 import EditEventForm from "./EditEventForm";
 import { countActiveUpcomingPublishedEventsByHub, getEventById } from "@/lib/data/events";
 import { listEventAdminAttendanceRows } from "@/lib/data/event-bookings";
@@ -10,9 +12,7 @@ import { getHubPaymentSetupState } from "@/lib/domain/hub-payment-configuration"
 import { listMediaAssetsByHubId, listMediaFoldersByHubId } from "@/lib/data/media";
 import { notFound } from "next/navigation";
 
-export default async function EventDetailPage({ params, searchParams }) {
-  const { hubSlug, eventId } = await params;
-  const query = await searchParams;
+async function EventDetailContent({ hubSlug, eventId, query }) {
   const eventsSearchParams = new URLSearchParams();
 
   ["q", "status", "pricing", "visibility"].forEach((key) => {
@@ -108,5 +108,16 @@ export default async function EventDetailPage({ params, searchParams }) {
         />
       }
     />
+  );
+}
+
+export default async function EventDetailPage({ params, searchParams }) {
+  const { hubSlug, eventId } = await params;
+  const query = await searchParams;
+
+  return (
+    <Suspense fallback={<AdminProgrammeDetailFallback kind="event" />}>
+      <EventDetailContent hubSlug={hubSlug} eventId={eventId} query={query} />
+    </Suspense>
   );
 }
