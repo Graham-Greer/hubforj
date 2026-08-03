@@ -1,18 +1,16 @@
+import { Suspense } from "react";
 import { headers } from "next/headers";
 import MemberMembershipWorkspace from "@/components/patterns/member-membership-workspace/MemberMembershipWorkspace";
+import { MemberMembershipFallback } from "@/components/patterns/member-account-fallbacks";
+import PageHeader from "@/components/patterns/page-header/PageHeader";
 import { requireCurrentMemberSessionForHub } from "@/lib/auth/member-session";
 import { requireHubBySlug } from "@/lib/data/hubs";
 import { getCurrentMembershipByUser, getPendingMembershipUpgradeRequestByUser, listMembershipPlansByHub } from "@/lib/data/memberships";
 import { getNativePaymentTransactionById } from "@/lib/data/native-payment-transactions";
 import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
+import styles from "../accountRoute.module.css";
 
-export default async function MembershipPage({ params, searchParams }) {
-  const { hubSlug } = await params;
-  const { success = "", error = "" } = await searchParams;
-  const hubRecord = await requireHubBySlug(hubSlug);
-  const requestHeaders = await headers();
-  const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(requestHeaders));
-  const hub = { ...hubRecord, routeMode };
+async function MembershipContent({ hub, success = "", error = "" }) {
   const memberSession = await requireCurrentMemberSessionForHub(hub, `/${hub.slug}/account/membership`);
   const [membership, membershipPlans, upgradeRequest] = await Promise.all([
     getCurrentMembershipByUser(hub.id, memberSession.user.id),
@@ -48,6 +46,29 @@ export default async function MembershipPage({ params, searchParams }) {
       upgradeTransaction={upgradeTransaction}
       successMessage={successMessage}
       errorMessage={typeof error === "string" ? error : ""}
+      showHeader={false}
     />
+  );
+}
+
+export default async function MembershipPage({ params, searchParams }) {
+  const { hubSlug } = await params;
+  const { success = "", error = "" } = await searchParams;
+  const hubRecord = await requireHubBySlug(hubSlug);
+  const requestHeaders = await headers();
+  const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(requestHeaders));
+  const hub = { ...hubRecord, routeMode };
+
+  return (
+    <div className={styles.routeStack}>
+      <PageHeader
+        eyebrow="Member account"
+        title="Membership"
+        description="Check your current plan, confirm renewal timing, and see whether this hub offers any public upgrade plans."
+      />
+      <Suspense fallback={<MemberMembershipFallback />}>
+        <MembershipContent hub={hub} success={success} error={error} />
+      </Suspense>
+    </div>
   );
 }

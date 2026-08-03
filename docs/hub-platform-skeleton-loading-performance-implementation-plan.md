@@ -297,6 +297,24 @@ Skeleton families needed:
 - bookings list skeleton
 - enrolled courses list skeleton
 
+Implementation rules for the audited member account slice:
+
+- Use dedicated member/public skeleton primitives under `components/patterns/member-account-fallbacks`.
+- Do not reuse admin/operator skeleton primitives or admin surface tokens on public member pages.
+- Skeleton color, border, and surface treatment must resolve from public site tokens such as `--surface-primary`, `--surface-secondary`, and `--public-card-border` so light and dark themes stay aligned with the public site.
+- Route title sections remain real content outside Suspense.
+- Only data-rich sections below the title skeletonize.
+- Do not add a parent `account/loading.jsx` for these routes; page-level Suspense boundaries are required so the account nav and route title stay stable.
+- Because the account layout already guards member access, route pages should avoid duplicate pre-title member data loading where possible and place the member/session-specific payload inside the Suspense content.
+
+Audited member account route anatomy:
+
+- `/account`: title `Overview`; data-rich skeleton covers three summary cards, membership panel, upcoming bookings preview, and recent billing preview.
+- `/account/bookings`: title `My Bookings`; data-rich skeleton covers current/history toggle, a full-width search input plus separate filter trigger, result count, and public-surface booking cards with media, badges, and actions.
+- `/account/membership`: title `Membership`; data-rich skeleton covers current membership panel, status badges, fact tiles, and available upgrade plan card.
+- `/account/billing`: title `Billing`; data-rich skeleton covers three payment summary cards, a full-width search input plus separate filter trigger, result count, and public-surface billing item cards.
+- `/account/profile`: title `Profile`; data-rich skeleton covers the identity card, avatar area, edit action position, badges, and detail rows.
+
 Priority member routes:
 
 1. `/account`
@@ -490,6 +508,11 @@ These routes have enough anatomy detail in this plan to begin skeleton implement
 - `/(admin)/[hubSlug]/admin/settings/pages/events`
 - `/(admin)/[hubSlug]/admin/settings/pages/courses`
 - `/(admin)/[hubSlug]/admin/settings/pages/testimonials`
+- `/(hub)/[hubSlug]/account`
+- `/(hub)/[hubSlug]/account/bookings`
+- `/(hub)/[hubSlug]/account/membership`
+- `/(hub)/[hubSlug]/account/billing`
+- `/(hub)/[hubSlug]/account/profile`
 
 ### Identified But Not Fully Audited
 
@@ -507,11 +530,6 @@ These routes are recognized in the route-family audit but still need detailed DO
 - `/(hub)/[hubSlug]/terms`
 - `/(hub)/[hubSlug]/privacy`
 - `/(hub)/[hubSlug]/cookies`
-- `/(hub)/[hubSlug]/account`
-- `/(hub)/[hubSlug]/account/profile`
-- `/(hub)/[hubSlug]/account/membership`
-- `/(hub)/[hubSlug]/account/billing`
-- `/(hub)/[hubSlug]/account/bookings`
 - `/(hub)/[hubSlug]/account/courses`
 - `/(platform)/platform`
 - `/(platform)/platform/hubs`
