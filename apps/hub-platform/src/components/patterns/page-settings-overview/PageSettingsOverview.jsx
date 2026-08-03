@@ -8,7 +8,7 @@ import {
 } from "@/lib/domain/site-settings";
 import styles from "./PageSettingsOverview.module.css";
 
-export default function PageSettingsOverview({ hub, siteSettings }) {
+export default function PageSettingsOverview({ hub, siteSettings, showHeader = true }) {
   const heroTitle = siteSettings.homePage?.hero?.title || "Homepage hero not configured";
   const testimonialsTitle =
     siteSettings.homePage?.testimonials?.title || "Testimonials section title not configured";
@@ -19,11 +19,13 @@ export default function PageSettingsOverview({ hub, siteSettings }) {
 
   return (
     <div className={styles.root}>
-      <PageHeader
-        eyebrow="Pages"
-        title="Edit your public pages"
-        description="Update the main content your visitors see on the homepage, events page, courses page, and testimonials page."
-      />
+      {showHeader ? (
+        <PageHeader
+          eyebrow="Pages"
+          title="Edit your public pages"
+          description="Update the main content your visitors see on the homepage, events page, courses page, and testimonials page."
+        />
+      ) : null}
 
       <div className={styles.grid}>
         <SettingsPanelCard

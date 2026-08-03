@@ -2,6 +2,11 @@ import { Suspense } from "react";
 import LockedFeatureState from "@/components/patterns/locked-feature-state/LockedFeatureState";
 import PageHeader from "@/components/patterns/page-header/PageHeader";
 import HubPaymentsWorkspace from "@/components/patterns/hub-payments-workspace/HubPaymentsWorkspace";
+import {
+  AdminMembershipPlansFallback,
+  AdminPaymentRecordsFallback,
+  AdminPaymentSetupFallback,
+} from "@/components/patterns/admin-route-fallbacks/AdminRouteFallbacks";
 import { getCurrentHubOperatorAccess } from "@/lib/auth/hub-access";
 import { requireHubCoreBySlug } from "@/lib/data/hubs";
 import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
@@ -64,36 +69,75 @@ function buildPaymentSuccessMessage(success) {
 }
 
 function PaymentsWorkspaceFallback({ selectedView }) {
-  const title =
-    selectedView === "payments"
-      ? "Loading payment records"
-      : selectedView === "plans"
-        ? "Loading membership plans"
-        : "Loading payment setup";
+  if (selectedView === "payments") {
+    return <AdminPaymentRecordsFallback />;
+  }
 
-  return (
-    <section className={styles.loadingPanel} aria-busy="true" aria-label={title}>
-      <div>
-        <p className={styles.loadingEyebrow}>{title}</p>
-        <div className={`${styles.loadingLine} ${styles.loadingLineWide}`} />
-      </div>
-      <div className={styles.loadingGrid}>
-        <div className={styles.loadingTile} />
-        <div className={styles.loadingTile} />
-        <div className={styles.loadingTile} />
-      </div>
-      <div className={styles.loadingLine} />
-      <div className={`${styles.loadingLine} ${styles.loadingLineShort}`} />
-    </section>
-  );
+  if (selectedView === "plans") {
+    return <AdminMembershipPlansFallback />;
+  }
+
+  return <AdminPaymentSetupFallback />;
+}
+
+function getPaymentsHeaderCopy(selectedView) {
+  if (selectedView === "payments") {
+    return {
+      eyebrow: "Payments",
+      title: "Payments and reporting",
+      description: "Review membership, event, and course payments in one place.",
+    };
+  }
+
+  if (selectedView === "plans") {
+    return {
+      eyebrow: "Memberships",
+      title: "Membership plans",
+      description: "Create and manage the plans members can use to access your community.",
+    };
+  }
+
+  return {
+    eyebrow: "Payments",
+    title: "Payment setup",
+    description: "Connect Stripe and review the setup steps needed for native hub payments.",
+  };
 }
 
 function buildAdminHref(hubSlug, pathname, routeMode) {
   return buildHubRuntimeHref(hubSlug, pathname, routeMode);
 }
 
-async function PaymentsWorkspaceLoader({ hub, routeMode, selectedView, success, error }) {
+async function PaymentsWorkspaceLoader({ hubSlug, selectedView, success, error }) {
+  const headerStore = await headers();
+  const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
+  const hub = await requireHubCoreBySlug(hubSlug);
+
+  if (!hub) {
+    notFound();
+  }
+
   const paymentsEnabled = hasHubCapability(hub, "paymentsEnabled");
+
+  if (!paymentsEnabled && selectedView !== "plans") {
+    return (
+      <LockedFeatureState
+        eyebrow="Growth feature"
+        title="Built-in payments are locked on your current package"
+        description="Package tier management with Hubforj stays in your commercial account area. Native member payments inside the hub only unlock on Growth."
+        unlocks={[
+          "Connect Stripe from the hub admin portal",
+          "Complete embedded onboarding inside Hubforj",
+          "Operate Stripe-backed member payments from one workspace",
+        ]}
+        secondaryAction={{ href: buildAdminHref(hub.slug, "/admin/payments?view=plans", routeMode), label: "Open membership plans" }}
+        rootOnboardingKey="payments-setup-locked-root"
+        unlocksOnboardingKey="payments-setup-locked-unlocks"
+        secondaryActionOnboardingKey="payments-setup-locked-action"
+      />
+    );
+  }
+
   const shouldCheckSupportDiagnostics = selectedView === "setup";
   const access = shouldCheckSupportDiagnostics ? await getCurrentHubOperatorAccess(hub) : null;
   const showSupportDiagnostics = access?.mode === "support";
@@ -156,49 +200,14 @@ export default async function PaymentsPage({ params, searchParams }) {
   const { hubSlug } = await params;
   const { success = "", error = "", view = "setup" } = await searchParams;
   const selectedView = view === "plans" ? "plans" : view === "payments" ? "payments" : "setup";
-  const headerStore = await headers();
-  const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
-  const hub = await requireHubCoreBySlug(hubSlug);
-
-  if (!hub) {
-    notFound();
-  }
-
-  const paymentsEnabled = hasHubCapability(hub, "paymentsEnabled");
-
-  if (!paymentsEnabled && selectedView !== "plans") {
-    return (
-      <LockedFeatureState
-        eyebrow="Growth feature"
-        title="Built-in payments are locked on your current package"
-        description="Package tier management with Hubforj stays in your commercial account area. Native member payments inside the hub only unlock on Growth."
-        unlocks={[
-          "Connect Stripe from the hub admin portal",
-          "Complete embedded onboarding inside Hubforj",
-          "Operate Stripe-backed member payments from one workspace",
-        ]}
-        secondaryAction={{ href: buildAdminHref(hub.slug, "/admin/payments?view=plans", routeMode), label: "Open membership plans" }}
-        rootOnboardingKey="payments-setup-locked-root"
-        unlocksOnboardingKey="payments-setup-locked-unlocks"
-        secondaryActionOnboardingKey="payments-setup-locked-action"
-      />
-    );
-  }
 
   return (
     <div className={styles.layout}>
-      {selectedView === "payments" ? (
-        <PageHeader
-          eyebrow="Payments"
-          title="Payments and reporting"
-          description="Review membership, event, and course payments in one place."
-        />
-      ) : null}
+      <PageHeader {...getPaymentsHeaderCopy(selectedView)} />
 
       <Suspense fallback={<PaymentsWorkspaceFallback selectedView={selectedView} />}>
         <PaymentsWorkspaceLoader
-          hub={hub}
-          routeMode={routeMode}
+          hubSlug={hubSlug}
           selectedView={selectedView}
           success={success}
           error={error}

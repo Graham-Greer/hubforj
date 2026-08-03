@@ -1,0 +1,317 @@
+.stack {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.toolbar,
+.paginationRow,
+.cardHeader,
+.programmeBody,
+.mediaContent {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.toolbar {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.filterRow,
+.paginationControls,
+.badges,
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.paginationRow {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.paginationControls {
+  justify-content: flex-end;
+}
+
+.list,
+.programmeCopy,
+.identityCopy,
+.mediaWorkspace,
+.folderCard {
+  display: grid;
+}
+
+.list {
+  gap: var(--space-4);
+}
+
+.programmeCard,
+.contentCard,
+.folderCard {
+  border: 1px solid var(--admin-surface-muted-border, var(--border-subtle));
+  border-radius: var(--panel-radius);
+  background: var(--admin-surface-default-fill, var(--surface-primary));
+  box-shadow: var(--admin-surface-muted-shadow, none);
+}
+
+.programmeCard,
+.contentCard {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+.cardHeader {
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.programmeBody {
+  align-items: flex-start;
+}
+
+.programmeMedia {
+  flex: 0 0 12rem;
+  aspect-ratio: 4 / 3;
+}
+
+.programmeCopy,
+.identityCopy,
+.mediaWorkspace,
+.folderCard {
+  gap: var(--space-3);
+}
+
+.programmeCopy {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
+.avatar {
+  flex: 0 0 3.5rem;
+  aspect-ratio: 1;
+  border-radius: var(--radius-full);
+}
+
+.folderGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--space-3);
+}
+
+.folderCard {
+  min-block-size: 5.5rem;
+  padding: var(--space-4);
+}
+
+.paymentSetupHero {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.paymentFactsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.paymentFact,
+.planRow {
+  border: 1px solid var(--admin-surface-muted-border, var(--border-subtle));
+  border-radius: var(--radius-md);
+  background: var(--admin-surface-muted-fill, var(--surface-secondary));
+}
+
+.paymentFact {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.paymentToolbar {
+  display: grid;
+  grid-template-columns: auto minmax(14rem, 1fr) auto;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.paymentDateFilters,
+.planIdentity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.planAction {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.planRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-block-size: 4.5rem;
+  padding: var(--space-4) var(--space-5);
+}
+
+.settingsCardGrid,
+.legalContentGrid,
+.accountDomainGrid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.settingsCardGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.settingsCard,
+.legalShell,
+.legalEditor,
+.legalGuidance,
+.accountDomainPanel {
+  border: 1px solid var(--admin-surface-muted-border, var(--border-subtle));
+  border-radius: var(--panel-radius);
+  background: var(--admin-surface-default-fill, var(--surface-primary));
+  box-shadow: var(--admin-surface-muted-shadow, none);
+}
+
+.settingsCard,
+.legalShell,
+.legalEditor,
+.legalGuidance,
+.accountPackage,
+.accountDomain,
+.accountCopy,
+.accountDomainPanel {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.settingsCard {
+  min-block-size: 11rem;
+  padding: var(--space-4);
+}
+
+.legalShell,
+.legalBody {
+  padding: var(--space-6);
+}
+
+.legalBody {
+  display: grid;
+  gap: var(--space-5);
+  padding: 0;
+}
+
+.legalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.legalHeaderCopy {
+  display: grid;
+  gap: var(--space-3);
+  max-inline-size: 48rem;
+}
+
+.legalContentGrid {
+  grid-template-columns: minmax(0, 1.45fr) minmax(20rem, 0.95fr);
+  align-items: start;
+}
+
+.legalEditor,
+.legalGuidance,
+.accountDomainPanel {
+  padding: var(--space-4);
+}
+
+.accountDomainGrid {
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 0.95fr);
+}
+
+.mediaContent {
+  align-items: flex-start;
+}
+
+.mediaContent > :first-child {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.mediaContent > :last-child {
+  flex: 0 0 22rem;
+}
+
+.detailsPreview {
+  display: grid;
+  aspect-ratio: 4 / 3;
+}
+
+@media (max-width: 72rem) {
+  .paymentToolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .mediaContent {
+    display: grid;
+  }
+
+  .mediaContent > :last-child {
+    flex-basis: auto;
+  }
+}
+
+@media (max-width: 56rem) {
+  .toolbar,
+  .paginationRow,
+  .cardHeader,
+  .programmeBody {
+    display: grid;
+  }
+
+  .programmeMedia {
+    inline-size: min(18rem, 100%);
+  }
+
+  .paginationControls {
+    justify-content: flex-start;
+  }
+
+  .paymentFactsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .settingsCardGrid,
+  .legalContentGrid,
+  .accountDomainGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .planAction {
+    justify-content: flex-start;
+  }
+
+  .legalHeader {
+    display: grid;
+  }
+
+  .planRow {
+    display: grid;
+  }
+}

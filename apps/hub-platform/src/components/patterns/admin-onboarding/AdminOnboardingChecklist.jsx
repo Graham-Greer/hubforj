@@ -2,6 +2,11 @@
 
 import Button from "@/components/ui/button/Button";
 import Surface from "@/components/primitives/surface/Surface";
+import {
+  SkeletonBlock,
+  SkeletonButtonRow,
+  SkeletonText,
+} from "@/components/patterns/loading-skeleton";
 import { useAdminOnboarding } from "./AdminOnboardingProvider";
 import styles from "./AdminOnboardingChecklist.module.css";
 
@@ -23,27 +28,28 @@ function ChecklistSkeleton() {
     <Surface padding="md" className={styles.card} aria-hidden="true">
       <div className={styles.header}>
         <div className={styles.copy}>
-          <span className={styles.skeletonEyebrow} />
-          <span className={styles.skeletonTitle} />
-          <span className={styles.skeletonBody} />
+          <SkeletonBlock variant="eyebrow" width="7rem" />
+          <SkeletonBlock variant="heading" width="min(100%, 24rem)" />
+          <SkeletonText lines={1} widths={["min(100%, 34rem)"]} compact />
         </div>
         <div className={styles.progress}>
-          <span className={styles.skeletonProgressValue} />
-          <span className={styles.skeletonProgressLabel} />
+          <SkeletonBlock variant="heading" width="3.5rem" />
+          <SkeletonBlock variant="eyebrow" width="5rem" />
         </div>
       </div>
-      <div className={styles.skeletonProgressBar} />
+      <SkeletonBlock height="0.5rem" />
       <div className={styles.items}>
         {Array.from({ length: 4 }).map((_, index) => (
           <div key={index} className={styles.item}>
             <div className={styles.itemCopy}>
-              <span className={styles.skeletonItemTitle} />
-              <span className={styles.skeletonItemStatus} />
+              <SkeletonBlock variant="heading" width={index % 2 === 0 ? "18rem" : "14rem"} />
+              <SkeletonBlock variant="eyebrow" width="6rem" />
             </div>
-            <span className={styles.skeletonButton} />
+            <SkeletonBlock variant="button" width="5.5rem" />
           </div>
         ))}
       </div>
+      <SkeletonButtonRow count={2} />
     </Surface>
   );
 }

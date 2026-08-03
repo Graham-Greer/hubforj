@@ -1,6 +1,12 @@
+import { Suspense } from "react";
 import EmptyState from "@/components/patterns/empty-state/EmptyState";
 import MembersWorkspace from "@/components/patterns/members-workspace/MembersWorkspace";
 import PageHeader from "@/components/patterns/page-header/PageHeader";
+import {
+  SkeletonButtonRow,
+  SkeletonList,
+  SkeletonMetricGrid,
+} from "@/components/patterns/loading-skeleton";
 import { listCourseRegistrationPaymentAttentionUserIdsByHub } from "@/lib/data/course-registrations";
 import { listEventBookingPaymentAttentionUserIdsByHub } from "@/lib/data/event-bookings";
 import { requireHubCoreBySlug } from "@/lib/data/hubs";
@@ -15,8 +21,17 @@ import { getUserStatusLabel, getUserStatusTone } from "@/lib/domain/users";
 import { headers } from "next/headers";
 import styles from "./page.module.css";
 
-export default async function MembersPage({ params }) {
-  const { hubSlug } = await params;
+function MembersWorkspaceFallback() {
+  return (
+    <section className={styles.workspaceFallback} aria-busy="true" aria-label="Loading member directory">
+      <SkeletonMetricGrid count={4} columns={4} />
+      <SkeletonButtonRow count={4} />
+      <SkeletonList rows={8} withBadges />
+    </section>
+  );
+}
+
+async function MembersDirectoryLoader({ hubSlug }) {
   const headerStore = await headers();
   const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
   const hub = await requireHubCoreBySlug(hubSlug);
@@ -145,12 +160,7 @@ export default async function MembersPage({ params }) {
   ];
 
   return (
-    <div className={styles.layout}>
-      <PageHeader
-        eyebrow="Members"
-        title="Member directory"
-        description="Review members, check their status and payment context, and open the right record for follow-up."
-      />
+    <>
       {members.length ? (
         <MembersWorkspace items={memberItems} summary={summary} filterDefinitions={filterDefinitions} hubSlug={hub.slug} />
       ) : null}
@@ -162,6 +172,23 @@ export default async function MembersPage({ params }) {
           primaryAction={{ href: buildHubRuntimeHref(hub.slug, "/admin", routeMode), label: "Back to overview" }}
         />
       ) : null}
+    </>
+  );
+}
+
+export default async function MembersPage({ params }) {
+  const { hubSlug } = await params;
+
+  return (
+    <div className={styles.layout}>
+      <PageHeader
+        eyebrow="Members"
+        title="Member directory"
+        description="Review members, check their status and payment context, and open the right record for follow-up."
+      />
+      <Suspense fallback={<MembersWorkspaceFallback />}>
+        <MembersDirectoryLoader hubSlug={hubSlug} />
+      </Suspense>
     </div>
   );
 }

@@ -4,14 +4,21 @@ import StatCard from "@/components/ui/stat-card/StatCard";
 import FormMessage from "@/components/ui/form-message/FormMessage";
 import PageHeader from "@/components/patterns/page-header/PageHeader";
 import AdminOnboardingChecklist from "@/components/patterns/admin-onboarding/AdminOnboardingChecklist";
+import {
+  SkeletonBlock,
+  SkeletonMetricGrid,
+  SkeletonPanel,
+  SkeletonText,
+} from "@/components/patterns/loading-skeleton";
 import { getCurrentHubOperatorAccess } from "@/lib/auth/hub-access";
 import {
   getHubAdminDashboardDeferredOverviewBySlug,
-  getHubAdminDashboardSummaryBySlug,
+  getHubAdminDashboardSummaryStripBySlug,
 } from "@/lib/data/hub-admin";
 import { requireHubCoreBySlug } from "@/lib/data/hubs";
 import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
 import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
+import { resolveHubPackageEntitlements } from "@/lib/domain/hub-package";
 import { isHubRegionalSetupComplete } from "@/lib/domain/hub-regional-setup";
 import { getLegalSettingsByHubId } from "@/lib/legal/legalRepository";
 import { headers } from "next/headers";
@@ -81,11 +88,7 @@ function buildOwnerLegalAttentionItems(hub, legalSettings, routeMode = "path") {
 function DashboardLoadingSection({ title }) {
   return (
     <DashboardSection title={title}>
-      <div className={styles.panelLoading}>
-        <span className={styles.loadingLine} />
-        <span className={styles.loadingLine} />
-        <span className={styles.loadingLineShort} />
-      </div>
+      <SkeletonText lines={6} widths={["88%", "62%", "76%", "54%", "70%", "46%"]} />
     </DashboardSection>
   );
 }
@@ -110,40 +113,22 @@ function DashboardPanelsFallback({ coursesEnabled }) {
   );
 }
 
-async function DashboardRevenueCard({ overviewPromise }) {
-  const overview = await overviewPromise;
-  const totalRevenue = overview?.totalRevenue || {
-    formatted: "£0.00",
-    isMixedCurrency: false,
-  };
-
+function DashboardSummaryStripFallback({ statCount = 4 }) {
   return (
-    <StatCard
-      label="Revenue"
-      value={totalRevenue.formatted}
-      detail={
-        totalRevenue.isMixedCurrency
-          ? "Net native payments recorded across multiple currencies."
-          : "Net native payments recorded after refunds."
-      }
-    />
+    <>
+      <div className={styles.packageBar} aria-hidden="true">
+        <div className={styles.packageIdentity}>
+          <SkeletonBlock variant="pill" width="7rem" />
+          <SkeletonBlock variant="pill" width="6rem" />
+        </div>
+      </div>
+      <SkeletonMetricGrid count={statCount} columns={4} />
+    </>
   );
 }
 
-async function DashboardCoursesCard({ overviewPromise }) {
-  const overview = await overviewPromise;
-
-  return (
-    <StatCard
-      label="Courses"
-      value={overview ? String(overview.activeUpcomingPublishedCourseCount) : "0"}
-      detail="Published upcoming courses currently open."
-    />
-  );
-}
-
-async function DashboardDeferredPanels({ hubSlug, routeMode, overviewPromise }) {
-  const overview = await overviewPromise;
+async function DashboardPanelsLoader({ hubSlug, routeMode }) {
+  const overview = await getHubAdminDashboardDeferredOverviewBySlug(hubSlug, { routeMode });
   const hub = overview?.hub || null;
   const packageInfo = overview?.package || null;
   const access = hub ? await getCurrentHubOperatorAccess(hub) : null;
@@ -187,24 +172,11 @@ async function DashboardDeferredPanels({ hubSlug, routeMode, overviewPromise }) 
   );
 }
 
-export default async function HubAdminPage({ params, searchParams }) {
-  const { hubSlug } = await params;
-  const { success = "" } = await searchParams;
-  const headerStore = await headers();
-  const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
-  const coreHub = await requireHubCoreBySlug(hubSlug);
-
-  if (!isHubRegionalSetupComplete(coreHub)) {
-    redirect(buildAdminHref(coreHub.slug, "/admin/onboarding", routeMode));
-  }
-
-  const summary = await getHubAdminDashboardSummaryBySlug(hubSlug);
+async function DashboardSummaryStripLoader({ hubSlug }) {
+  const summary = await getHubAdminDashboardSummaryStripBySlug(hubSlug);
   const hub = summary?.hub || null;
 
   const packageInfo = summary?.package || null;
-  const deferredOverviewPromise = hub
-    ? getHubAdminDashboardDeferredOverviewBySlug(hubSlug, { routeMode })
-    : Promise.resolve(null);
   const activeMembersLimit = packageInfo?.limits?.activeMembers;
   const activeUpcomingEventsLimit = packageInfo?.limits?.activeUpcomingEvents;
   const isStarterOrGrowth = packageInfo?.packageTier === "starter" || packageInfo?.packageTier === "growth";
@@ -250,16 +222,13 @@ export default async function HubAdminPage({ params, searchParams }) {
           detail: "Admin access remains explicit and traceable.",
         },
       ];
+  const totalRevenue = summary?.totalRevenue || {
+    formatted: "£0.00",
+    isMixedCurrency: false,
+  };
 
   return (
-    <div className={styles.layout}>
-      {success === "inviteAccepted" ? <FormMessage tone="success">Admin onboarding complete. You now have active access to this hub.</FormMessage> : null}
-      <PageHeader
-        eyebrow="Overview"
-        title={hub?.name || "Hub overview"}
-        description="Use this overview to orient yourself quickly and move into the next operational task."
-      />
-      <AdminOnboardingChecklist />
+    <>
       {packageInfo ? (
         <div className={styles.packageBar}>
           <div className={styles.packageIdentity}>
@@ -284,17 +253,54 @@ export default async function HubAdminPage({ params, searchParams }) {
         ))}
         {isStarterOrGrowth ? (
           <>
-            <Suspense fallback={<StatCard label="Courses" value="Loading" detail="Published upcoming courses currently open." />}>
-              <DashboardCoursesCard overviewPromise={deferredOverviewPromise} />
-            </Suspense>
-            <Suspense fallback={<StatCard label="Revenue" value="Loading" detail="Net native payments recorded after refunds." />}>
-              <DashboardRevenueCard overviewPromise={deferredOverviewPromise} />
-            </Suspense>
+            <StatCard
+              label="Courses"
+              value={summary ? String(summary.activeUpcomingPublishedCourseCount) : "0"}
+              detail="Published upcoming courses currently open."
+            />
+            <StatCard
+              label="Revenue"
+              value={totalRevenue.formatted}
+              detail={
+                totalRevenue.isMixedCurrency
+                  ? "Net native payments recorded across multiple currencies."
+                  : "Net native payments recorded after refunds."
+              }
+            />
           </>
         ) : null}
       </div>
-      <Suspense fallback={<DashboardPanelsFallback coursesEnabled={packageInfo?.capabilities?.coursesEnabled} />}>
-        <DashboardDeferredPanels hubSlug={hubSlug} routeMode={routeMode} overviewPromise={deferredOverviewPromise} />
+    </>
+  );
+}
+
+export default async function HubAdminPage({ params, searchParams }) {
+  const { hubSlug } = await params;
+  const { success = "" } = await searchParams;
+  const headerStore = await headers();
+  const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
+  const coreHub = await requireHubCoreBySlug(hubSlug);
+  const corePackageInfo = resolveHubPackageEntitlements(coreHub);
+  const isStarterOrGrowth = corePackageInfo?.packageTier === "starter" || corePackageInfo?.packageTier === "growth";
+
+  if (!isHubRegionalSetupComplete(coreHub)) {
+    redirect(buildAdminHref(coreHub.slug, "/admin/onboarding", routeMode));
+  }
+
+  return (
+    <div className={styles.layout}>
+      {success === "inviteAccepted" ? <FormMessage tone="success">Admin onboarding complete. You now have active access to this hub.</FormMessage> : null}
+      <PageHeader
+        eyebrow="Overview"
+        title={coreHub?.name || "Hub overview"}
+        description="Use this overview to orient yourself quickly and move into the next operational task."
+      />
+      <AdminOnboardingChecklist />
+      <Suspense fallback={<DashboardSummaryStripFallback statCount={isStarterOrGrowth ? 4 : 3} />}>
+        <DashboardSummaryStripLoader hubSlug={hubSlug} />
+      </Suspense>
+      <Suspense fallback={<DashboardPanelsFallback coursesEnabled={corePackageInfo?.capabilities?.coursesEnabled} />}>
+        <DashboardPanelsLoader hubSlug={hubSlug} routeMode={routeMode} />
       </Suspense>
     </div>
   );

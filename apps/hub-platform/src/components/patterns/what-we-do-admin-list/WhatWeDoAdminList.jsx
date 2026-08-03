@@ -58,7 +58,7 @@ function DeleteWhatWeDoModal({ hub, item, deleteWhatWeDoAction, onClose }) {
   );
 }
 
-export default function WhatWeDoAdminList({ hub, items, deleteWhatWeDoAction }) {
+export default function WhatWeDoAdminList({ hub, items, deleteWhatWeDoAction, showHeader = true }) {
   const summary = summarizeWhatWeDoItems(items);
   const router = useRouter();
   const [pendingDelete, setPendingDelete] = useState(null);
@@ -66,16 +66,18 @@ export default function WhatWeDoAdminList({ hub, items, deleteWhatWeDoAction }) 
   return (
     <>
       <div className={styles.root} data-onboarding="what-we-do-list">
-        <PageHeader
-          eyebrow="What we do"
-          title={!items.length ? "Create the first item" : "Manage items"}
-          description={
-            !items.length
-              ? "Create homepage offering content to describe what your community offers. We recommend creating 3 to 6 items for a clean layout."
-              : "Review homepage offering content, we recommend keeping it to 6 items max to avoid cluttering the home page."
-          }
-          actions={<Button href={`/${hub.slug}/admin/what-we-do/create`}>Create item</Button>}
-        />
+        {showHeader ? (
+          <PageHeader
+            eyebrow="What we do"
+            title={!items.length ? "Create the first item" : "Manage items"}
+            description={
+              !items.length
+                ? "Create homepage offering content to describe what your community offers. We recommend creating 3 to 6 items for a clean layout."
+                : "Review homepage offering content, we recommend keeping it to 6 items max to avoid cluttering the home page."
+            }
+            actions={<Button href={`/${hub.slug}/admin/what-we-do/create`}>Create item</Button>}
+          />
+        ) : null}
 
         <div className={styles.stats}>
           <StatCard label="Total" value={String(summary.total)} detail="Structured What we do records." />

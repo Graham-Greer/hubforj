@@ -1,5 +1,5 @@
 import MediaLibraryWorkspace from "@/components/patterns/media-library-workspace/MediaLibraryWorkspace";
-import { requireHubBySlug } from "@/lib/data/hubs";
+import { requireHubCoreBySlug } from "@/lib/data/hubs";
 import { listMediaAssetsByHubId, listMediaFoldersByHubId } from "@/lib/data/media";
 
 function normalizeSearchParam(value) {
@@ -9,7 +9,7 @@ function normalizeSearchParam(value) {
 export default async function MediaPage({ params, searchParams }) {
   const { hubSlug } = await params;
   const resolvedSearchParams = await searchParams;
-  const hub = await requireHubBySlug(hubSlug);
+  const hub = await requireHubCoreBySlug(hubSlug);
 
   const [assets, folders] = await Promise.all([
     listMediaAssetsByHubId(hub.id),

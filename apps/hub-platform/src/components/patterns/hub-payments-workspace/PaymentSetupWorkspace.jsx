@@ -88,6 +88,7 @@ export default function PaymentSetupWorkspace({
   paymentLedgerSyncStatus,
   paymentReconciliationReport,
   showSupportDiagnostics = false,
+  showHeader = true,
   beginHubPaymentSetupAction,
   refreshHubPaymentSetupAction,
   syncHubPaymentLedgerAction,
@@ -107,11 +108,13 @@ export default function PaymentSetupWorkspace({
 
   return (
     <div className={styles.setupRoot}>
-      <PageHeader
-        eyebrow="Payments setup"
-        title="Set up built-in payments"
-        description="Connect Stripe for this hub and confirm when built-in member payments are ready to use."
-      />
+      {showHeader ? (
+        <PageHeader
+          eyebrow="Payments setup"
+          title="Set up built-in payments"
+          description="Connect Stripe for this hub and confirm when built-in member payments are ready to use."
+        />
+      ) : null}
 
       <Surface padding="md" className={styles.setupHeroPanel} data-onboarding="payments-setup-hero-panel">
         <div className={styles.setupHeroHeader}>

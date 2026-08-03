@@ -1,4 +1,10 @@
+import { Suspense } from "react";
 import Button from "@/components/ui/button/Button";
+import PageHeader from "@/components/patterns/page-header/PageHeader";
+import {
+  AdminProgrammeListFallback,
+  AdminRouteStack,
+} from "@/components/patterns/admin-route-fallbacks/AdminRouteFallbacks";
 import OfferingAdminListWorkspace from "@/components/patterns/offering-admin-list-workspace/OfferingAdminListWorkspace";
 import { deleteCourseAction } from "./[courseId]/actions";
 import { countEnrolledCourseRegistrations } from "@/lib/data/course-registrations";
@@ -13,7 +19,7 @@ import {
 } from "@/lib/domain/courses";
 import { getSectionRichTextPlainText } from "@/lib/domain/section-rich-text";
 import { listCoursesByHubSlug } from "@/lib/data/courses";
-import { requireHubBySlug } from "@/lib/data/hubs";
+import { requireHubCoreBySlug } from "@/lib/data/hubs";
 
 const filterDefinitions = [
   {
@@ -50,9 +56,7 @@ const filterDefinitions = [
   },
 ];
 
-export default async function CoursesPage({ params }) {
-  const { hubSlug } = await params;
-  const hub = await requireHubBySlug(hubSlug);
+async function CoursesWorkspace({ hub }) {
   const courses = await listCoursesByHubSlug(hub.slug);
   const enrolmentCounts = await Promise.all(
     courses.map(async (course) => [course.id, await countEnrolledCourseRegistrations(hub.id, course.id)])
@@ -113,6 +117,7 @@ export default async function CoursesPage({ params }) {
       description="Review published and draft courses, filter the list quickly, and open the one you need to edit or manage."
       actions={<Button href={`/${hub.slug}/admin/courses/create`} data-onboarding="courses-create-button">Create course</Button>}
       items={items}
+      showHeader={false}
       onboardingKey="courses-list"
       deleteAction={deleteCourseAction}
       deleteConfirmLabel="Delete course"
@@ -125,5 +130,24 @@ export default async function CoursesPage({ params }) {
         secondaryAction: { href: `/${hub.slug}/admin`, label: "Back to overview" },
       }}
     />
+  );
+}
+
+export default async function CoursesPage({ params }) {
+  const { hubSlug } = await params;
+  const hub = await requireHubCoreBySlug(hubSlug);
+
+  return (
+    <AdminRouteStack>
+      <PageHeader
+        eyebrow="Courses"
+        title="Manage courses"
+        description="Review published and draft courses, filter the list quickly, and open the one you need to edit or manage."
+        actions={<Button href={`/${hub.slug}/admin/courses/create`} data-onboarding="courses-create-button">Create course</Button>}
+      />
+      <Suspense fallback={<AdminProgrammeListFallback rows={2} filters={3} />}>
+        <CoursesWorkspace hub={hub} />
+      </Suspense>
+    </AdminRouteStack>
   );
 }

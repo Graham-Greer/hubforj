@@ -553,6 +553,7 @@ export default function MembershipPlanManager({
   membershipPlans,
   pendingUpgradeRequests = [],
   paymentSetupState = null,
+  showHeader = true,
   openPlanId,
   setOpenPlanId,
   planDeleteTarget,
@@ -570,16 +571,24 @@ export default function MembershipPlanManager({
 
   return (
     <>
-      <PageHeader
-        eyebrow="Membership plans"
-        title="Manage membership plans"
-        description="Manage your community's default plan and create membership upgrade options to suit your needs."
-        actions={
+      {showHeader ? (
+        <PageHeader
+          eyebrow="Membership plans"
+          title="Manage membership plans"
+          description="Manage your community's default plan and create membership upgrade options to suit your needs."
+          actions={
+            <Button type="button" onClick={openCreatePlan} data-onboarding="membership-plans-create-button">
+              Create membership plan
+            </Button>
+          }
+        />
+      ) : (
+        <div className={styles.planHeaderActions}>
           <Button type="button" onClick={openCreatePlan} data-onboarding="membership-plans-create-button">
             Create membership plan
           </Button>
-        }
-      />
+        </div>
+      )}
       <div className={styles.planSection} data-onboarding="membership-plans-section">
         <PendingUpgradeRequestsPanel
           hub={hub}

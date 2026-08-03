@@ -1,9 +1,15 @@
+import { Suspense } from "react";
 import Button from "@/components/ui/button/Button";
+import PageHeader from "@/components/patterns/page-header/PageHeader";
+import {
+  AdminProgrammeListFallback,
+  AdminRouteStack,
+} from "@/components/patterns/admin-route-fallbacks/AdminRouteFallbacks";
 import OfferingAdminListWorkspace from "@/components/patterns/offering-admin-list-workspace/OfferingAdminListWorkspace";
 import { deleteEventAction } from "./[eventId]/actions";
 import { listEventsByHubSlug } from "@/lib/data/events";
 import { listEventSeriesByHubSlug } from "@/lib/data/event-series";
-import { requireHubBySlug } from "@/lib/data/hubs";
+import { requireHubCoreBySlug } from "@/lib/data/hubs";
 import {
   formatEventDateRange,
   getEventStatusLabel,
@@ -45,9 +51,7 @@ const filterDefinitions = [
   },
 ];
 
-export default async function EventsPage({ params }) {
-  const { hubSlug } = await params;
-  const hub = await requireHubBySlug(hubSlug);
+async function EventsWorkspace({ hub }) {
   const [events, eventSeries] = await Promise.all([
     listEventsByHubSlug(hub.slug),
     listEventSeriesByHubSlug(hub.slug),
@@ -147,6 +151,7 @@ export default async function EventsPage({ params }) {
         description="Review upcoming and draft events, filter the list quickly, and open the one you need to edit, publish, or manage."
         actions={<Button href={`/${hub.slug}/admin/events/create`} data-onboarding="events-create-button">Create event</Button>}
         items={items}
+        showHeader={false}
         onboardingKey="events-list"
         deleteAction={deleteEventAction}
         deleteConfirmLabel="Delete event"
@@ -160,5 +165,24 @@ export default async function EventsPage({ params }) {
         }}
       />
     </div>
+  );
+}
+
+export default async function EventsPage({ params }) {
+  const { hubSlug } = await params;
+  const hub = await requireHubCoreBySlug(hubSlug);
+
+  return (
+    <AdminRouteStack>
+      <PageHeader
+        eyebrow="Events"
+        title="Manage events"
+        description="Review upcoming and draft events, filter the list quickly, and open the one you need to edit, publish, or manage."
+        actions={<Button href={`/${hub.slug}/admin/events/create`} data-onboarding="events-create-button">Create event</Button>}
+      />
+      <Suspense fallback={<AdminProgrammeListFallback rows={3} filters={3} />}>
+        <EventsWorkspace hub={hub} />
+      </Suspense>
+    </AdminRouteStack>
   );
 }

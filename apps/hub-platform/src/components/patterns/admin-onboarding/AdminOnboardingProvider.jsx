@@ -502,6 +502,7 @@ export default function AdminOnboardingProvider({
   );
   const routeJourneyKey = matchingJourneyKeys[0] || "";
   const reducedMotion = Boolean(state?.preferences?.reducedMotion) || prefersReducedMotion;
+  const setupChecklistRequested = normalizeString(searchParams.get("setupChecklist")) === "1";
 
   useEffect(() => {
     if (!currentJourneyKey || !currentStep) {
@@ -561,7 +562,7 @@ export default function AdminOnboardingProvider({
     actorUserId,
     adminBasePath,
     checklistItems,
-    checklistHydrating: loading && shouldHydrateChecklist,
+    checklistHydrating: loading && shouldHydrateChecklist && setupChecklistRequested,
     currentJourney,
     currentOrigin,
     currentStep,

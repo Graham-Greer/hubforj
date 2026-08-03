@@ -16,6 +16,7 @@ const sizeClassNames = {
 
 export default function Button({
   href,
+  prefetch,
   type = "button",
   variant = "primary",
   size = "md",
@@ -40,7 +41,7 @@ export default function Button({
     }
 
     return (
-      <Link href={href} className={classes} {...rest}>
+      <Link href={href} prefetch={prefetch} className={classes} {...rest}>
         {children}
       </Link>
     );

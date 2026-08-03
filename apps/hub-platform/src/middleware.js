@@ -54,6 +54,43 @@ function buildRedirectUrl(request, targetHost, pathname) {
   return redirectUrl;
 }
 
+function getRouteFamily(pathname) {
+  const segments = normalizePathname(pathname).split("/").filter(Boolean);
+  return segments[1] === "admin" ? "admin" : "";
+}
+
+function buildRequestHeaders(request, pathname) {
+  const requestHeaders = new Headers(request.headers);
+  const routeFamily = getRouteFamily(pathname);
+
+  requestHeaders.set("x-hubforj-pathname", normalizePathname(pathname));
+  requestHeaders.set("x-hubforj-search", request.nextUrl.search || "");
+
+  if (routeFamily) {
+    requestHeaders.set("x-hubforj-route-family", routeFamily);
+  } else {
+    requestHeaders.delete("x-hubforj-route-family");
+  }
+
+  return requestHeaders;
+}
+
+function nextWithRouteHeaders(request, pathname) {
+  return NextResponse.next({
+    request: {
+      headers: buildRequestHeaders(request, pathname),
+    },
+  });
+}
+
+function rewriteWithRouteHeaders(request, rewriteUrl) {
+  return NextResponse.rewrite(rewriteUrl, {
+    request: {
+      headers: buildRequestHeaders(request, rewriteUrl.pathname),
+    },
+  });
+}
+
 export async function middleware(request) {
   const pathname = normalizePathname(request.nextUrl.pathname);
 
@@ -65,13 +102,13 @@ export async function middleware(request) {
 
   if (hostContext.kind !== "platform_subdomain" && hostContext.kind !== "local_subdomain") {
     if (hostContext.kind !== "custom_domain_candidate") {
-      return NextResponse.next();
+      return nextWithRouteHeaders(request, pathname);
     }
 
     const resolved = await resolveCustomDomainMapping(request, hostContext.host);
 
     if (!resolved?.hubSlug) {
-      return NextResponse.next();
+      return nextWithRouteHeaders(request, pathname);
     }
 
     if (resolved.redirectTo && resolved.redirectTo !== hostContext.host) {
@@ -84,13 +121,13 @@ export async function middleware(request) {
 
     const rewriteUrl = request.nextUrl.clone();
     rewriteUrl.pathname = pathname === "/" ? `/${resolved.hubSlug}` : `/${resolved.hubSlug}${pathname}`;
-    return NextResponse.rewrite(rewriteUrl);
+    return rewriteWithRouteHeaders(request, rewriteUrl);
   }
 
   const hubSlug = hostContext.subdomainLabel;
 
   if (!hubSlug) {
-    return NextResponse.next();
+    return nextWithRouteHeaders(request, pathname);
   }
 
   if (pathname === `/${hubSlug}` || pathname.startsWith(`/${hubSlug}/`)) {
@@ -99,7 +136,7 @@ export async function middleware(request) {
 
   const rewriteUrl = request.nextUrl.clone();
   rewriteUrl.pathname = pathname === "/" ? `/${hubSlug}` : `/${hubSlug}${pathname}`;
-  return NextResponse.rewrite(rewriteUrl);
+  return rewriteWithRouteHeaders(request, rewriteUrl);
 }
 
 export const config = {

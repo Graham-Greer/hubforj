@@ -1,6 +1,14 @@
+import { headers } from "next/headers";
+import AdminSegmentLoading from "./(admin)/[hubSlug]/loading";
 import styles from "./loading.module.css";
 
-export default function RootLoading() {
+export default async function RootLoading() {
+  const headerStore = await headers();
+
+  if (headerStore.get("x-hubforj-route-family") === "admin") {
+    return <AdminSegmentLoading />;
+  }
+
   return (
     <main className={styles.root}>
       <section className={styles.panel} role="status" aria-live="polite">

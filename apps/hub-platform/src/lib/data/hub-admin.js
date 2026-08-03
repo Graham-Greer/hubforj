@@ -442,18 +442,38 @@ export async function getHubAdminOverviewBySlug(hubSlug, options = {}) {
   };
 }
 
-export async function getHubAdminDashboardSummaryBySlug(hubSlug) {
+export async function getHubAdminDashboardSummaryStripBySlug(hubSlug) {
   const hub = await getHubCoreBySlug(hubSlug);
   if (!hub) {
     return null;
   }
 
   const entitlements = resolveHubPackageEntitlements(hub);
-  const [memberSummary, pendingInviteCount, activeUpcomingPublishedEventCount] = await Promise.all([
+  const [
+    memberSummary,
+    pendingInviteCount,
+    activeUpcomingPublishedEventCount,
+    courses,
+    paymentReport,
+  ] = await Promise.all([
     summarizeMembersByHub(hub.id),
     countPendingInvitesByHub(hub.id),
     countActiveUpcomingPublishedEventsByHub(hub.id),
+    entitlements.capabilities?.coursesEnabled ? listCoursesByHub(hub) : Promise.resolve([]),
+    getHubPaymentReportByHub(hub, {
+      courseItems: entitlements.capabilities?.coursesEnabled ? undefined : [],
+    }),
   ]);
+  const activeUpcomingCourses = courses.filter((course) => isActiveUpcomingPublishedCourse(course));
+  const locale = resolveLaunchFormattingLocale(hub.locale, hub.country);
+  const defaultCurrency = hub.defaultCurrency || "USD";
+  const totalRevenue =
+    paymentReport.summary?.collectedRevenue || {
+      amount: 0,
+      currency: defaultCurrency,
+      formatted: formatMoney(0, defaultCurrency, locale),
+      isMixedCurrency: false,
+    };
 
   return {
     hub,
@@ -462,6 +482,8 @@ export async function getHubAdminDashboardSummaryBySlug(hubSlug) {
     activeMemberCount: memberSummary.activeMemberCount,
     pendingInviteCount,
     activeUpcomingPublishedEventCount,
+    activeUpcomingPublishedCourseCount: activeUpcomingCourses.length,
+    totalRevenue,
   };
 }
 
