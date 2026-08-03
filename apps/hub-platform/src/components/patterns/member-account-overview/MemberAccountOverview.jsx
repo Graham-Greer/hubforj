@@ -72,7 +72,7 @@ function BillingPreviewItem({ item }) {
   );
 }
 
-export default function MemberAccountOverview({ hub, overview }) {
+export default function MemberAccountOverview({ hub, overview, showHeader = true }) {
   const membership = overview?.membership || null;
   const upcomingBookings = overview?.upcomingBookings || [];
   const recentBilling = overview?.recentBilling || [];
@@ -80,16 +80,18 @@ export default function MemberAccountOverview({ hub, overview }) {
 
   return (
     <div className={styles.root}>
-      <PageHeader
-        eyebrow="Member account"
-        title="Overview"
-        description={`Manage your membership, bookings, billing, and account details for ${hub.name}.`}
-      />
+      {showHeader ? (
+        <PageHeader
+          eyebrow="Member account"
+          title="Overview"
+          description={`Manage your membership, bookings, billing, and account details for ${hub.name}.`}
+        />
+      ) : null}
 
       <div className={styles.stats}>
-        <StatCard label="Membership" value={overview?.summary?.membershipState || "None"} detail="Latest plan state." />
-        <StatCard label="Upcoming bookings" value={String(overview?.summary?.upcomingBookingsCount || 0)} detail="Events and courses still ahead." />
-        <StatCard label="Payment attention" value={String(overview?.summary?.paymentAttentionCount || 0)} detail="Items still unpaid or requiring follow-up." />
+        <StatCard tone="default" label="Membership" value={overview?.summary?.membershipState || "None"} detail="Latest plan state." />
+        <StatCard tone="default" label="Upcoming bookings" value={String(overview?.summary?.upcomingBookingsCount || 0)} detail="Events and courses still ahead." />
+        <StatCard tone="default" label="Payment attention" value={String(overview?.summary?.paymentAttentionCount || 0)} detail="Items still unpaid or requiring follow-up." />
       </div>
 
       <Surface className={styles.membershipSurface}>

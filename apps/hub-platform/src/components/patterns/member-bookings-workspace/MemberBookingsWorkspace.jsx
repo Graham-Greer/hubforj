@@ -223,7 +223,7 @@ function BookingRow({ hubSlug, item }) {
   );
 }
 
-export default function MemberBookingsWorkspace({ hub, items }) {
+export default function MemberBookingsWorkspace({ hub, items, showHeader = true }) {
   const [searchValue, setSearchValue] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
   const [activeView, setActiveView] = useState("current");
@@ -245,13 +245,22 @@ export default function MemberBookingsWorkspace({ hub, items }) {
 
   if (!items.length) {
     return (
-      <EmptyState
-        eyebrow="My Bookings"
-        title="No bookings yet"
-        description="Once you book an event or enrol on a course, it will appear here with status, payment, and attendance details."
-        primaryAction={browseActions.primaryAction}
-        secondaryAction={browseActions.secondaryAction}
-      />
+      <div className={styles.root}>
+        {showHeader ? (
+          <PageHeader
+            eyebrow="Member account"
+            title="My Bookings"
+            description="Review your event and course bookings, check current status, and cancel a booking when needed."
+          />
+        ) : null}
+        <EmptyState
+          eyebrow="My Bookings"
+          title="No bookings yet"
+          description="Once you book an event or enrol on a course, it will appear here with status, payment, and attendance details."
+          primaryAction={browseActions.primaryAction}
+          secondaryAction={browseActions.secondaryAction}
+        />
+      </div>
     );
   }
 
@@ -276,11 +285,13 @@ export default function MemberBookingsWorkspace({ hub, items }) {
 
   return (
     <div className={styles.root}>
-      <PageHeader
-        eyebrow="Member account"
-        title="My Bookings"
-        description="Review your event and course bookings, check current status, and cancel a booking when needed."
-      />
+      {showHeader ? (
+        <PageHeader
+          eyebrow="Member account"
+          title="My Bookings"
+          description="Review your event and course bookings, check current status, and cancel a booking when needed."
+        />
+      ) : null}
 
       <div className={styles.toolbar}>
         <SegmentedToggle
@@ -325,7 +336,7 @@ export default function MemberBookingsWorkspace({ hub, items }) {
             <p className={styles.emptyDescription}>{emptyState.description}</p>
             <div className={styles.emptyActions}>
               {emptyState.primaryAction ? (
-                <Button href={emptyState.primaryAction.href} variant="priary">
+                <Button href={emptyState.primaryAction.href} variant="primary">
                   {emptyState.primaryAction.label}
                 </Button>
               ) : null}

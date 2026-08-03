@@ -234,13 +234,13 @@
   --member-account-nav-item-pad-x: var(--public-nav-item-pad-x);
   --member-account-nav-item-bg: var(--surface-secondary);
   --member-account-nav-item-bg-hover: var(--surface-secondary);
-  --member-account-nav-item-bg-active: var(--accent-primary);
+  --member-account-nav-item-bg-active: var(--button-primary-bg);
   --member-account-nav-item-border: var(--border-subtle);
   --member-account-nav-item-border-hover: var(--accent-primary);
   --member-account-nav-item-border-active: transparent;
   --member-account-nav-item-text: var(--text-secondary);
   --member-account-nav-item-text-hover: var(--text-primary);
-  --member-account-nav-item-text-active: var(--member-account-nav-item-text);
+  --member-account-nav-item-text-active: var(--button-primary-text);
   --public-mobile-nav-overlay-bg: var(--overlay-bg);
   --public-mobile-nav-surface: var(--surface-primary);
   --public-mobile-nav-border: var(--public-shell-border);

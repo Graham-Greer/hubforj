@@ -5,9 +5,9 @@ function joinClassNames(...values) {
   return values.filter(Boolean).join(" ");
 }
 
-export default function StatCard({ label, value, detail, className = "" }) {
+export default function StatCard({ label, value, detail, className = "", tone = "muted" }) {
   return (
-    <Surface tone="muted" padding="md" className={joinClassNames(styles.root, className)}>
+    <Surface tone={tone} padding="md" className={joinClassNames(styles.root, className)}>
       <span className={styles.label}>{label}</span>
       <strong className={styles.value}>{value}</strong>
       {detail ? <span className={styles.detail}>{detail}</span> : null}

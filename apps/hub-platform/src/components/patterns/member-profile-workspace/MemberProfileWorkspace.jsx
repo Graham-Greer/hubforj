@@ -56,16 +56,18 @@ function DetailRow({ label, value }) {
   );
 }
 
-export default function MemberProfileWorkspace({ hub, member, avatarEditor = null, form = null }) {
+export default function MemberProfileWorkspace({ hub, member, avatarEditor = null, form = null, showHeader = true }) {
   const [isEditing, setIsEditing] = useState(false);
 
   return (
     <div className={styles.root}>
-      <PageHeader
-        eyebrow="Member account"
-        title="Profile"
-        description="Review your account details and update the basics we currently support."
-      />
+      {showHeader ? (
+        <PageHeader
+          eyebrow="Member account"
+          title="Profile"
+          description="Review your account details and update the basics we currently support."
+        />
+      ) : null}
 
       <div className={styles.mainGrid}>
         <Surface className={styles.identityCard}>

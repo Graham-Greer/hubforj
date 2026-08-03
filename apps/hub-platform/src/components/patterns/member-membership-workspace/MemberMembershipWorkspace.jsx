@@ -202,6 +202,7 @@ export default function MemberMembershipWorkspace({
   upgradeTransaction = null,
   successMessage = "",
   errorMessage = "",
+  showHeader = true,
 }) {
   const routeMode = hub?.routeMode || "path";
   const paymentProcessingMode = hub.packagePaymentProcessingMode || "none";
@@ -220,13 +221,22 @@ export default function MemberMembershipWorkspace({
 
   if (!membership) {
     return (
-      <EmptyState
-        eyebrow="Membership"
-        title="Membership not set up yet"
-        description="Your account is active, but no membership record has been assigned yet. Contact the hub if you expected a membership plan or renewal schedule to appear here."
-        primaryAction={{ href: `${buildHubRuntimeHref(hub.slug, "/", routeMode)}#footer-contact`, label: "Contact the hub" }}
-        secondaryAction={{ href: buildHubRuntimeHref(hub.slug, "/account", routeMode), label: "Back to account" }}
-      />
+      <div className={styles.root}>
+        {showHeader ? (
+          <PageHeader
+            eyebrow="Member account"
+            title="Membership"
+            description="Check your current plan, confirm renewal timing, and see whether this hub offers any public upgrade plans."
+          />
+        ) : null}
+        <EmptyState
+          eyebrow="Membership"
+          title="Membership not set up yet"
+          description="Your account is active, but no membership record has been assigned yet. Contact the hub if you expected a membership plan or renewal schedule to appear here."
+          primaryAction={{ href: `${buildHubRuntimeHref(hub.slug, "/", routeMode)}#footer-contact`, label: "Contact the hub" }}
+          secondaryAction={{ href: buildHubRuntimeHref(hub.slug, "/account", routeMode), label: "Back to account" }}
+        />
+      </div>
     );
   }
 
@@ -234,11 +244,13 @@ export default function MemberMembershipWorkspace({
     <div className={styles.root}>
       {errorMessage ? <FormMessage tone="danger">{decodeURIComponent(errorMessage)}</FormMessage> : null}
       {successMessage ? <FormMessage tone="success">{successMessage}</FormMessage> : null}
-      <PageHeader
-        eyebrow="Member account"
-        title="Membership"
-        description="Check your current plan, confirm renewal timing, and see whether this hub offers any public upgrade plans."
-      />
+      {showHeader ? (
+        <PageHeader
+          eyebrow="Member account"
+          title="Membership"
+          description="Check your current plan, confirm renewal timing, and see whether this hub offers any public upgrade plans."
+        />
+      ) : null}
 
       {upgradeRequest ? (
         <PendingUpgradeRequestCard

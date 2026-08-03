@@ -35,7 +35,7 @@ function filterItems(items, searchValue, activeFilter) {
   });
 }
 
-export default function MemberPaymentsWorkspace({ hub, items }) {
+export default function MemberPaymentsWorkspace({ hub, items, showHeader = true }) {
   const routeMode = hub?.routeMode || "path";
   const [searchValue, setSearchValue] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
@@ -60,28 +60,39 @@ export default function MemberPaymentsWorkspace({ hub, items }) {
 
   if (!items.length) {
     return (
-      <EmptyState
-        eyebrow="Payments"
-        title="No payment activity yet"
-        description="As soon as membership renewals or paid bookings exist for this account, they will appear here."
-        primaryAction={{ href: buildHubRuntimeHref(hub.slug, "/events", routeMode), label: "Browse events" }}
-        secondaryAction={{ href: buildHubRuntimeHref(hub.slug, "/account", routeMode), label: "Back to account" }}
-      />
+      <div className={styles.root}>
+        {showHeader ? (
+          <PageHeader
+            eyebrow="Member account"
+            title="Billing"
+            description="Review membership, event, and course payment activity in one place."
+          />
+        ) : null}
+        <EmptyState
+          eyebrow="Payments"
+          title="No payment activity yet"
+          description="As soon as membership renewals or paid bookings exist for this account, they will appear here."
+          primaryAction={{ href: buildHubRuntimeHref(hub.slug, "/events", routeMode), label: "Browse events" }}
+          secondaryAction={{ href: buildHubRuntimeHref(hub.slug, "/account", routeMode), label: "Back to account" }}
+        />
+      </div>
     );
   }
 
   return (
     <div className={styles.root}>
-      <PageHeader
-        eyebrow="Member account"
-        title="Billing"
-        description="Review membership, event, and course payment activity in one place."
-      />
+      {showHeader ? (
+        <PageHeader
+          eyebrow="Member account"
+          title="Billing"
+          description="Review membership, event, and course payment activity in one place."
+        />
+      ) : null}
 
       <div className={styles.stats}>
-        <StatCard label="Payment items" value={String(summary.total)} detail="Visible billing records on your account." />
-        <StatCard label="Action required" value={String(summary.actionRequired)} detail="Items still unpaid or needing follow-up." />
-        <StatCard label="Settled" value={String(summary.settled)} detail="Items already paid or not requiring payment." />
+        <StatCard tone="default" label="Payment items" value={String(summary.total)} detail="Visible billing records on your account." />
+        <StatCard tone="default" label="Action required" value={String(summary.actionRequired)} detail="Items still unpaid or needing follow-up." />
+        <StatCard tone="default" label="Settled" value={String(summary.settled)} detail="Items already paid or not requiring payment." />
       </div>
 
       <div className={styles.toolbar}>
