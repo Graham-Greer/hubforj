@@ -138,13 +138,19 @@ export async function provisionOwnerAdminFromProductSite(payload) {
   }
 
   const signInPath = normalizeString(data?.signInPath);
+  const handoffPath = normalizeString(data?.handoffPath);
 
-  if (!signInPath.startsWith("/")) {
-    throw new Error("Hub admin activation did not return a valid sign-in path.");
+  if (!handoffPath.startsWith("/") && !signInPath.startsWith("/")) {
+    throw new Error("Hub admin activation did not return a valid redirect path.");
   }
 
   return {
     ...data,
-    signInHref: buildHostedHubHref(baseUrl, data?.hubSlug, signInPath) || `${baseUrl}${signInPath}`,
+    adminHandoffHref: handoffPath
+      ? buildHostedHubHref(baseUrl, data?.hubSlug, handoffPath) || `${baseUrl}${handoffPath}`
+      : "",
+    signInHref: signInPath
+      ? buildHostedHubHref(baseUrl, data?.hubSlug, signInPath) || `${baseUrl}${signInPath}`
+      : "",
   };
 }

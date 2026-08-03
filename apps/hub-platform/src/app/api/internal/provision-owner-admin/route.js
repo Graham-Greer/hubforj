@@ -1,11 +1,12 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { buildHubAuthHref } from "@/lib/auth/hub-auth-redirects";
+import { createOwnerAdminHandoff } from "@/lib/auth/owner-admin-handoff";
 import {
   getInternalAutomationAuthorizationState,
   normalizeProvisionOwnerAdminAutomationRequestBody,
 } from "@/lib/domain/internal-automation";
-import { getHubById } from "@/lib/data/hubs";
+import { getHubCoreById } from "@/lib/data/hubs";
 import { normalizeUserRecord } from "@/lib/data/user-shared";
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
 
@@ -63,7 +64,7 @@ export async function POST(request) {
 
   try {
     const payload = normalizeProvisionOwnerAdminAutomationRequestBody(body);
-    const hub = await getHubById(payload.hubId);
+    const hub = await getHubCoreById(payload.hubId);
 
     if (!hub) {
       throw new Error("Hub not found.");
@@ -84,10 +85,18 @@ export async function POST(request) {
         throw new Error("The existing admin account is not active.");
       }
 
+      const handoff = await createOwnerAdminHandoff({
+        hub,
+        user: existingUser,
+        ownerEmail: payload.ownerEmail,
+      });
+
       return NextResponse.json({
         status: "existing",
         hubId: hub.id,
         hubSlug: hub.slug,
+        handoffPath: handoff.handoffPath,
+        handoffExpiresAtEpochSeconds: handoff.expiresAtEpochSeconds,
         signInPath: buildAdminSignInHref(hub.slug, payload.ownerEmail),
       });
     }
@@ -108,6 +117,12 @@ export async function POST(request) {
     };
 
     await userRef.create(userRecord);
+    const createdUser = normalizeUserRecord({ id: userRef.id, ...userRecord });
+    const handoff = await createOwnerAdminHandoff({
+      hub,
+      user: createdUser,
+      ownerEmail: payload.ownerEmail,
+    });
 
     console.info("Owner admin provisioned", {
       hubId: hub.id,
@@ -122,6 +137,8 @@ export async function POST(request) {
       hubId: hub.id,
       hubSlug: hub.slug,
       userId: userRef.id,
+      handoffPath: handoff.handoffPath,
+      handoffExpiresAtEpochSeconds: handoff.expiresAtEpochSeconds,
       signInPath: buildAdminSignInHref(hub.slug, payload.ownerEmail),
     });
   } catch (error) {
