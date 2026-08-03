@@ -1,8 +1,10 @@
+import { headers } from "next/headers";
 import MemberAccountShell from "@/components/patterns/member-account-shell/MemberAccountShell";
 import SectionContainer from "@/components/sections/section-container/SectionContainer";
 import SectionShell from "@/components/sections/section-shell/SectionShell";
 import { requireCurrentMemberSessionForHub } from "@/lib/auth/member-session";
 import { requireHubBySlug } from "@/lib/data/hubs";
+import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
 import { notFound } from "next/navigation";
 
 export default async function AccountLayout({ children, params }) {
@@ -16,11 +18,14 @@ export default async function AccountLayout({ children, params }) {
   }
 
   await requireCurrentMemberSessionForHub(hub);
+  const requestHeaders = await headers();
+  const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(requestHeaders));
+  const runtimeHub = { ...hub, routeMode };
 
   return (
     <SectionShell surface="transparent" spacing="default">
       <SectionContainer width="default">
-        <MemberAccountShell hub={hub}>{children}</MemberAccountShell>
+        <MemberAccountShell hub={runtimeHub}>{children}</MemberAccountShell>
       </SectionContainer>
     </SectionShell>
   );
