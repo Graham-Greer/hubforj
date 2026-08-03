@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { requireCommercialAccountContext } from "@/lib/server/commercial-account-context";
 import { provisionOwnerAdminFromProductSite } from "@/lib/server/provision-owner-admin";
 
+export const dynamic = "force-dynamic";
+
 function buildAccountRedirect(request, state) {
   return NextResponse.redirect(new URL(`/account?adminActivation=${encodeURIComponent(state)}`, request.url));
 }
@@ -31,7 +33,7 @@ export async function GET(request) {
       ownerFullName: account.ownerFullName,
     });
 
-    return NextResponse.redirect(handoff.signInHref);
+    return NextResponse.redirect(handoff.adminHandoffHref || handoff.signInHref);
   } catch {
     return buildAccountRedirect(request, "error");
   }
