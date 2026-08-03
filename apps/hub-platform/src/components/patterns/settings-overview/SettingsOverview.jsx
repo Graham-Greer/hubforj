@@ -35,7 +35,13 @@ function deriveLegalSettingsPanelStatus(legalSettings) {
   };
 }
 
-export default function SettingsOverview({ hub, siteSettings, legalSettings = null, paymentConfiguration = null }) {
+export default function SettingsOverview({
+  hub,
+  siteSettings,
+  legalSettings = null,
+  paymentConfiguration = null,
+  showHeader = true,
+}) {
   const socialCount = Object.values(siteSettings.socialLinks || {}).filter(Boolean).length;
   const brandingStatus = deriveBrandingSettingsPanelStatus(hub, siteSettings);
   const siteStatus = deriveSiteSettingsPanelStatus(hub, siteSettings);
@@ -51,11 +57,13 @@ export default function SettingsOverview({ hub, siteSettings, legalSettings = nu
 
   return (
     <div className={styles.root}>
-      <PageHeader
-        eyebrow="Site settings"
-        title="Manage site settings"
-        description="Manage site-wide identity, public defaults, and structured contact details without mixing them into page-level copy."
-      />
+      {showHeader ? (
+        <PageHeader
+          eyebrow="Site settings"
+          title="Manage site settings"
+          description="Manage site-wide identity, public defaults, and structured contact details without mixing them into page-level copy."
+        />
+      ) : null}
 
       <div className={styles.stats}>
         <StatCard label="Public theme" value={hub.theme} detail="Current public and member-facing theme mode." />

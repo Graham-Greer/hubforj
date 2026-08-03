@@ -185,6 +185,7 @@ export default function OfferingAdminListWorkspace({
   deleteConfirmLabel = "Delete item",
   onboardingKey = "",
   enableDateRangeFilter = false,
+  showHeader = true,
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -230,7 +231,7 @@ export default function OfferingAdminListWorkspace({
 
   return (
     <div className={styles.root} data-onboarding={onboardingKey || undefined}>
-      <PageHeader eyebrow={eyebrow} title={title} description={description} actions={actions} />
+      {showHeader ? <PageHeader eyebrow={eyebrow} title={title} description={description} actions={actions} /> : null}
 
       <div className={styles.toolbar}>
         <div className={styles.toolbarControls}>

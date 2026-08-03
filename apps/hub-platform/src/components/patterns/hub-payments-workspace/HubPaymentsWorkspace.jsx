@@ -175,6 +175,7 @@ export default function HubPaymentsWorkspace({
           paymentLedgerSyncStatus={paymentLedgerSyncStatus}
           paymentReconciliationReport={paymentReconciliationReport}
           showSupportDiagnostics={showSupportDiagnostics}
+          showHeader={false}
           beginHubPaymentSetupAction={beginHubPaymentSetupAction}
           refreshHubPaymentSetupAction={refreshHubPaymentSetupAction}
           syncHubPaymentLedgerAction={syncHubPaymentLedgerAction}
@@ -186,6 +187,7 @@ export default function HubPaymentsWorkspace({
           membershipPlans={membershipPlans}
           pendingUpgradeRequests={pendingUpgradeRequests}
           paymentSetupState={paymentSetupState}
+          showHeader={false}
           openPlanId={workspace.openPlanId}
           setOpenPlanId={workspace.setOpenPlanId}
           planDeleteTarget={workspace.planDeleteTarget}

@@ -59,7 +59,7 @@ function DeleteTestimonialModal({ hub, testimonial, deleteTestimonialAction, onC
   );
 }
 
-export default function TestimonialAdminList({ hub, testimonials, deleteTestimonialAction }) {
+export default function TestimonialAdminList({ hub, testimonials, deleteTestimonialAction, showHeader = true }) {
   const summary = summarizeTestimonials(testimonials);
   const router = useRouter();
   const [pendingDelete, setPendingDelete] = useState(null);
@@ -67,16 +67,18 @@ export default function TestimonialAdminList({ hub, testimonials, deleteTestimon
   return (
     <>
       <div className={styles.root} data-onboarding="testimonials-list">
-        <PageHeader
-          eyebrow={!testimonials.length ? "No testimonials yet" : "Testimonials"}
-          title={!testimonials.length ? "Create the first testimonial" : "Manage your testimonials"}
-          description={
-            !testimonials.length
-              ? "Add the first testimonial when you are ready to publish social proof on the website."
-              : "Review testimonial quality, control publication, and keep social proof ready for the website."
-          }
-          actions={<Button href={`/${hub.slug}/admin/testimonials/create`}>Create testimonial</Button>}
-        />
+        {showHeader ? (
+          <PageHeader
+            eyebrow={!testimonials.length ? "No testimonials yet" : "Testimonials"}
+            title={!testimonials.length ? "Create the first testimonial" : "Manage your testimonials"}
+            description={
+              !testimonials.length
+                ? "Add the first testimonial when you are ready to publish social proof on the website."
+                : "Review testimonial quality, control publication, and keep social proof ready for the website."
+            }
+            actions={<Button href={`/${hub.slug}/admin/testimonials/create`}>Create testimonial</Button>}
+          />
+        ) : null}
 
         <div className={styles.stats}>
           <StatCard label="Total" value={String(summary.total)} detail="Structured testimonial records." />

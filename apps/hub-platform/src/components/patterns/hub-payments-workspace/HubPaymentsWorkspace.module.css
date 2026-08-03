@@ -241,6 +241,11 @@
   gap: var(--space-5);
 }
 
+.planHeaderActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .planList {
   display: grid;
   gap: var(--space-3);
@@ -427,6 +432,10 @@
   }
 
   .toolbarMenus {
+    justify-content: flex-start;
+  }
+
+  .planHeaderActions {
     justify-content: flex-start;
   }
 

@@ -18,7 +18,7 @@ export default async function HubAdminLayout({ children, params }) {
   const headerStore = await headers();
   const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
   const operatorTheme = normalizeOperatorTheme(cookieStore.get(operatorThemeCookieName)?.value);
-  const operatorSession = await getCurrentSuperadminSession();
+  const operatorSessionPromise = getCurrentSuperadminSession();
   let hub;
 
   try {
@@ -27,6 +27,7 @@ export default async function HubAdminLayout({ children, params }) {
     notFound();
   }
 
+  const operatorSession = await operatorSessionPromise;
   const supportMode = operatorSession ? await getSupportModeForHub(hub) : null;
   const adminSession = operatorSession ? null : await getCurrentAdminSessionForHub(hub);
 

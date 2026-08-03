@@ -1,7 +1,12 @@
+import { Suspense } from "react";
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
 import StatCard from "@/components/ui/stat-card/StatCard";
 import PageHeader from "@/components/patterns/page-header/PageHeader";
+import {
+  AdminAccountSettingsFallback,
+  AdminRouteStack,
+} from "@/components/patterns/admin-route-fallbacks/AdminRouteFallbacks";
 import Surface from "@/components/primitives/surface/Surface";
 import { getHubAdminOverviewBySlug } from "@/lib/data/hub-admin";
 import { resolvePackageManagementHandoff } from "@/lib/domain/package-management-handoff";
@@ -87,8 +92,7 @@ function buildDomainStatusDescription({ canManageCustomDomain, domainStatus, dom
   return "This hub has Growth entitlement and is ready for a custom domain.";
 }
 
-export default async function AccountSettingsPage({ params }) {
-  const { hubSlug } = await params;
+async function AccountSettingsContent({ hubSlug }) {
   const overview = await getHubAdminOverviewBySlug(hubSlug);
   const hub = overview?.hub || null;
   const packageInfo = overview?.package || null;
@@ -160,13 +164,7 @@ export default async function AccountSettingsPage({ params }) {
     .join(" ");
 
   return (
-    <div className={styles.root}>
-      <PageHeader
-        eyebrow="Account settings"
-        title="Plan and domain"
-        description="Check your plan, monitor usage, and manage your hub domain from one place."
-      />
-
+    <>
       {packageInfo ? (
         <Surface padding="md" className={styles.packagePanel} data-onboarding="account-package-panel">
           <div className={styles.packageIdentity}>
@@ -388,6 +386,25 @@ export default async function AccountSettingsPage({ params }) {
           </div>
         </Surface>
       </div>
+    </>
+  );
+}
+
+export default async function AccountSettingsPage({ params }) {
+  const { hubSlug } = await params;
+
+  return (
+    <div className={styles.root}>
+      <AdminRouteStack>
+        <PageHeader
+          eyebrow="Account settings"
+          title="Plan and domain"
+          description="Check your plan, monitor usage, and manage your hub domain from one place."
+        />
+        <Suspense fallback={<AdminAccountSettingsFallback />}>
+          <AccountSettingsContent hubSlug={hubSlug} />
+        </Suspense>
+      </AdminRouteStack>
     </div>
   );
 }

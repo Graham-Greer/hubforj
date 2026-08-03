@@ -36,23 +36,6 @@
   grid-template-columns: 1fr;
 }
 
-.panelLoading {
-  display: grid;
-  gap: var(--space-3);
-}
-
-.loadingLine,
-.loadingLineShort {
-  display: block;
-  min-height: 0.875rem;
-  border-radius: var(--radius-full);
-  background: color-mix(in srgb, var(--color-text-muted) 18%, transparent);
-}
-
-.loadingLineShort {
-  width: 62%;
-}
-
 @media (max-width: 72rem) {
   .summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));

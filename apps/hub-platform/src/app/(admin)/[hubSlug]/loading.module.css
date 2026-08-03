@@ -1,0 +1,142 @@
+.root {
+  display: grid;
+  min-block-size: 100vh;
+  grid-template-columns: auto minmax(0, 1fr);
+  background: var(--admin-canvas-bg);
+}
+
+.sidebar {
+  display: grid;
+  align-content: start;
+  gap: var(--space-8);
+  inline-size: var(--shell-sidebar-width);
+  min-block-size: 100%;
+  padding: var(--space-6);
+  border-inline-end: var(--space-px) solid var(--admin-sidebar-border);
+  background: var(--admin-sidebar-bg);
+}
+
+.brand,
+.sidebarItem,
+.mobileIdentity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.brandMark,
+.mobileBrandMark {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--radius-md);
+  background: var(--admin-accent-surface);
+  color: var(--admin-accent-text-on-surface);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.08em;
+}
+
+.brandMark {
+  inline-size: 3rem;
+  block-size: 3rem;
+}
+
+.mobileBrandMark {
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+}
+
+.brandCopy,
+.sidebarNav,
+.sidebarSection,
+.frame,
+.content,
+.headerCopy,
+.packageRow {
+  display: grid;
+}
+
+.brandCopy {
+  gap: var(--space-2);
+}
+
+.sidebarNav {
+  gap: var(--admin-sidebar-nav-gap);
+}
+
+.sidebarSection {
+  gap: var(--space-3);
+}
+
+.frame {
+  align-content: start;
+}
+
+.topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-5);
+  margin: var(--space-6) var(--content-gutter) 0;
+  padding-block-end: var(--space-5);
+  border-block-end: var(--space-px) solid var(--admin-canvas-border);
+}
+
+.mobileIdentity {
+  display: none;
+  min-inline-size: 0;
+}
+
+.content {
+  gap: var(--space-5);
+  inline-size: min(100%, var(--shell-content-max-width));
+  margin-inline: auto;
+  padding: var(--space-6) var(--content-gutter);
+}
+
+.headerCopy {
+  gap: var(--space-3);
+  max-inline-size: 48rem;
+}
+
+.packageRow {
+  grid-auto-flow: column;
+  justify-content: start;
+  gap: var(--space-3);
+}
+
+.panels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+@media (max-width: 64rem) {
+  .root {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .topbar {
+    align-items: center;
+    margin: 0;
+    padding: var(--space-3) var(--content-gutter);
+  }
+
+  .mobileIdentity {
+    display: flex;
+  }
+
+  .content {
+    padding-block: var(--space-4);
+  }
+}
+
+@media (max-width: 56rem) {
+  .panels {
+    grid-template-columns: 1fr;
+  }
+}
