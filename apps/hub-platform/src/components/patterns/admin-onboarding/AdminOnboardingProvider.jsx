@@ -96,6 +96,7 @@ export default function AdminOnboardingProvider({
   const [suppressedJourneyKeys, setSuppressedJourneyKeys] = useState([]);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const currentJourneyKeyRef = useRef("");
+  const checklistRevealIntentRef = useRef("");
   const loadedHubSlugRef = useRef("");
   const lastLoadedRouteKeyRef = useRef("");
   const loadStateRef = useRef(async () => {});
@@ -366,8 +367,20 @@ export default function AdminOnboardingProvider({
   };
 
   const revealChecklist = async () => {
-    if (!state) {
-      router.push(adminBasePath);
+    const checklistIntentHref = `${adminBasePath}?setupChecklist=1`;
+
+    if (!state || !shouldHydrateChecklist || !state.checklistHydrated) {
+      trackAdminOnboardingEvent("checklist_view_requested", {
+        actorRole,
+        hubId: hub.id,
+        source: "help_menu",
+      });
+      router.push(checklistIntentHref, { scroll: false });
+      return;
+    }
+
+    if (state.checklist?.dismissed === false) {
+      router.push(adminBasePath, { scroll: false });
       return;
     }
 
@@ -385,11 +398,67 @@ export default function AdminOnboardingProvider({
       source: "help_menu",
     });
     await persistState(nextState);
-    router.push(adminBasePath);
+    router.push(adminBasePath, { scroll: false });
   };
 
   useEffect(() => {
+    const shouldRevealChecklist = normalizeString(searchParams.get("setupChecklist")) === "1";
+    const intentKey = `${hub.slug}:${routeKey}`;
+
+    if (
+      !shouldRevealChecklist ||
+      !shouldHydrateChecklist ||
+      loading ||
+      !state?.checklistHydrated ||
+      checklistRevealIntentRef.current === intentKey
+    ) {
+      return;
+    }
+
+    checklistRevealIntentRef.current = intentKey;
+
+    if (state.checklist?.dismissed === false) {
+      router.replace(adminBasePath, { scroll: false });
+      return;
+    }
+
+    const nextState = {
+      ...cloneState(state),
+      checklist: {
+        ...state.checklist,
+        dismissed: false,
+        lastViewedAt: new Date().toISOString(),
+      },
+    };
+
+    trackAdminOnboardingEvent("checklist_viewed", {
+      actorRole,
+      hubId: hub.id,
+      source: "help_menu",
+    });
+    persistState(nextState).finally(() => {
+      router.replace(adminBasePath, { scroll: false });
+    });
+  }, [
+    actorRole,
+    adminBasePath,
+    hub.id,
+    hub.slug,
+    loading,
+    persistState,
+    routeKey,
+    router,
+    searchParams,
+    shouldHydrateChecklist,
+    state,
+  ]);
+
+  useEffect(() => {
     if (loading || !state || currentJourneyKey) {
+      return;
+    }
+
+    if (normalizeString(searchParams.get("setupChecklist")) === "1") {
       return;
     }
 
@@ -492,6 +561,7 @@ export default function AdminOnboardingProvider({
     actorUserId,
     adminBasePath,
     checklistItems,
+    checklistHydrating: loading && shouldHydrateChecklist,
     currentJourney,
     currentOrigin,
     currentStep,

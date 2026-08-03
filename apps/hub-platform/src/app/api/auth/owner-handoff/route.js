@@ -32,6 +32,16 @@ export async function GET(request) {
     const redirectPath = buildHubRuntimeHref(session.hubSlug, session.destinationPath || "/admin", routeMode);
     const response = buildRedirectResponse(request, redirectPath);
 
+    console.info("Owner admin handoff consumed", {
+      handoffId,
+      hubId: session.hubId,
+      hubSlug: session.hubSlug,
+      destinationPath: session.destinationPath || "/admin",
+      redirectPath,
+      routeMode,
+      host: requestHost,
+    });
+
     response.cookies.set(sessionCookieName, session.sessionValue, buildSessionCookieOptions());
     return response;
   } catch (error) {
