@@ -251,7 +251,7 @@ Acceptance criteria:
 
 ### 2026-08-04 - Public Home Shell Cache Foundation
 
-Status: implemented at source level, pending runtime verification.
+Status: implemented and runtime verified.
 
 Completed:
 
@@ -267,15 +267,14 @@ Completed:
 - Added implementation note:
   [hub-platform-public-home-cache-slice-2026-08-04.md](hub-platform-public-home-cache-slice-2026-08-04.md)
 
-Pending:
+Runtime verification:
 
-- Runtime route verification on local or preview.
-- Before/after network comparison where measurable.
-- Expansion to deferred home sections, events listings, and courses listings.
+- User confirmed public home route behaves as expected after deployment.
+- Production hard-refresh screenshot showed a clean public home document load around 311 ms with no unrelated route fetch storm.
 
 ### 2026-08-04 - Public Home Deferred Content Cache
 
-Status: implemented at source level, pending runtime verification.
+Status: implemented and runtime verified.
 
 Completed:
 
@@ -290,15 +289,13 @@ Completed:
 - Added implementation note:
   [hub-platform-public-home-deferred-cache-slice-2026-08-04.md](hub-platform-public-home-deferred-cache-slice-2026-08-04.md)
 
-Pending:
+Runtime verification:
 
-- Runtime route verification on local or preview.
-- Before/after network comparison where measurable.
-- Expansion to events and courses query optimization.
+- User confirmed public home deferred content behaved as expected after deployment.
 
 ### 2026-08-04 - Public Events And Courses Anonymous Cache
 
-Status: implemented at source level, pending runtime verification.
+Status: implemented and runtime verified for anonymous `/events` and `/courses`.
 
 Completed:
 
@@ -316,6 +313,29 @@ Completed:
 
 Pending:
 
-- Runtime verify anonymous `/events` and `/courses` after deployment.
 - Runtime verify signed-in member-only visibility still works.
-- Compare warm anonymous hard-refresh waterfalls for `/events` and `/courses`.
+
+Runtime verification:
+
+- Production `/events` hard-refresh screenshot showed a clean document load around 335 ms.
+- Production `/courses` hard-refresh screenshot showed a clean document load around 393 ms.
+- User confirmed the skeleton UI is present and barely visible even with heavy throttling for both routes.
+
+### 2026-08-04 - Public Testimonials Shell/Deferred Split
+
+Status: implemented at source level, pending runtime verification.
+
+Completed:
+
+- Added shell/deferred public testimonials helpers.
+- Updated `/testimonials` to render hero and CTA from shell data.
+- Deferred the testimonial listing behind `Suspense`.
+- Added a route-specific public testimonial skeleton for cards, spotlight, and showcase variants.
+- Preserved existing cached testimonial helper, visibility rules, sorting, media hydration, and invalidation.
+- Added implementation note:
+  [hub-platform-public-testimonials-shell-deferred-slice-2026-08-04.md](hub-platform-public-testimonials-shell-deferred-slice-2026-08-04.md)
+
+Pending:
+
+- Runtime verify anonymous `/testimonials` after deployment.
+- Verify testimonial create/edit/delete invalidation updates the route.

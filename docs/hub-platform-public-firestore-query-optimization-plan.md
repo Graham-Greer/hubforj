@@ -205,7 +205,7 @@ Acceptance criteria:
 
 ### 2026-08-04 - Public Events/Courses Bounded Query Foundation
 
-Status: implemented at source level behind feature flag, pending index deployment and runtime verification.
+Status: implemented behind feature flag and runtime verified for public `/events` and `/courses`.
 
 Completed:
 
@@ -219,16 +219,20 @@ Completed:
 - Added implementation note:
   [hub-platform-public-offering-bounded-query-slice-2026-08-04.md](hub-platform-public-offering-bounded-query-slice-2026-08-04.md)
 
+Runtime verification:
+
+- User deployed/created the required Firebase indexes.
+- User enabled the required Vercel environment variable.
+- Production `/events` hard-refresh screenshot showed a clean document load around 335 ms.
+- Production `/courses` hard-refresh screenshot showed a clean document load around 393 ms.
+
 Pending:
 
-- Deploy Firestore indexes.
-- Enable feature flag in preview/non-production.
-- Runtime verify public events and courses routes.
-- Plan server-side pagination/search/filtering as a later slice.
+- Plan server-side pagination/search/filtering as a later slice for very large hubs.
 
 ### 2026-08-04 - Public Events/Courses Anonymous Cache And Fallback Follow-Up
 
-Status: implemented at source level, pending runtime verification.
+Status: implemented and runtime verified for anonymous `/events` and `/courses`.
 
 Completed:
 
@@ -241,8 +245,10 @@ Completed:
 - Added implementation note:
   [hub-platform-public-offering-cache-and-fallback-slice-2026-08-04.md](hub-platform-public-offering-cache-and-fallback-slice-2026-08-04.md)
 
+Runtime verification:
+
+- User confirmed skeleton UI is in place and barely visible even with heavy throttling for both events and courses.
+
 Pending:
 
-- Re-test `/events` anonymous hard refresh after production deployment.
-- Re-test `/courses` anonymous hard refresh after production deployment.
 - Confirm signed-in member-only offerings still bypass anonymous cache.

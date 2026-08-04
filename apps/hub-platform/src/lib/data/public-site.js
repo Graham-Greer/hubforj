@@ -449,3 +449,15 @@ export async function getPublicTestimonialsData(hubSlug) {
     testimonials,
   };
 }
+
+export async function getPublicTestimonialsShellData(hubSlug) {
+  return getPublicSiteContext(hubSlug, { homeMedia: false, pageHeroKeys: ["testimonials"] });
+}
+
+export async function getPublicTestimonialsDeferredData(hub) {
+  const testimonials = await listPublicTestimonialsByHub(hub);
+
+  return {
+    testimonials,
+  };
+}

@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import CTASection from "@/components/sections/cta-section/CTASection";
 import HeroSection from "@/components/sections/hero-section/HeroSection";
 import TestimonialsSection from "@/components/sections/testimonials-section/TestimonialsSection";
-import { getPublicTestimonialsData } from "@/lib/data/public-site";
+import { PublicTestimonialsSectionFallback } from "@/components/patterns/public-testimonial-fallbacks";
+import { getPublicTestimonialsDeferredData, getPublicTestimonialsShellData } from "@/lib/data/public-site";
 import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { getDefaultTestimonialsPageHero } from "@/lib/domain/public-testimonials";
 import {
@@ -10,9 +12,33 @@ import {
   getTemplateTestimonialsPageConfig,
 } from "@/lib/templates/template-registry";
 
+async function TestimonialsDeferredContent({
+  deferredDataPromise,
+  eyebrow,
+  title,
+  description,
+  variant,
+  contentWidth,
+}) {
+  const { testimonials = [] } = await deferredDataPromise;
+
+  return (
+    <TestimonialsSection
+      eyebrow={eyebrow}
+      title={title}
+      description={description}
+      testimonials={testimonials}
+      variant={variant}
+      maxItems={null}
+      containerWidth={contentWidth}
+    />
+  );
+}
+
 export default async function TestimonialsPage({ params }) {
   const { hubSlug } = await params;
-  const { hub, siteSettings, testimonials } = await getPublicTestimonialsData(hubSlug);
+  const { hub, siteSettings } = await getPublicTestimonialsShellData(hubSlug);
+  const deferredDataPromise = getPublicTestimonialsDeferredData(hub);
   const pageTemplate = getTemplateTestimonialsPageConfig(hub.template);
   const landingPageTemplate = getTemplateLandingPageConfig(hub.template);
   const contentWidth = getTemplateContentWidth(hub.template);
@@ -71,15 +97,23 @@ export default async function TestimonialsPage({ params }) {
         height={pageTemplate.hero.height}
         containerWidth={pageTemplate.hero.containerWidth}
       />
-      <TestimonialsSection
-        eyebrow={testimonialsEyebrow}
-        title={testimonialsTitle}
-        description={testimonialsDescription}
-        testimonials={testimonials}
-        variant={pageTemplate.listing.variant}
-        maxItems={null}
-        containerWidth={contentWidth}
-      />
+      <Suspense
+        fallback={
+          <PublicTestimonialsSectionFallback
+            variant={pageTemplate.listing.variant}
+            containerWidth={contentWidth}
+          />
+        }
+      >
+        <TestimonialsDeferredContent
+          deferredDataPromise={deferredDataPromise}
+          eyebrow={testimonialsEyebrow}
+          title={testimonialsTitle}
+          description={testimonialsDescription}
+          variant={pageTemplate.listing.variant}
+          contentWidth={contentWidth}
+        />
+      </Suspense>
       <CTASection
         eyebrow={hasCtaConfig ? ctaSettings.eyebrow || "" : ""}
         title={
