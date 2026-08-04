@@ -1,0 +1,192 @@
+.root {
+  --public-testimonial-skeleton-surface: var(--section-card-surface, var(--surface-primary));
+  --public-testimonial-skeleton-muted: var(--surface-secondary);
+  --public-testimonial-skeleton-border: var(--public-card-border, var(--border-subtle));
+  --public-testimonial-skeleton-block: color-mix(
+    in srgb,
+    var(--public-testimonial-skeleton-muted) 78%,
+    var(--public-testimonial-skeleton-surface) 22%
+  );
+  --public-testimonial-skeleton-highlight: color-mix(
+    in srgb,
+    var(--public-testimonial-skeleton-surface) 76%,
+    var(--public-testimonial-skeleton-muted) 24%
+  );
+
+  display: grid;
+  gap: var(--section-layout-gap-lg);
+}
+
+.heading {
+  display: grid;
+  max-inline-size: 48rem;
+  gap: var(--space-3);
+}
+
+.spotlightLayout {
+  display: grid;
+  gap: var(--public-section-cluster-gap);
+  align-items: start;
+}
+
+.showcaseLayout {
+  display: grid;
+  gap: var(--public-section-cluster-gap);
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  align-items: stretch;
+}
+
+.grid,
+.rail {
+  align-items: stretch;
+}
+
+.card {
+  display: grid;
+  min-block-size: 100%;
+  gap: var(--section-layout-gap-md);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  align-content: stretch;
+}
+
+.cardSpotlight {
+  min-block-size: clamp(18rem, 28vw, 24rem);
+}
+
+.variantShowcase .card {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent-primary) 10%, transparent), transparent 40%),
+    var(--section-card-surface);
+}
+
+.variantSpotlight .spotlightLayout {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: clamp(var(--space-6), 4vw, var(--space-10));
+}
+
+.variantSpotlight .card {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.variantSpotlight .cardSpotlight {
+  background: transparent;
+}
+
+.quoteStack,
+.identity {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.attribution {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: center;
+}
+
+.block {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  inline-size: 100%;
+  block-size: 1rem;
+  border-radius: var(--radius-pill);
+  background: var(--public-testimonial-skeleton-block);
+}
+
+.block::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: -45%;
+  inline-size: 45%;
+  background: linear-gradient(90deg, transparent, var(--public-testimonial-skeleton-highlight), transparent);
+  animation: public-testimonial-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.eyebrow {
+  inline-size: 7rem;
+  block-size: 0.9rem;
+}
+
+.headingTitle {
+  max-inline-size: 32rem;
+  block-size: 2.4rem;
+  border-radius: var(--radius-sm);
+}
+
+.headingLine {
+  max-inline-size: 42rem;
+}
+
+.headingLineShort {
+  max-inline-size: 28rem;
+}
+
+.quoteMark {
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  border-radius: var(--radius-full);
+}
+
+.quoteLine,
+.quoteLineWide,
+.quoteLineShort {
+  block-size: 1.15rem;
+}
+
+.quoteLine {
+  max-inline-size: 88%;
+}
+
+.quoteLineWide {
+  max-inline-size: 96%;
+}
+
+.quoteLineShort {
+  max-inline-size: 64%;
+}
+
+.avatar {
+  inline-size: 3.5rem;
+  block-size: 3.5rem;
+  border-radius: var(--radius-full);
+}
+
+.author {
+  max-inline-size: 12rem;
+  block-size: 1.1rem;
+}
+
+.authorMeta {
+  max-inline-size: 16rem;
+  block-size: 0.9rem;
+}
+
+@keyframes public-testimonial-skeleton-shimmer {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(320%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .block::after {
+    animation: none;
+  }
+}
+
+@media (max-width: 64rem) {
+  .showcaseLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .variantSpotlight .spotlightLayout {
+    grid-template-columns: 1fr;
+  }
+}

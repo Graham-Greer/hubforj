@@ -1694,7 +1694,7 @@ The hub-platform skeleton strategy is complete when:
 
 ### 2026-08-04 - Public Events/Courses Listing Fallbacks
 
-Status: implemented at source level, pending runtime visual verification.
+Status: implemented and runtime visually verified.
 
 Completed:
 
@@ -1711,3 +1711,47 @@ Locked Behaviour:
 - Public offering skeletons must be route-specific and public-token based.
 - Public offering skeletons should sit only around the data-rich listing/FAQ area below the fast hero shell.
 - Future public route skeletons should reuse the same public fallback family where possible instead of introducing route-local one-off skeleton styling.
+
+Runtime Verification:
+
+- User confirmed events and courses skeleton UI is present and barely visible even with heavy throttling.
+
+### 2026-08-04 - Public Root Loading Cleanup
+
+Status: implemented and runtime visually verified.
+
+Completed:
+
+- Replaced the public root loading progress-card experience with a neutral public shell skeleton.
+- Preserved the existing admin branch so admin routes continue to use admin-specific loading.
+- Removed the public progress bar that felt jarring on hard refresh.
+- Used public/system surface tokens and reduced-motion support.
+
+Locked Behaviour:
+
+- Root public loading must remain a calm shell approximation, not a branded progress-card interstitial.
+- Route-specific public skeletons should take over once the route starts streaming.
+- Admin root loading should remain admin-specific.
+
+Runtime Verification:
+
+- User confirmed the revised public root loading state is better.
+
+### 2026-08-04 - Public Testimonials Listing Fallback
+
+Status: implemented at source level, pending runtime visual verification.
+
+Completed:
+
+- Added `PublicTestimonialsSectionFallback` for public `/testimonials`.
+- Used public section/card surface tokens.
+- Kept public hero and CTA outside the testimonial Suspense boundary.
+- Reserved heading, testimonial card, quote, and attribution structure.
+- Covered cards, spotlight-plus-rail, and showcase variants.
+- Added implementation note:
+  [hub-platform-public-testimonials-shell-deferred-slice-2026-08-04.md](hub-platform-public-testimonials-shell-deferred-slice-2026-08-04.md)
+
+Locked Behaviour:
+
+- Public testimonials skeletons must stay below the hero and focus on testimonial listing content.
+- Future public content routes should split shell and deferred content before adding decorative loading states.
