@@ -200,3 +200,28 @@ Acceptance criteria:
 - Verify legacy content after migration/backfill.
 - Verify pagination under create/update/delete between page loads.
 - Run scoped static checks and `git diff --check`.
+
+## Implementation Progress
+
+### 2026-08-04 - Public Events/Courses Bounded Query Foundation
+
+Status: implemented at source level behind feature flag, pending index deployment and runtime verification.
+
+Completed:
+
+- Added bounded public event listing reads using `status + startAt` and `status + endAt`.
+- Added bounded public course listing reads using `status + startAt` and `status + endAt`.
+- Replaced the public events route's full event-series read with referenced-series reads using public media hydration.
+- Kept optimized path disabled by default with `HUB_PLATFORM_PUBLIC_BOUNDED_OFFERING_QUERIES_ENABLED=false`.
+- Added required Firestore indexes to `firestore.indexes.json`.
+- Preserved existing domain visibility filters for legacy compatibility.
+- Preserved exact event count helper for admin/package enforcement.
+- Added implementation note:
+  [hub-platform-public-offering-bounded-query-slice-2026-08-04.md](hub-platform-public-offering-bounded-query-slice-2026-08-04.md)
+
+Pending:
+
+- Deploy Firestore indexes.
+- Enable feature flag in preview/non-production.
+- Runtime verify public events and courses routes.
+- Plan server-side pagination/search/filtering as a later slice.

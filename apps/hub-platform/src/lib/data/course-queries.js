@@ -14,6 +14,22 @@ import {
 } from "@/lib/domain/courses";
 import { normalizeCourseRecord, normalizeString, withCourseMedia, withPublicCourseMedia } from "./course-shared.js";
 
+const PUBLIC_COURSES_QUERY_LIMIT = 120;
+
+function isBoundedPublicOfferingQueriesEnabled() {
+  return normalizeString(process.env.HUB_PLATFORM_PUBLIC_BOUNDED_OFFERING_QUERIES_ENABLED).toLowerCase() === "true";
+}
+
+function normalizeDateForFirestoreBoundary(value = new Date()) {
+  const date = value instanceof Date ? value : new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return new Date().toISOString().slice(0, 16);
+  }
+
+  return date.toISOString().slice(0, 16);
+}
+
 function toSortableTimestamp(course) {
   const timestamp = Date.parse(String(course?.startAt || ""));
   return Number.isNaN(timestamp) ? Number.POSITIVE_INFINITY : timestamp;
@@ -45,15 +61,42 @@ async function listFirestoreCoursesByHubId(hubId) {
 }
 
 async function listFirestorePublishedCoursesByHubId(hubId) {
-  const snapshot = await getFirebaseAdminDb()
-    .collection("hubs")
-    .doc(hubId)
-    .collection("courses")
-    .where("status", "==", "published")
-    .get();
+  if (!isBoundedPublicOfferingQueriesEnabled()) {
+    const snapshot = await getFirebaseAdminDb()
+      .collection("hubs")
+      .doc(hubId)
+      .collection("courses")
+      .where("status", "==", "published")
+      .get();
 
-  const courses = snapshot.docs.map((doc) => normalizeCourseRecord({ id: doc.id, hubId, ...doc.data() }));
-  const coursesWithMedia = await withPublicCourseMedia(hubId, courses);
+    const courses = snapshot.docs.map((doc) => normalizeCourseRecord({ id: doc.id, hubId, ...doc.data() }));
+    const coursesWithMedia = await withPublicCourseMedia(hubId, courses);
+    return sortCoursesByUpcoming(coursesWithMedia);
+  }
+
+  const coursesCollection = getFirebaseAdminDb().collection("hubs").doc(hubId).collection("courses");
+  const cutoff = normalizeDateForFirestoreBoundary();
+  const [startingSnapshot, endingSnapshot] = await Promise.all([
+    coursesCollection
+      .where("status", "==", "published")
+      .where("startAt", ">=", cutoff)
+      .orderBy("startAt", "asc")
+      .limit(PUBLIC_COURSES_QUERY_LIMIT)
+      .get(),
+    coursesCollection
+      .where("status", "==", "published")
+      .where("endAt", ">=", cutoff)
+      .orderBy("endAt", "asc")
+      .limit(PUBLIC_COURSES_QUERY_LIMIT)
+      .get(),
+  ]);
+  const byId = new Map();
+
+  [...startingSnapshot.docs, ...endingSnapshot.docs].forEach((doc) => {
+    byId.set(doc.id, normalizeCourseRecord({ id: doc.id, hubId, ...doc.data() }));
+  });
+
+  const coursesWithMedia = await withPublicCourseMedia(hubId, [...byId.values()]);
   return sortCoursesByUpcoming(coursesWithMedia);
 }
 

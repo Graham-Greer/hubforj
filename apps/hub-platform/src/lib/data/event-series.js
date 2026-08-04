@@ -13,6 +13,7 @@ export {
   listEventSeriesByHub,
   listEventSeriesByHubSlug,
   listEventSeriesOccurrences,
+  listVisibleEventSeriesByIdsForHub,
 } from "./event-series-queries.js";
 
 export {

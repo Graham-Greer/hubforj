@@ -9,6 +9,26 @@ import { getHubBySlug } from "@/lib/data/hubs";
 import { canViewPublishedEvent, isEventPubliclyVisible, normalizeEventSlug } from "@/lib/domain/events";
 import { normalizeEventRecord, normalizeString, withEventMedia, withPublicEventMedia } from "./event-shared.js";
 
+const PUBLIC_EVENTS_QUERY_LIMIT = 120;
+
+function isBoundedPublicOfferingQueriesEnabled() {
+  return normalizeString(process.env.HUB_PLATFORM_PUBLIC_BOUNDED_OFFERING_QUERIES_ENABLED).toLowerCase() === "true";
+}
+
+function normalizeDateForFirestoreBoundary(value = new Date()) {
+  const date = value instanceof Date ? value : new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return new Date().toISOString().slice(0, 16);
+  }
+
+  return date.toISOString().slice(0, 16);
+}
+
+function sortEventsByStartAt(events) {
+  return [...events].sort((left, right) => String(left.startAt || "").localeCompare(String(right.startAt || "")));
+}
+
 async function listFirestoreEventsByHubId(hubId) {
   const snapshot = await getFirebaseAdminDb()
     .collection("hubs")
@@ -22,31 +42,57 @@ async function listFirestoreEventsByHubId(hubId) {
 }
 
 async function listFirestorePublishedEventsByHubId(hubId) {
-  const snapshot = await getFirebaseAdminDb()
-    .collection("hubs")
-    .doc(hubId)
-    .collection("events")
-    .where("status", "==", "published")
-    .get();
+  if (!isBoundedPublicOfferingQueriesEnabled()) {
+    const snapshot = await getFirebaseAdminDb()
+      .collection("hubs")
+      .doc(hubId)
+      .collection("events")
+      .where("status", "==", "published")
+      .get();
 
-  const events = snapshot.docs.map((doc) => normalizeEventRecord({ id: doc.id, hubId, ...doc.data() }));
-  return withPublicEventMedia(
-    hubId,
-    events.sort((left, right) => String(left.startAt || "").localeCompare(String(right.startAt || "")))
-  );
+    const events = snapshot.docs.map((doc) => normalizeEventRecord({ id: doc.id, hubId, ...doc.data() }));
+    return withPublicEventMedia(hubId, sortEventsByStartAt(events));
+  }
+
+  const eventsCollection = getFirebaseAdminDb().collection("hubs").doc(hubId).collection("events");
+  const cutoff = normalizeDateForFirestoreBoundary();
+  const [startingSnapshot, endingSnapshot] = await Promise.all([
+    eventsCollection
+      .where("status", "==", "published")
+      .where("startAt", ">=", cutoff)
+      .orderBy("startAt", "asc")
+      .limit(PUBLIC_EVENTS_QUERY_LIMIT)
+      .get(),
+    eventsCollection
+      .where("status", "==", "published")
+      .where("endAt", ">=", cutoff)
+      .orderBy("endAt", "asc")
+      .limit(PUBLIC_EVENTS_QUERY_LIMIT)
+      .get(),
+  ]);
+  const byId = new Map();
+
+  [...startingSnapshot.docs, ...endingSnapshot.docs].forEach((doc) => {
+    byId.set(doc.id, normalizeEventRecord({ id: doc.id, hubId, ...doc.data() }));
+  });
+
+  return withPublicEventMedia(hubId, sortEventsByStartAt([...byId.values()]));
 }
 
 async function countFirestoreActiveUpcomingPublishedEventsByHubId(hubId, now = new Date()) {
-  const nowIso = (now instanceof Date ? now : new Date(now)).toISOString();
+  const cutoff = normalizeDateForFirestoreBoundary(now);
   const snapshot = await getFirebaseAdminDb()
     .collection("hubs")
     .doc(hubId)
     .collection("events")
     .where("status", "==", "published")
-    .select("startAt")
+    .select("startAt", "endAt")
     .get();
 
-  return snapshot.docs.filter((doc) => normalizeString(doc.data()?.startAt) >= nowIso).length;
+  return snapshot.docs.filter((doc) => {
+    const data = doc.data() || {};
+    return normalizeString(data.endAt) >= cutoff || normalizeString(data.startAt) >= cutoff;
+  }).length;
 }
 
 async function getFirestoreEventBySlug(hubId, eventSlug) {
@@ -108,8 +154,10 @@ export async function countActiveUpcomingPublishedEventsByHub(hubId, options = {
     return count;
   }
 
-  const nowIso = (now instanceof Date ? now : new Date(now)).toISOString();
-  const excludedEventMatches = normalizeString(event.status) === "published" && normalizeString(event.startAt) >= nowIso;
+  const nowIso = normalizeDateForFirestoreBoundary(now);
+  const excludedEventMatches =
+    normalizeString(event.status) === "published" &&
+    (normalizeString(event.endAt) >= nowIso || normalizeString(event.startAt) >= nowIso);
 
   return excludedEventMatches ? Math.max(0, count - 1) : count;
 }
