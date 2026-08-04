@@ -134,7 +134,6 @@ export default function MediaLibraryDialogs({
   folderRows,
   confirmFolder,
   confirmAsset,
-  folderCounts,
   workspaceError,
   isPending,
   onCloseFolderModal,
@@ -172,11 +171,7 @@ export default function MediaLibraryDialogs({
       {confirmFolder ? (
         <ConfirmModal
           title="Delete folder"
-          description={
-            folderCounts.get(confirmFolder.id)
-              ? `Delete ${confirmFolder.name}? Assets in this folder will be moved to Unfiled.`
-              : `Delete ${confirmFolder.name}? This cannot be undone.`
-          }
+          description={`Delete ${confirmFolder.name}? Any assets in this folder will be moved to Unfiled.`}
           confirmLabel="Delete folder"
           onClose={onCloseConfirm}
           onConfirm={onConfirmFolderDelete}

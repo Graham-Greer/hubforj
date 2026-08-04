@@ -101,6 +101,20 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "hubId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "avatarAssetId",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": [

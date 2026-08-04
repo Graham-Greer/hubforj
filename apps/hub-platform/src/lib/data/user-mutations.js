@@ -13,6 +13,7 @@ import {
 } from "@/lib/domain/users";
 import { normalizeString } from "./user-shared.js";
 import { getUserById, listUsersByHub } from "./user-queries.js";
+import { createMediaUsageReference, syncMediaUsageReferenceForAssetChange } from "./media-usage-projection.js";
 
 export async function updateMemberProfileById(hubId, userId, payload, actorId = "system") {
   const normalizedHubId = normalizeString(hubId);
@@ -75,6 +76,19 @@ export async function updateMemberAvatarById(hubId, userId, payload, actorId = "
     avatarAlt,
     updatedAt: now,
     updatedBy: actorId,
+  });
+  await syncMediaUsageReferenceForAssetChange({
+    hubId: normalizedHubId,
+    previousAssetId: existing.avatarAssetId,
+    nextAssetId: avatarAssetId,
+    usageRef: createMediaUsageReference({
+      entityType: "user",
+      entityId: normalizedUserId,
+      field: "avatar",
+      label: existing.name || existing.email || "User avatar",
+      href: "",
+    }),
+    updatedAt: now,
   });
 
   return {

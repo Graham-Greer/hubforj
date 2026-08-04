@@ -46,6 +46,22 @@ function inferAllowedTypes(accept) {
   return allowed;
 }
 
+function mergeAssets(currentAssets, nextAssets) {
+  const merged = [...currentAssets];
+  const seen = new Set(merged.map((asset) => asset.id));
+
+  nextAssets.forEach((asset) => {
+    if (!asset?.id || seen.has(asset.id)) {
+      return;
+    }
+
+    seen.add(asset.id);
+    merged.push(asset);
+  });
+
+  return merged;
+}
+
 export default function MediaAssetField({
   label,
   hint,
@@ -71,8 +87,15 @@ export default function MediaAssetField({
   const searchParams = useSearchParams();
   const fileInputRef = useRef(null);
   const handledPickerKeyRef = useRef("");
+  const selectedAssetRequestRef = useRef("");
   const [localAssets, setLocalAssets] = useState(assets);
   const [localFolders, setLocalFolders] = useState(folders);
+  const [assetCursor, setAssetCursor] = useState("");
+  const [hasMoreAssets, setHasMoreAssets] = useState(false);
+  const [pickerAssetsLoaded, setPickerAssetsLoaded] = useState(false);
+  const [isLoadingPickerAssets, setIsLoadingPickerAssets] = useState(false);
+  const [pickerLoadError, setPickerLoadError] = useState("");
+  const [isLoadingSelectedAsset, setIsLoadingSelectedAsset] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [localAssetId, setLocalAssetId] = useState(assetId || "");
@@ -89,12 +112,25 @@ export default function MediaAssetField({
   const allowedTypes = useMemo(() => inferAllowedTypes(accept), [accept]);
 
   useEffect(() => {
-    setLocalAssets(assets);
+    if (!assets.length) {
+      return;
+    }
+
+    setLocalAssets((current) => mergeAssets(current, assets));
   }, [assets]);
 
   useEffect(() => {
     setLocalFolders(folders);
   }, [folders]);
+
+  useEffect(() => {
+    if (isControlled) {
+      return;
+    }
+
+    setLocalAssetId(assetId || "");
+    setLocalAssetAlt(assetAlt || "");
+  }, [assetAlt, assetId, isControlled]);
 
   const pickedField = searchParams.get("pickedField") || "";
   const pickedAltField = searchParams.get("pickedAltField") || "";
@@ -161,6 +197,51 @@ export default function MediaAssetField({
     });
   }, [availableAssets, localFolders, pickerFolderFilter, pickerSearch]);
   const pickerSelectedAsset = pickerFilteredAssets.find((asset) => asset.id === pickerSelectedAssetId) || null;
+
+  useEffect(() => {
+    if (!showPickerModal || pickerSelectedAssetId || !pickerFilteredAssets[0]?.id) {
+      return;
+    }
+
+    setPickerSelectedAssetId(pickerFilteredAssets[0].id);
+  }, [pickerFilteredAssets, pickerSelectedAssetId, showPickerModal]);
+
+  useEffect(() => {
+    if (!selectedAssetId || selectedAsset || selectedAssetRequestRef.current === selectedAssetId) {
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    selectedAssetRequestRef.current = selectedAssetId;
+    setIsLoadingSelectedAsset(true);
+
+    fetch(`/api/admin/hubs/${encodeURIComponent(hubSlug)}/media/assets/${encodeURIComponent(selectedAssetId)}`, {
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const payload = await response.json();
+
+        if (!response.ok) {
+          throw new Error(payload.error || "Unable to load selected media.");
+        }
+
+        if (payload.asset) {
+          setLocalAssets((current) => mergeAssets(current, [payload.asset]));
+        }
+      })
+      .catch((error) => {
+        if (error.name === "AbortError") {
+          selectedAssetRequestRef.current = "";
+        }
+      })
+      .finally(() => {
+        setIsLoadingSelectedAsset(false);
+      });
+
+    return () => {
+      controller.abort();
+    };
+  }, [hubSlug, selectedAsset, selectedAssetId]);
 
   useEffect(() => {
     if (!isPickedForField) {
@@ -256,11 +337,49 @@ export default function MediaAssetField({
     }
   }
 
+  async function loadPickerAssets({ reset = false } = {}) {
+    if (isLoadingPickerAssets || (!reset && pickerAssetsLoaded && !hasMoreAssets)) {
+      return;
+    }
+
+    setIsLoadingPickerAssets(true);
+    setPickerLoadError("");
+
+    try {
+      const params = new URLSearchParams();
+      const cursor = reset ? "" : assetCursor;
+
+      if (cursor) {
+        params.set("cursor", cursor);
+      }
+
+      const response = await fetch(`/api/admin/hubs/${encodeURIComponent(hubSlug)}/media/assets?${params.toString()}`);
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Unable to load media.");
+      }
+
+      const nextAssets = Array.isArray(payload.assets) ? payload.assets : [];
+      setLocalAssets((current) => mergeAssets(current, nextAssets));
+      setAssetCursor(payload.nextCursor || "");
+      setHasMoreAssets(Boolean(payload.hasMore));
+      setPickerAssetsLoaded(true);
+    } catch (error) {
+      setPickerLoadError(String(error?.message || "Unable to load media."));
+    } finally {
+      setIsLoadingPickerAssets(false);
+    }
+  }
+
   function openExistingMediaPicker() {
     setPickerSelectedAssetId(selectedAssetId || availableAssets[0]?.id || "");
     setPickerFolderFilter("all");
     setPickerSearch("");
     setShowPickerModal(true);
+    if (!pickerAssetsLoaded) {
+      void loadPickerAssets({ reset: true });
+    }
   }
 
   function applyPickedAsset() {
@@ -341,7 +460,9 @@ export default function MediaAssetField({
                 disabled={isUploading}
               >
                 <Icon name="imagesmode" size="md" decorative />
-                <span className={styles.selectFieldText}>{emptyTitle || "Select media"}</span>
+                <span className={styles.selectFieldText}>
+                  {isLoadingSelectedAsset ? "Loading selected media" : emptyTitle || "Select media"}
+                </span>
               </button>
               {canPickExistingMedia ? (
                 <Button type="button" size="lg" variant="secondary" onClick={openExistingMediaPicker}>
@@ -515,46 +636,67 @@ export default function MediaAssetField({
                 ))}
               </div>
               <div className={styles.assetPickerPanel}>
+                {pickerLoadError ? <FormMessage tone="danger">{pickerLoadError}</FormMessage> : null}
                 {pickerFilteredAssets.length ? (
-                  <div className={styles.assetPickerGrid}>
-                    {pickerFilteredAssets.map((asset) => (
-                      <button
-                        key={asset.id}
-                        type="button"
-                        className={[
-                          styles.assetPickerCard,
-                          pickerSelectedAssetId === asset.id ? styles.assetPickerCardActive : "",
-                        ]
-                          .filter(Boolean)
-                          .join(" ")}
-                        onClick={() => setPickerSelectedAssetId(asset.id)}
-                      >
-                        <span className={styles.assetPickerThumb}>
-                          {asset.type === "video" ? (
-                            <video
-                              src={asset.publicUrl}
-                              className={styles.previewVideo}
-                              muted
-                              playsInline
-                              preload="metadata"
-                            />
-                          ) : (
-                            <Image
-                              src={asset.publicUrl}
-                              alt={asset.alt || asset.filename}
-                              className={styles.previewImage}
-                              fill
-                              sizes="10rem"
-                              unoptimized
-                            />
-                          )}
-                        </span>
-                        <span className={styles.assetPickerMeta}>
-                          <strong>{asset.displayName || asset.filename}</strong>
-                          <span>{asset.type === "video" ? "Video" : "Image"} - {formatSize(asset.sizeBytes)}</span>
-                        </span>
-                      </button>
-                    ))}
+                  <div className={styles.assetPickerStack}>
+                    <div className={styles.assetPickerGrid}>
+                      {pickerFilteredAssets.map((asset) => (
+                        <button
+                          key={asset.id}
+                          type="button"
+                          className={[
+                            styles.assetPickerCard,
+                            pickerSelectedAssetId === asset.id ? styles.assetPickerCardActive : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                          onClick={() => setPickerSelectedAssetId(asset.id)}
+                        >
+                          <span className={styles.assetPickerThumb}>
+                            {asset.type === "video" ? (
+                              <video
+                                src={asset.publicUrl}
+                                className={styles.previewVideo}
+                                muted
+                                playsInline
+                                preload="metadata"
+                              />
+                            ) : (
+                              <Image
+                                src={asset.publicUrl}
+                                alt={asset.alt || asset.filename}
+                                className={styles.previewImage}
+                                fill
+                                sizes="10rem"
+                                unoptimized
+                              />
+                            )}
+                          </span>
+                          <span className={styles.assetPickerMeta}>
+                            <strong>{asset.displayName || asset.filename}</strong>
+                            <span>{asset.type === "video" ? "Video" : "Image"} - {formatSize(asset.sizeBytes)}</span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                    {hasMoreAssets ? (
+                      <div className={styles.loadMoreRow}>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() => loadPickerAssets()}
+                          disabled={isLoadingPickerAssets}
+                        >
+                          {isLoadingPickerAssets ? "Loading media" : "Load more media"}
+                        </Button>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : isLoadingPickerAssets ? (
+                  <div className={styles.assetPickerEmpty}>
+                    <Icon name="imagesmode" size="lg" tone="muted" decorative />
+                    <strong>Loading media</strong>
+                    <span>Fetching the first page of assets.</span>
                   </div>
                 ) : (
                   <div className={styles.assetPickerEmpty}>

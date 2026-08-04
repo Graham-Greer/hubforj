@@ -1739,7 +1739,7 @@ Runtime Verification:
 
 ### 2026-08-04 - Public Testimonials Listing Fallback
 
-Status: implemented at source level, pending runtime visual verification.
+Status: implemented and runtime visually verified.
 
 Completed:
 
@@ -1755,3 +1755,9 @@ Locked Behaviour:
 
 - Public testimonials skeletons must stay below the hero and focus on testimonial listing content.
 - Future public content routes should split shell and deferred content before adding decorative loading states.
+
+Runtime Verification:
+
+- Production `/testimonials` screenshot showed a clean document load around 416 ms.
+- Testimonial RSC refresh/navigation requests were around 157-173 ms.
+- User confirmed the broader public root loading experience is improved after replacing the progress-card fallback.

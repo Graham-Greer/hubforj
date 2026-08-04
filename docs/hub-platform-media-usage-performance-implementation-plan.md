@@ -32,6 +32,8 @@ Separate media asset listing from media usage reporting:
 - Usage layer:
   - Lazy-loaded on demand or served from projection.
   - Does not block first render.
+  - Unknown usage must be treated as pending, not as zero.
+  - Destructive asset actions must remain blocked until usage has been loaded or verified server-side.
 
 Potential projection:
 
@@ -75,12 +77,23 @@ Asset performance rule:
 - Avoid loading all assets by default.
 - Add indexes for media listing sort/filter fields.
 - Load thumbnail/display metadata only for the list view.
+- Make UI copy clear when counts/search are scoped to loaded assets.
+- Preserve picker mode by fetching a selected asset directly if it is not present in the first media page.
 
 Acceptance criteria:
 
 - Media route first load reads one page of assets.
 - Pagination does not re-read all assets.
 - Large original images do not block the first useful media list render.
+- Folder counts on the route do not imply full-library counts unless backed by a projection or aggregate.
+- Selected picker assets remain available even when outside the first page.
+
+Implementation status:
+
+- Implemented initial bounded admin media route loading with a default 48-asset page.
+- Added cursor pagination through `/api/admin/hubs/[hubSlug]/media/assets`.
+- Initial folder counts now represent loaded assets only and are labelled accordingly.
+- Full-library server-side search and folder aggregate counts are intentionally deferred until a dedicated query/index pass.
 
 ### Phase 2: Lazy Load Usage
 
@@ -89,12 +102,94 @@ Acceptance criteria:
 - Show explicit usage loading state inside the item detail area only.
 - Keep lazy usage fetch bounded to the selected asset or visible page of assets.
 - Cache usage result per request where safe.
+- Prevent asset deletion in the client while usage is unknown.
+- Keep the server delete action authoritative by rechecking usage immediately before deletion.
+- Track Firestore indexes required by lazy usage source queries.
+- Return partial usage data with a verification flag for the admin UI when one source query fails, but keep destructive server-side checks strict.
+- Make selected-asset usage fetching idempotent per mounted media workspace so rerenders cannot repeatedly call the same usage endpoint.
 
 Acceptance criteria:
 
 - Media library can render assets before usage data is available.
 - Usage display remains available to admins.
 - Expanding one asset does not scan unrelated usage if a projection is available.
+- The details panel never shows `0 references` while usage has not loaded.
+- If lazy usage fails, the admin sees an inline usage error and destructive actions remain safe.
+- Missing or building indexes cannot make the UI claim an asset is unused.
+- Selecting one asset does not trigger repeated usage fetches for that same asset during ordinary rerenders.
+
+Implementation status:
+
+- Removed initial media route usage graph scanning.
+- Added selected-asset usage loading through `/api/admin/hubs/[hubSlug]/media/assets/[assetId]/usage`.
+- Added a targeted usage query that checks only references for the selected asset across site settings, homepage media, page hero media, testimonials, events, event series, courses, and users.
+- Marked usage-backed records as `usageLoaded: true`; page-list records start as `usageLoaded: false`.
+- Asset deletion remains protected by client disablement and by the existing server-side usage check.
+- Added the required `users` index for `hubId + avatarAssetId`.
+- Added tolerant selected-asset usage reporting for the admin UI while keeping `buildMediaUsageForAssetId` strict for delete verification.
+- Added a ref-backed client request guard so each selected asset usage lookup is attempted once per mounted workspace.
+
+### Phase 2B: Bound Embedded Media Pickers
+
+- Remove full media library reads from admin create/edit/settings routes that only need a media field.
+- Keep route shells and form titles fast by rendering fields before picker assets are fetched.
+- Fetch the currently selected asset by id only when a field needs to render an existing preview.
+- Fetch media picker pages only when the admin opens the existing-media picker.
+- Reuse the protected media asset pagination endpoint from the media library.
+- Use metadata-only asset reads for previews; do not run usage verification for ordinary form rendering.
+- Preserve upload folder selection by continuing to load media folders server-side while folder counts remain scoped/metadata-only.
+
+Acceptance criteria:
+
+- Event create/edit routes do not call `listMediaAssetsByHubId`.
+- Course create/edit routes do not call `listMediaAssetsByHubId`.
+- Testimonial create/edit routes do not call `listMediaAssetsByHubId`.
+- Branding and public page settings routes do not call `listMediaAssetsByHubId`.
+- Existing selected media previews still render after the field hydrates the selected asset by id.
+- Opening the existing-media picker loads a bounded first page and supports loading more assets.
+- Batch media hydration for event/course/testimonial/list previews does not build the full usage graph.
+
+Implementation status:
+
+- Removed admin form route usage of `listMediaAssetsByHubId`.
+- Added protected metadata endpoint `/api/admin/hubs/[hubSlug]/media/assets/[assetId]`.
+- Added `getMediaAssetMetadataById` for preview-only reads.
+- Updated `MediaAssetField` to lazy-load selected asset metadata and picker pages.
+- Updated `getMediaAssetsByIds` to return metadata-only assets without usage graph scanning.
+- Updated site settings admin form value readers to avoid media hydration because form values only require asset ids and alt text.
+- Fixed the selected-preview picker state so an edit form can hydrate the currently selected image without incorrectly marking the picker library page as loaded.
+
+Production verification checklist:
+
+- Hard refresh each embedded media form route in production with Chrome DevTools Network open.
+- Confirm no route-level request calls the full media asset library before the form shell renders.
+- Confirm opening the existing-media picker triggers one bounded `/api/admin/hubs/[hubSlug]/media/assets` request.
+- Confirm a selected existing asset outside the first page still renders its preview through `/api/admin/hubs/[hubSlug]/media/assets/[assetId]`.
+- Confirm the picker first page contains the bounded media library page, not only the previously selected asset.
+- Confirm the picker supports load-more pagination without replacing the selected preview.
+- Confirm create routes with no selected asset do not call the selected-asset metadata endpoint.
+- Confirm edit routes with selected media do not call the usage endpoint merely to render the form.
+- Confirm route navigation and hard refresh show the same picker behavior.
+- Confirm the media library page itself still lazy-loads usage only for the selected asset.
+- Capture before/after screenshots for at least:
+  - event create
+  - event edit
+  - course create
+  - course edit
+  - testimonial create
+  - testimonial edit
+  - branding settings
+  - homepage settings
+  - events page settings
+  - courses page settings
+  - testimonials page settings
+
+Regression lock:
+
+- Admin form routes must not import `listMediaAssetsByHubId`.
+- `MediaAssetField` must treat incoming `assets` as preview seed data, not proof that the picker page has loaded.
+- Full-library media reads are reserved for dedicated admin media workflows or deliberate maintenance scripts.
+- Usage verification must not be part of ordinary form rendering.
 
 ### Phase 3: Add Usage Projection If Needed
 
@@ -111,6 +206,51 @@ Acceptance criteria:
 - Usage summary for a page of assets is a bounded multi-read or batched lookup.
 - Projection can be rebuilt if drift occurs.
 - Projection updates are idempotent.
+
+Implementation status:
+
+- Added `hubs/{hubId}/mediaUsage/{assetId}` projection support.
+- Projection documents store:
+  - `hubId`
+  - `assetId`
+  - `usageCount`
+  - `references`
+  - `lastReferencedAt`
+  - `updatedAt`
+  - `schemaVersion`
+- Added direct projection reads for `getMediaAssetUsageById`.
+- Kept targeted scan fallback when a projection document does not yet exist.
+- When fallback verification completes successfully, the projection is repaired for that asset.
+- Verified zero-usage assets now receive an explicit zero-usage projection so they do not repeatedly fall back to scans.
+- Asset deletion removes its projection document after strict live usage verification passes.
+- Wired projection maintenance into:
+  - event create/update/delete
+  - course create/update/delete
+  - recurring event-series create/update
+  - testimonial create/update/delete
+  - member avatar update/remove
+  - branding settings media changes
+  - homepage media changes
+  - events page hero media changes
+  - courses page hero media changes
+  - testimonials page hero media changes
+  - general site settings writes that may affect the shared site settings document
+- Delete verification still uses the strict source-of-truth usage scan, not projection-only state.
+
+Remaining production verification:
+
+- Select a media asset with known event usage and confirm the usage panel is served from `mediaUsage` after one successful lookup or after editing the event.
+- Select an unused media asset twice and confirm the second lookup does not perform the fallback source scan.
+- Change an event image from asset A to asset B and confirm asset A loses the event reference while asset B gains it.
+- Remove a testimonial author image and confirm the relevant projection reference is removed.
+- Change branding logo and page hero media and confirm site settings references move correctly.
+- Delete an unused asset and confirm its `mediaUsage/{assetId}` document is removed.
+- Confirm a stale or missing projection never allows deletion of a genuinely referenced asset because delete still performs strict verification.
+
+Known tradeoff:
+
+- Existing hubs will not have complete projection coverage until assets are selected once, edited through the updated admin flows, or processed by a future reconciliation/backfill script.
+- This is intentional for the first production-safe projection release because it avoids a broad migration while preserving correct usage results through fallback scanning.
 
 ### Phase 4: Integrate With Public Cache Invalidation
 
@@ -145,6 +285,8 @@ Acceptance criteria:
 
 - Same image reused in multiple page sections.
 - Same image reused in events, courses, and testimonials.
+- Same image reused in branding, homepage hero, homepage info media, and per-page heroes.
+- Same image reused on generated or recurring event-series records.
 - Media asset deleted while still referenced.
 - Referenced content deleted.
 - Asset metadata changes but binary does not.
@@ -154,6 +296,14 @@ Acceptance criteria:
 - Very large original images.
 - Failed upload leaving partial metadata.
 - User avatar/media references included in usage scans.
+- Picker mode references an asset outside the first loaded page.
+- Admin filters a folder where not all assets have been loaded yet.
+- Admin searches for an asset that exists outside the loaded page.
+- Usage fetch fails after the asset details panel has rendered.
+- React rerenders while an asset usage lookup is in flight or after it has completed.
+- Asset selected from an older page has been deleted by another admin before usage loads.
+- Required usage index is deployed but still building.
+- One usage source fails while other sources return valid references.
 
 ## Verification Checklist
 
@@ -166,3 +316,12 @@ Acceptance criteria:
 - Confirm thumbnails/responsive images load instead of full originals where applicable.
 - Confirm public cache invalidation for media-backed public sections.
 - Run scoped checks and `git diff --check`.
+- Deploy Firestore indexes and confirm the `users` `hubId + avatarAssetId` index is built before relying on avatar usage checks in production.
+
+## Current Tradeoffs
+
+- Search, filter, and folder counts are currently scoped to loaded assets. This keeps first render bounded but means a large library may require loading more pages before a match is visible.
+- Folder deletion still updates all assets in the folder server-side. For very large folders, this remains a potential write-heavy operation and should be revisited with batched pagination or a folder archive model if folder sizes become large.
+- Selected-asset usage now prefers the `mediaUsage` projection. It falls back to targeted source queries only when the projection is missing, then repairs the projection after a complete verification.
+- Embedded admin media pickers now lazy-load bounded media pages instead of calling `listMediaAssetsByHubId`.
+- Existing hubs still need either natural admin edits, selected-asset fallback repair, or a future reconciliation/backfill run before every asset has a projection document.

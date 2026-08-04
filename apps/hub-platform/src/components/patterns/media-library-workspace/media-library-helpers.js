@@ -61,12 +61,28 @@ export function getUsageHref(hubSlug, usage) {
     return `/${hubSlug}/admin/settings/branding`;
   }
 
+  if (usage.entityType === "page") {
+    const pageRoutes = {
+      home: "home",
+      events: "events",
+      courses: "courses",
+      testimonials: "testimonials",
+    };
+    const pageRoute = pageRoutes[usage.entityId];
+
+    return pageRoute ? `/${hubSlug}/admin/settings/pages/${pageRoute}` : `/${hubSlug}/admin/settings/pages`;
+  }
+
   if (usage.entityType === "testimonial") {
     return `/${hubSlug}/admin/testimonials/${usage.entityId}`;
   }
 
   if (usage.entityType === "event") {
     return `/${hubSlug}/admin/events/${usage.entityId}`;
+  }
+
+  if (usage.entityType === "eventSeries") {
+    return `/${hubSlug}/admin/events/series/${usage.entityId}`;
   }
 
   if (usage.entityType === "course") {

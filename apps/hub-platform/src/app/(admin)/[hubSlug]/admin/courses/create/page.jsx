@@ -5,22 +5,21 @@ import WorkflowGuidance from "@/components/patterns/workflow-guidance/WorkflowGu
 import WorkspaceSection from "@/components/patterns/workspace-section/WorkspaceSection";
 import { requireHubBySlug, requireHubCoreBySlug } from "@/lib/data/hubs";
 import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
-import { listMediaAssetsByHubId, listMediaFoldersByHubId } from "@/lib/data/media";
+import { listMediaFoldersByHubId } from "@/lib/data/media";
 import { getHubPaymentSetupState } from "@/lib/domain/hub-payment-configuration";
 import CreateCourseForm from "./CreateCourseForm";
 import styles from "./page.module.css";
 
 async function CreateCourseWorkspace({ hubSlug }) {
   const hub = await requireHubBySlug(hubSlug);
-  const [mediaAssets, mediaFolders, paymentConfiguration] = await Promise.all([
-    listMediaAssetsByHubId(hub.id),
+  const [mediaFolders, paymentConfiguration] = await Promise.all([
     listMediaFoldersByHubId(hub.id),
     getHubPaymentConfigurationByHubId(hub.id),
   ]);
   const paymentSetupState = getHubPaymentSetupState(hub, paymentConfiguration);
 
   return (
-    <CreateCourseForm hub={hub} mediaAssets={mediaAssets} mediaFolders={mediaFolders} paymentSetupState={paymentSetupState} />
+    <CreateCourseForm hub={hub} mediaAssets={[]} mediaFolders={mediaFolders} paymentSetupState={paymentSetupState} />
   );
 }
 

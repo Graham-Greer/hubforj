@@ -8,8 +8,9 @@ import crypto from "node:crypto";
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
 import { createPublicContentCache, getPublicContentCacheTags } from "@/lib/cache/public-content";
 import { requireHubBySlug } from "@/lib/data/hubs";
-import { getMediaAssetById, getMediaAssetsByIds, getPublicMediaAssetsByIds } from "@/lib/data/media";
+import { getMediaAssetMetadataById, getMediaAssetsByIds, getPublicMediaAssetsByIds } from "@/lib/data/media";
 import { normalizeCreateTestimonialPayload } from "@/lib/domain/testimonials";
+import { createMediaUsageReference, removeMediaUsageReference, syncMediaUsageReferenceForAssetChange } from "./media-usage-projection.js";
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -151,7 +152,7 @@ export async function getTestimonialById(hubId, testimonialId) {
 
   return {
     ...testimonial,
-    authorImageAsset: await getMediaAssetById(normalizedHubId, testimonial.authorImageAssetId),
+    authorImageAsset: await getMediaAssetMetadataById(normalizedHubId, testimonial.authorImageAssetId),
   };
 }
 
@@ -171,6 +172,19 @@ export async function createTestimonialByHubSlug(hubSlug, payload, actorId = "sy
   };
 
   await ref.set(writeModel);
+  await syncMediaUsageReferenceForAssetChange({
+    hubId: hub.id,
+    previousAssetId: "",
+    nextAssetId: next.authorImageAssetId,
+    usageRef: createMediaUsageReference({
+      entityType: "testimonial",
+      entityId: ref.id,
+      field: "authorImage",
+      label: next.authorName || "Testimonial image",
+      href: "",
+    }),
+    updatedAt: now,
+  });
   return normalizeTestimonialRecord({ id: ref.id, ...writeModel });
 }
 
@@ -195,6 +209,19 @@ export async function updateTestimonial(hubId, testimonialId, payload, actorId =
   };
 
   await ref.update(update);
+  await syncMediaUsageReferenceForAssetChange({
+    hubId: normalizedHubId,
+    previousAssetId: existing.data()?.authorImageAssetId,
+    nextAssetId: next.authorImageAssetId,
+    usageRef: createMediaUsageReference({
+      entityType: "testimonial",
+      entityId: normalizedTestimonialId,
+      field: "authorImage",
+      label: next.authorName || "Testimonial image",
+      href: "",
+    }),
+    updatedAt: update.updatedAt,
+  });
   return normalizeTestimonialRecord({ id: normalizedTestimonialId, hubId: normalizedHubId, ...existing.data(), ...update });
 }
 
@@ -212,4 +239,15 @@ export async function deleteTestimonial(hubId, testimonialId) {
   }
 
   await ref.delete();
+  await removeMediaUsageReference({
+    hubId: normalizedHubId,
+    assetId: existing.data()?.authorImageAssetId,
+    usageRef: createMediaUsageReference({
+      entityType: "testimonial",
+      entityId: normalizedTestimonialId,
+      field: "authorImage",
+      label: normalizeString(existing.data()?.authorName) || "Testimonial image",
+      href: "",
+    }),
+  });
 }

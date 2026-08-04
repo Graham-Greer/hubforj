@@ -14,6 +14,8 @@ export default function MediaAssetDetailsPanel({
   hub,
   isPicker = false,
   selectedAsset,
+  usageLoading = false,
+  usageError = false,
   folderRows,
   detailValues,
   setDetailValues,
@@ -21,6 +23,10 @@ export default function MediaAssetDetailsPanel({
   onUseSelectedAsset,
   onRequestDelete,
 }) {
+  const isUsagePending = selectedAsset ? !usageError && (usageLoading || !selectedAsset.usageLoaded) : false;
+  const isDeleteBlockedByUsage = selectedAsset ? usageError || isUsagePending || selectedAsset.usageCount > 0 : true;
+  const usageRefs = Array.isArray(selectedAsset?.usageRefs) ? selectedAsset.usageRefs : [];
+
   return (
     <Surface className={styles.detailsPanel} padding="md" data-onboarding="media-details-panel">
       {selectedAsset ? (
@@ -94,9 +100,13 @@ export default function MediaAssetDetailsPanel({
 
           <div className={styles.usageSection}>
             <h3 className={styles.sectionTitle}>Usage references</h3>
-            {selectedAsset.usageRefs.length ? (
+            {usageError ? (
+              <p className={styles.usageEmpty}>Usage references could not be loaded just now.</p>
+            ) : isUsagePending ? (
+              <p className={styles.usageEmpty}>Loading usage references...</p>
+            ) : usageRefs.length ? (
               <ul className={styles.usageList}>
-                {selectedAsset.usageRefs.map((usage) => {
+                {usageRefs.map((usage) => {
                   const href = getUsageHref(hub.slug, usage);
                   return (
                     <Surface
@@ -124,11 +134,19 @@ export default function MediaAssetDetailsPanel({
             <Button variant="secondary" onClick={onSaveDetails}>
               Save details
             </Button>
-            <Button variant="ghost" onClick={onRequestDelete} disabled={selectedAsset.usageCount > 0}>
+            <Button
+              variant="ghost"
+              onClick={onRequestDelete}
+              disabled={isDeleteBlockedByUsage}
+            >
               Delete
             </Button>
           </div>
-          {selectedAsset.usageCount > 0 ? (
+          {usageError ? (
+            <p className={styles.deleteHint}>Usage references could not be verified, so this asset cannot be deleted yet.</p>
+          ) : isUsagePending ? (
+            <p className={styles.deleteHint}>Usage references are loading before this asset can be deleted.</p>
+          ) : selectedAsset.usageCount > 0 ? (
             <p className={styles.deleteHint}>This asset is still in use and cannot be deleted until those usages are removed.</p>
           ) : null}
         </div>

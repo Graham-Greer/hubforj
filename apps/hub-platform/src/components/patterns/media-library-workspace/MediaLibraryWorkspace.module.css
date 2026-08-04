@@ -171,6 +171,17 @@
   align-items: start;
 }
 
+.assetColumn {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.loadMoreRow {
+  display: flex;
+  justify-content: center;
+}
+
 .assetGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));

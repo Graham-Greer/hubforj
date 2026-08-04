@@ -10,6 +10,7 @@ import { createPublicContentCache, getPublicContentCacheTags } from "@/lib/cache
 import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
 import { requireHubBySlug, requireHubCoreById } from "@/lib/data/hubs";
 import { getMediaAssetById, getPublicMediaAssetById } from "@/lib/data/media";
+import { syncSiteSettingsMediaUsageProjection } from "@/lib/data/media-usage-projection";
 import {
   hasSectionRichTextContent,
   normalizeSectionRichTextContent,
@@ -35,6 +36,21 @@ const getCachedSiteSettingsRecordDataByHubId = cache(async (hubId) => {
   const doc = await getFirebaseAdminDb().collection("hubs").doc(hubId).collection("siteSettings").doc(SITE_SETTINGS_DOC).get();
   return doc.exists ? doc.data() : {};
 });
+
+function getSiteSettingsRef(hubId) {
+  return getFirebaseAdminDb().collection("hubs").doc(hubId).collection("siteSettings").doc(SITE_SETTINGS_DOC);
+}
+
+async function syncSiteSettingsMediaUsageAfterWrite(hubId, previousDoc, options = {}) {
+  const nextDoc = await getSiteSettingsRef(hubId).get();
+
+  await syncSiteSettingsMediaUsageProjection(
+    hubId,
+    previousDoc?.exists ? previousDoc.data() : {},
+    nextDoc.exists ? nextDoc.data() : {},
+    options
+  );
+}
 
 export async function getSiteSettingsByHubSlug(hubSlug) {
   const hub = await requireHubBySlug(hubSlug);
@@ -177,28 +193,33 @@ export async function getSiteSettingsByHub(hub) {
   return readSiteSettingsByHub(hub);
 }
 
+async function getSiteSettingsRecordForAdminForm(hub) {
+  const record = await getCachedSiteSettingsRecordDataByHubId(hub.id);
+  return normalizeSiteSettingsRecord(hub, record, { routeMode: "path" });
+}
+
 export async function getSiteSettingsFormValuesByHub(hub) {
-  const siteSettings = await getSiteSettingsByHub(hub);
+  const siteSettings = await getSiteSettingsRecordForAdminForm(hub);
   return normalizeSiteSettingsForAdminForm(siteSettings);
 }
 
 export async function getBrandingSettingsFormValuesByHub(hub) {
-  const siteSettings = await getSiteSettingsByHub(hub);
+  const siteSettings = await getSiteSettingsRecordForAdminForm(hub);
   return normalizeBrandingSettingsForAdminForm(siteSettings);
 }
 
 export async function getEventsPageSettingsFormValuesByHub(hub) {
-  const siteSettings = await getSiteSettingsByHub(hub);
+  const siteSettings = await getSiteSettingsRecordForAdminForm(hub);
   return normalizeEventsPageSettingsForAdminForm(siteSettings);
 }
 
 export async function getCoursesPageSettingsFormValuesByHub(hub) {
-  const siteSettings = await getSiteSettingsByHub(hub);
+  const siteSettings = await getSiteSettingsRecordForAdminForm(hub);
   return normalizeCoursesPageSettingsForAdminForm(siteSettings);
 }
 
 export async function getTestimonialsPageSettingsFormValuesByHub(hub) {
-  const siteSettings = await getSiteSettingsByHub(hub);
+  const siteSettings = await getSiteSettingsRecordForAdminForm(hub);
   return normalizeTestimonialsPageSettingsForAdminForm(siteSettings);
 }
 
@@ -219,6 +240,8 @@ export async function updateBrandingSettingsByHubSlug(hubSlug, payload, actorId 
   const next = normalizeBrandingSettingsPayload(payload);
   const now = new Date().toISOString();
   const db = getFirebaseAdminDb();
+  const siteSettingsRef = getSiteSettingsRef(hub.id);
+  const previousSiteSettingsDoc = await siteSettingsRef.get();
 
   await Promise.all([
     db.collection("hubs").doc(hub.id).update({
@@ -245,6 +268,7 @@ export async function updateBrandingSettingsByHubSlug(hubSlug, payload, actorId 
       updatedBy: actorId,
     }, { merge: true }),
   ]);
+  await syncSiteSettingsMediaUsageAfterWrite(hub.id, previousSiteSettingsDoc, { updatedAt: now });
 
   return { ...next, hubId: hub.id, updatedAt: now };
 }
@@ -256,6 +280,8 @@ export async function updateSiteSettingsByHubSlug(hubSlug, payload, actorId = "s
   const db = getFirebaseAdminDb();
   const paymentConfiguration = await getHubPaymentConfigurationByHubId(hub.id);
   const countryLocked = Boolean(paymentConfiguration?.onboardingStartedAt || paymentConfiguration?.stripeAccountId);
+  const siteSettingsRef = getSiteSettingsRef(hub.id);
+  const previousSiteSettingsDoc = await siteSettingsRef.get();
 
   if (countryLocked && next.country !== String(hub.country || "").trim().toUpperCase()) {
     throw new Error("Country cannot be changed after Stripe setup begins. Contact support if you need to change it.");
@@ -281,6 +307,7 @@ export async function updateSiteSettingsByHubSlug(hubSlug, payload, actorId = "s
       updatedBy: actorId,
     }, { merge: true }),
   ]);
+  await syncSiteSettingsMediaUsageAfterWrite(hub.id, previousSiteSettingsDoc, { updatedAt: now });
 
   return { ...next, hubId: hub.id, updatedAt: now };
 }
@@ -289,13 +316,16 @@ export async function updateHomepageSettingsByHubSlug(hubSlug, payload, actorId 
   const hub = await requireHubBySlug(hubSlug);
   const next = normalizeHomepageSettingsPayload(payload);
   const now = new Date().toISOString();
+  const siteSettingsRef = getSiteSettingsRef(hub.id);
+  const previousSiteSettingsDoc = await siteSettingsRef.get();
 
-  await getFirebaseAdminDb().collection("hubs").doc(hub.id).collection("siteSettings").doc(SITE_SETTINGS_DOC).set({
+  await siteSettingsRef.set({
     hubId: hub.id,
     ...next,
     updatedAt: now,
     updatedBy: actorId,
   }, { merge: true });
+  await syncSiteSettingsMediaUsageAfterWrite(hub.id, previousSiteSettingsDoc, { updatedAt: now });
 
   return { ...next, hubId: hub.id, updatedAt: now };
 }
@@ -304,13 +334,16 @@ export async function updateEventsPageSettingsByHubSlug(hubSlug, payload, actorI
   const hub = await requireHubBySlug(hubSlug);
   const next = normalizeEventsPageSettingsPayload(payload);
   const now = new Date().toISOString();
+  const siteSettingsRef = getSiteSettingsRef(hub.id);
+  const previousSiteSettingsDoc = await siteSettingsRef.get();
 
-  await getFirebaseAdminDb().collection("hubs").doc(hub.id).collection("siteSettings").doc(SITE_SETTINGS_DOC).set({
+  await siteSettingsRef.set({
     hubId: hub.id,
     ...next,
     updatedAt: now,
     updatedBy: actorId,
   }, { merge: true });
+  await syncSiteSettingsMediaUsageAfterWrite(hub.id, previousSiteSettingsDoc, { updatedAt: now });
 
   return { ...next, hubId: hub.id, updatedAt: now };
 }
@@ -319,13 +352,16 @@ export async function updateCoursesPageSettingsByHubSlug(hubSlug, payload, actor
   const hub = await requireHubBySlug(hubSlug);
   const next = normalizeCoursesPageSettingsPayload(payload);
   const now = new Date().toISOString();
+  const siteSettingsRef = getSiteSettingsRef(hub.id);
+  const previousSiteSettingsDoc = await siteSettingsRef.get();
 
-  await getFirebaseAdminDb().collection("hubs").doc(hub.id).collection("siteSettings").doc(SITE_SETTINGS_DOC).set({
+  await siteSettingsRef.set({
     hubId: hub.id,
     ...next,
     updatedAt: now,
     updatedBy: actorId,
   }, { merge: true });
+  await syncSiteSettingsMediaUsageAfterWrite(hub.id, previousSiteSettingsDoc, { updatedAt: now });
 
   return { ...next, hubId: hub.id, updatedAt: now };
 }
@@ -334,13 +370,16 @@ export async function updateTestimonialsPageSettingsByHubSlug(hubSlug, payload, 
   const hub = await requireHubBySlug(hubSlug);
   const next = normalizeTestimonialsPageSettingsPayload(payload);
   const now = new Date().toISOString();
+  const siteSettingsRef = getSiteSettingsRef(hub.id);
+  const previousSiteSettingsDoc = await siteSettingsRef.get();
 
-  await getFirebaseAdminDb().collection("hubs").doc(hub.id).collection("siteSettings").doc(SITE_SETTINGS_DOC).set({
+  await siteSettingsRef.set({
     hubId: hub.id,
     ...next,
     updatedAt: now,
     updatedBy: actorId,
   }, { merge: true });
+  await syncSiteSettingsMediaUsageAfterWrite(hub.id, previousSiteSettingsDoc, { updatedAt: now });
 
   return { ...next, hubId: hub.id, updatedAt: now };
 }

@@ -84,3 +84,14 @@ The fallback reserves:
 - Confirm unpublished testimonials do not appear.
 - Edit/create/delete a testimonial in admin and confirm public `/testimonials` updates after invalidation.
 - Compare Network waterfall before/after where available.
+
+## Runtime Verification
+
+- Production `/testimonials` hard-refresh screenshot showed a clean document load around 416 ms.
+- Testimonial RSC refresh/navigation requests were observed around 157-173 ms.
+- Repeated navigation between `/courses` and `/testimonials` still caused later `/courses` RSC requests, but this is currently accepted because the expensive public course data path is server-side cached.
+- Client navigation-cache tuning is deferred unless repeated route transitions remain visibly slow after this public cache/shell work.
+
+## Remaining Follow-Up
+
+- Verify testimonial create/edit/delete invalidation updates public `/testimonials`.

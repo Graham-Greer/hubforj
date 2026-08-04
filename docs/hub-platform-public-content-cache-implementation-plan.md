@@ -323,7 +323,7 @@ Runtime verification:
 
 ### 2026-08-04 - Public Testimonials Shell/Deferred Split
 
-Status: implemented at source level, pending runtime verification.
+Status: implemented and runtime verified.
 
 Completed:
 
@@ -335,7 +335,13 @@ Completed:
 - Added implementation note:
   [hub-platform-public-testimonials-shell-deferred-slice-2026-08-04.md](hub-platform-public-testimonials-shell-deferred-slice-2026-08-04.md)
 
+Runtime verification:
+
+- Production `/testimonials` hard-refresh screenshot showed a clean document load around 416 ms.
+- Testimonial RSC refresh/navigation requests observed around 157-173 ms.
+- User navigated repeatedly between `/courses` and `/testimonials`; subsequent `/courses` RSC requests still occurred, but the public server-side data path is cached and cheaper.
+
 Pending:
 
-- Runtime verify anonymous `/testimonials` after deployment.
 - Verify testimonial create/edit/delete invalidation updates the route.
+- Defer client navigation-cache tuning unless repeated route transitions remain visibly slow after server-side cache improvements.
