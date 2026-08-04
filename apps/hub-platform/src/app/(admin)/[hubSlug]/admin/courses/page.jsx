@@ -7,7 +7,7 @@ import {
 } from "@/components/patterns/admin-route-fallbacks/AdminRouteFallbacks";
 import OfferingAdminListWorkspace from "@/components/patterns/offering-admin-list-workspace/OfferingAdminListWorkspace";
 import { deleteCourseAction } from "./[courseId]/actions";
-import { countEnrolledCourseRegistrations } from "@/lib/data/course-registrations";
+import { resolveCourseRegistrationSummary } from "@/lib/data/course-registrations";
 import {
   formatCourseDateRange,
   getCourseFormatLabel,
@@ -58,17 +58,23 @@ const filterDefinitions = [
 
 async function CoursesWorkspace({ hub }) {
   const courses = await listCoursesByHubSlug(hub.slug);
-  const enrolmentCounts = await Promise.all(
-    courses.map(async (course) => [course.id, await countEnrolledCourseRegistrations(hub.id, course.id)])
+  const registrationSummaries = await Promise.all(
+    courses.map(async (course) => [
+      course.id,
+      await resolveCourseRegistrationSummary(hub.id, course, {
+        actorId: "course-list-summary-repair",
+      }),
+    ])
   );
-  const enrolmentCountsByCourseId = new Map(enrolmentCounts);
+  const registrationSummariesByCourseId = new Map(registrationSummaries);
 
   const items = courses.map((course) => {
     const scheduleLabel = formatCourseDateRange(course, hub.locale);
     const typeLabel = getCourseTypeLabel(course);
     const levelLabel = getCourseLevelLabel(course);
     const formatLabel = getCourseFormatLabel(course.format);
-    const enrolmentCount = enrolmentCountsByCourseId.get(course.id) || 0;
+    const registrationSummary = registrationSummariesByCourseId.get(course.id) || {};
+    const enrolmentCount = Number(registrationSummary.enrolledRegistrationCount || 0);
     const visibilityLabel = getCourseVisibilityLabel(course.visibility);
     const summary = course.summary || getSectionRichTextPlainText(course.description);
 

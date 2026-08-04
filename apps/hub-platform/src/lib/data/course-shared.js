@@ -108,6 +108,7 @@ export function normalizeCourseRecord(course) {
     attendanceActiveCount:
       normalizeCourseInteger(course.attendanceActiveCount, 0) ||
       normalizeCourseInteger(course.attendanceInProgressCount, 0) + normalizeCourseInteger(course.attendanceCompletedCount, 0),
+    registrationSummarySchemaVersion: normalizeCourseInteger(course.registrationSummarySchemaVersion, 0),
     registrationSummaryUpdatedAt: normalizeString(course.registrationSummaryUpdatedAt),
     registrationSummaryUpdatedBy: normalizeString(course.registrationSummaryUpdatedBy),
     createdAt: normalizeString(course.createdAt),

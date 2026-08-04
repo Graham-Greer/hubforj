@@ -120,9 +120,12 @@ Copy this block into the relevant implementation notes before starting a slice.
   - sibling registrations, attendance, export, and edit route prefetches have been disabled on detail action buttons
   - course detail now uses course-level registration summary counters for enrolled and active attendance counts
   - course registration create/status/attendance mutations maintain the summary counters
-  - existing courses without `registrationSummaryUpdatedAt` perform one lightweight status-only repair read, then subsequent detail loads use the course document counters
+  - course registration summary projections are trusted only when `registrationSummarySchemaVersion` matches the current projection schema and `registrationSummaryUpdatedAt` is present
+  - existing courses with missing or legacy summary metadata perform one lightweight status-only repair read, then subsequent detail/list loads use the course document counters
+  - the admin course list uses the same resolved course registration summary projection as course detail, so list badges and detail capacity/attendance counts share one source of truth
   - counter maintenance updates `registrationSummaryUpdatedAt` and does not mutate normal course content `updatedAt`
   - expected Network/server behavior: `/admin/courses/[courseId]` should not call `listCourseRegistrations` or hydrate member records for summary counts
+  - expected data behavior: course list and course detail counts must match after the first repair load for legacy courses
 - Admin onboarding:
   - route-scoped onboarding state is reused per hub once loaded
   - full checklist hydration still occurs only where the checklist is relevant
