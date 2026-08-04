@@ -12,6 +12,7 @@ import PackageUpgradeNotice from "@/components/patterns/package-upgrade-notice/P
 import SubmitButton from "@/components/ui/submit-button/SubmitButton";
 import useDirtyFormState from "@/hooks/use-dirty-form-state";
 import { getHubPaymentSetupState } from "@/lib/domain/hub-payment-configuration";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { parseSectionRichTextInput } from "@/lib/domain/section-rich-text";
 import {
   createFormSnapshotFromKeys,
@@ -54,9 +55,11 @@ export default function EditEventForm({
   paymentSetupState = null,
   publishLocked = false,
   publishUpgradeNotice = null,
+  routeMode = "path",
 }) {
   const router = useRouter();
   const [activeSectionId, setActiveSectionId] = useState(editTabs[0].id);
+  const eventHref = buildHubRuntimeHref(hub.slug, `/admin/events/${event.id}`, routeMode);
   const canUsePaidEvents = hub?.packageCapabilities?.paidEventsEnabled === true;
   const canUseGroupBookings = hub?.packageCapabilities?.groupBookingsEnabled === true;
   const paymentProcessingMode = hub?.packagePaymentProcessingMode || "none";
@@ -142,9 +145,9 @@ export default function EditEventForm({
       return;
     }
 
-    router.push(`/${hub.slug}/admin/events/${event.id}`);
+    router.push(eventHref);
     router.refresh();
-  }, [event.id, hub.slug, router, state?.success]);
+  }, [eventHref, router, state?.success]);
 
   const submitIdleLabel = state?.success && !isDirty ? "Event saved" : "Save event";
 
@@ -237,9 +240,9 @@ export default function EditEventForm({
       ) : null}
       <AdminFormFooter ref={feedbackRef} error={state?.error} success={state?.success}>
         {isDirty ? (
-          <AdminDiscardChangesButton href={`/${hub.slug}/admin/events/${event.id}`} label="Cancel" variant="secondary" />
+          <AdminDiscardChangesButton href={eventHref} label="Cancel" variant="secondary" />
         ) : (
-          <Button href={`/${hub.slug}/admin/events/${event.id}`} variant="secondary">
+          <Button href={eventHref} variant="secondary">
             Cancel
           </Button>
         )}

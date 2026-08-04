@@ -7,6 +7,7 @@ import Icon from "@/components/ui/icon/Icon";
 import OfferingAdminSummaryPanel from "@/components/patterns/offering-admin-summary-panel/OfferingAdminSummaryPanel";
 import PageHeader from "@/components/patterns/page-header/PageHeader";
 import WorkspaceSection from "@/components/patterns/workspace-section/WorkspaceSection";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import {
   formatCourseCapacity,
   formatCourseDateRange,
@@ -38,19 +39,20 @@ export default function CourseDetailWorkspace({
   coursesQuery = "",
   isEditing = false,
   editForm = null,
+  routeMode = "path",
   attendanceCount = 0,
   registrationCount = 0,
   canExportAttendanceReport = false,
   hasAttendanceRegistrations = false,
 }) {
-  const coursesListHref = `/${hub.slug}/admin/courses${coursesQuery ? `?${coursesQuery}` : ""}`;
-  const registrationsHref = `/${hub.slug}/admin/courses/${course.id}/registrations`;
-  const attendanceHref = `/${hub.slug}/admin/courses/${course.id}/attendance`;
-  const attendanceExportHref = `/${hub.slug}/admin/courses/${course.id}/attendance/export`;
-  const editHref = `/${hub.slug}/admin/courses/${course.id}?${new URLSearchParams({
+  const coursesListHref = buildHubRuntimeHref(hub.slug, `/admin/courses${coursesQuery ? `?${coursesQuery}` : ""}`, routeMode);
+  const registrationsHref = buildHubRuntimeHref(hub.slug, `/admin/courses/${course.id}/registrations`, routeMode);
+  const attendanceHref = buildHubRuntimeHref(hub.slug, `/admin/courses/${course.id}/attendance`, routeMode);
+  const attendanceExportHref = buildHubRuntimeHref(hub.slug, `/admin/courses/${course.id}/attendance/export`, routeMode);
+  const editHref = buildHubRuntimeHref(hub.slug, `/admin/courses/${course.id}?${new URLSearchParams({
     ...(coursesQuery ? Object.fromEntries(new URLSearchParams(coursesQuery)) : {}),
     mode: "edit",
-  }).toString()}#edit-course-details`;
+  }).toString()}#edit-course-details`, routeMode);
   const shouldShowVerifiedAttendance = hasCourseHappened(course);
   const attendanceLabel = shouldShowVerifiedAttendance ? "Attended" : "Attending";
   const badges = (

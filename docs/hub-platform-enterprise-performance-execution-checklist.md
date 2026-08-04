@@ -115,14 +115,19 @@ Copy this block into the relevant implementation notes before starting a slice.
   - sibling `registrations`, `attendance`, and `export` route prefetches have been disabled on the detail action buttons
   - the detail/edit shell no longer calls `listEventAdminAttendanceRows`
   - summary attendance now uses the event registration counter unless a future verified attendance count is explicitly loaded
+  - read-only event detail no longer fetches media folders or payment setup just to prepare the edit form; those dependencies are loaded only for `?mode=edit`
+  - read-only recurring event series detail no longer fetches media folders just to prepare the edit form; those dependencies are loaded only for `?mode=edit`
+  - event list/detail/series action hrefs and create/delete redirects are built with the current host/path route mode, so subdomain admin navigation does not intentionally hit slug-prefixed URLs that middleware must strip
   - expected Network result: no attendance/registrations/export requests before the admin selects those actions
 - Course detail route:
   - sibling registrations, attendance, export, and edit route prefetches have been disabled on detail action buttons
   - course detail now uses course-level registration summary counters for enrolled and active attendance counts
+  - read-only course detail no longer fetches media folders or payment setup just to prepare the edit form; those dependencies are loaded only for `?mode=edit`
   - course registration create/status/attendance mutations maintain the summary counters
   - course registration summary projections are trusted only when `registrationSummarySchemaVersion` matches the current projection schema and `registrationSummaryUpdatedAt` is present
   - existing courses with missing or legacy summary metadata perform one lightweight status-only repair read, then subsequent detail/list loads use the course document counters
   - the admin course list uses the same resolved course registration summary projection as course detail, so list badges and detail capacity/attendance counts share one source of truth
+  - course list/detail action hrefs and create/delete redirects are built with the current host/path route mode, so subdomain admin navigation does not intentionally hit slug-prefixed URLs that middleware must strip
   - counter maintenance updates `registrationSummaryUpdatedAt` and does not mutate normal course content `updatedAt`
   - expected Network/server behavior: `/admin/courses/[courseId]` should not call `listCourseRegistrations` or hydrate member records for summary counts
   - expected data behavior: course list and course detail counts must match after the first repair load for legacy courses

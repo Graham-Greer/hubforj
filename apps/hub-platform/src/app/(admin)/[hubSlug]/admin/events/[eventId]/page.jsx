@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { headers } from "next/headers";
 import EventDetailWorkspace from "@/components/patterns/event-detail-workspace/EventDetailWorkspace";
 import { AdminProgrammeDetailFallback } from "@/components/patterns/admin-route-fallbacks/AdminRouteFallbacks";
 import EditEventForm from "./EditEventForm";
@@ -8,6 +9,8 @@ import { isActiveUpcomingPublishedEvent } from "@/lib/domain/events";
 import { resolveHubPackageEntitlements } from "@/lib/domain/hub-package";
 import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
 import { getHubPaymentSetupState } from "@/lib/domain/hub-payment-configuration";
+import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { listMediaFoldersByHubId } from "@/lib/data/media";
 import { notFound } from "next/navigation";
 
@@ -23,14 +26,11 @@ async function EventDetailContent({ hubSlug, eventId, query }) {
   });
 
   const eventsQuery = eventsSearchParams.toString();
+  const headerStore = await headers();
+  const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
   const hub = await requireHubBySlug(hubSlug);
   const entitlements = resolveHubPackageEntitlements(hub);
-  const [event, mediaFolders, paymentConfiguration] = await Promise.all([
-    getEventById(hub.id, eventId),
-    listMediaFoldersByHubId(hub.id),
-    getHubPaymentConfigurationByHubId(hub.id),
-  ]);
-  const paymentSetupState = getHubPaymentSetupState(hub, paymentConfiguration);
+  const event = await getEventById(hub.id, eventId);
   const canEditEvent = event?.eventKind !== "series_occurrence";
   const isEditing = String(query?.mode || "") === "edit" && canEditEvent;
 
@@ -69,6 +69,28 @@ async function EventDetailContent({ hubSlug, eventId, query }) {
   const registrationCount = Number(event.registeredAttendeeCount || 0);
   const hasAttendanceRegistrations =
     registrationCount + Number(event.waitlistedAttendeeCount || 0) + Number(event.cancelledAttendeeCount || 0) > 0;
+  const editForm = isEditing
+    ? await (async () => {
+        const [mediaFolders, paymentConfiguration] = await Promise.all([
+          listMediaFoldersByHubId(hub.id),
+          getHubPaymentConfigurationByHubId(hub.id),
+        ]);
+        const paymentSetupState = getHubPaymentSetupState(hub, paymentConfiguration);
+
+        return (
+          <EditEventForm
+            hub={hub}
+            event={event}
+            mediaAssets={event.imageAsset ? [event.imageAsset] : []}
+            mediaFolders={mediaFolders}
+            paymentSetupState={paymentSetupState}
+            publishLocked={publishLocked}
+            publishUpgradeNotice={publishUpgradeNotice}
+            routeMode={routeMode}
+          />
+        );
+      })()
+    : null;
 
   return (
     <EventDetailWorkspace
@@ -76,23 +98,14 @@ async function EventDetailContent({ hubSlug, eventId, query }) {
       event={event}
       eventsQuery={eventsQuery}
       isEditing={isEditing}
+      routeMode={routeMode}
       registrationCount={registrationCount}
       attendanceCountVerified={false}
       canExportAttendanceReport={entitlements.capabilities?.reportingEnabled === true}
       hasAttendanceRegistrations={hasAttendanceRegistrations}
-      seriesWorkspaceHref={event.seriesId ? `/${hub.slug}/admin/events/series/${event.seriesId}` : ""}
+      seriesWorkspaceHref={event.seriesId ? buildHubRuntimeHref(hub.slug, `/admin/events/series/${event.seriesId}`, routeMode) : ""}
       canEditEvent={canEditEvent}
-      editForm={
-        <EditEventForm
-          hub={hub}
-          event={event}
-          mediaAssets={event.imageAsset ? [event.imageAsset] : []}
-          mediaFolders={mediaFolders}
-          paymentSetupState={paymentSetupState}
-          publishLocked={publishLocked}
-          publishUpgradeNotice={publishUpgradeNotice}
-        />
-      }
+      editForm={editForm}
     />
   );
 }

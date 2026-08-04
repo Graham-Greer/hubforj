@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { headers } from "next/headers";
 import Button from "@/components/ui/button/Button";
 import { AdminWizardFormFallback } from "@/components/patterns/admin-route-fallbacks/AdminRouteFallbacks";
 import PackageUpgradeNotice from "@/components/patterns/package-upgrade-notice/PackageUpgradeNotice";
@@ -10,6 +11,8 @@ import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-config
 import { listMediaFoldersByHubId } from "@/lib/data/media";
 import { resolveHubPackageEntitlements } from "@/lib/domain/hub-package";
 import { getHubPaymentSetupState } from "@/lib/domain/hub-payment-configuration";
+import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import CreateEventForm from "./CreateEventForm";
 import styles from "./page.module.css";
 
@@ -50,6 +53,8 @@ async function CreateEventWorkspace({ hubSlug }) {
 
 export default async function CreateEventPage({ params }) {
   const { hubSlug } = await params;
+  const headerStore = await headers();
+  const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
   const hub = await requireHubCoreBySlug(hubSlug);
 
   return (
@@ -59,7 +64,7 @@ export default async function CreateEventPage({ params }) {
         title="Create event"
         description="Set the schedule, capacity, pricing, visibility, and registration rules before publishing."
         actions={
-          <Button href={`/${hub.slug}/admin/events`} variant="secondary">
+          <Button href={buildHubRuntimeHref(hub.slug, "/admin/events", routeMode)} variant="secondary">
             Back to events
           </Button>
         }
