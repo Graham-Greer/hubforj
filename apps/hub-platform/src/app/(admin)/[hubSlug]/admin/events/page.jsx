@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { headers } from "next/headers";
 import Button from "@/components/ui/button/Button";
 import PageHeader from "@/components/patterns/page-header/PageHeader";
 import {
@@ -15,6 +16,8 @@ import {
   getEventStatusLabel,
   getEventStatusTone,
 } from "@/lib/domain/events";
+import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { getPublicEventSummary } from "@/lib/domain/public-events";
 
 const filterDefinitions = [
@@ -51,7 +54,11 @@ const filterDefinitions = [
   },
 ];
 
-async function EventsWorkspace({ hub }) {
+function buildAdminHref(hubSlug, pathname, routeMode) {
+  return buildHubRuntimeHref(hubSlug, pathname, routeMode);
+}
+
+async function EventsWorkspace({ hub, routeMode }) {
   const [events, eventSeries] = await Promise.all([
     listEventsByHubSlug(hub.slug),
     listEventSeriesByHubSlug(hub.slug),
@@ -85,11 +92,11 @@ async function EventsWorkspace({ hub }) {
           visibility: event.visibility || "public",
         },
         primaryAction: {
-          href: `/${hub.slug}/admin/events/${event.id}`,
+          href: buildAdminHref(hub.slug, `/admin/events/${event.id}`, routeMode),
           label: "Open event",
         },
         secondaryAction: {
-          href: `/${hub.slug}/admin/events/${event.id}?mode=edit`,
+          href: buildAdminHref(hub.slug, `/admin/events/${event.id}?mode=edit`, routeMode),
           label: "Edit event",
         },
         deleteMenuLabel: "Delete event",
@@ -131,7 +138,7 @@ async function EventsWorkspace({ hub }) {
         visibility: series.visibility || "public",
       },
       primaryAction: {
-        href: `/${hub.slug}/admin/events/series/${series.id}`,
+        href: buildAdminHref(hub.slug, `/admin/events/series/${series.id}`, routeMode),
         label: "Open series",
       },
       secondaryAction: null,
@@ -149,7 +156,7 @@ async function EventsWorkspace({ hub }) {
         eyebrow="Events"
         title="Manage events"
         description="Review upcoming and draft events, filter the list quickly, and open the one you need to edit, publish, or manage."
-        actions={<Button href={`/${hub.slug}/admin/events/create`} data-onboarding="events-create-button">Create event</Button>}
+        actions={<Button href={buildAdminHref(hub.slug, "/admin/events/create", routeMode)} data-onboarding="events-create-button">Create event</Button>}
         items={items}
         showHeader={false}
         onboardingKey="events-list"
@@ -160,8 +167,8 @@ async function EventsWorkspace({ hub }) {
           eyebrow: "No events yet",
           title: "Create the first event",
           description: "Create the first event to start managing registrations, capacity, and attendance.",
-          primaryAction: { href: `/${hub.slug}/admin/events/create`, label: "Create event" },
-          secondaryAction: { href: `/${hub.slug}/admin`, label: "Back to overview" },
+          primaryAction: { href: buildAdminHref(hub.slug, "/admin/events/create", routeMode), label: "Create event" },
+          secondaryAction: { href: buildAdminHref(hub.slug, "/admin", routeMode), label: "Back to overview" },
         }}
       />
     </div>
@@ -170,6 +177,8 @@ async function EventsWorkspace({ hub }) {
 
 export default async function EventsPage({ params }) {
   const { hubSlug } = await params;
+  const headerStore = await headers();
+  const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
   const hub = await requireHubCoreBySlug(hubSlug);
 
   return (
@@ -178,10 +187,10 @@ export default async function EventsPage({ params }) {
         eyebrow="Events"
         title="Manage events"
         description="Review upcoming and draft events, filter the list quickly, and open the one you need to edit, publish, or manage."
-        actions={<Button href={`/${hub.slug}/admin/events/create`} data-onboarding="events-create-button">Create event</Button>}
+        actions={<Button href={buildAdminHref(hub.slug, "/admin/events/create", routeMode)} data-onboarding="events-create-button">Create event</Button>}
       />
       <Suspense fallback={<AdminProgrammeListFallback rows={3} filters={3} />}>
-        <EventsWorkspace hub={hub} />
+        <EventsWorkspace hub={hub} routeMode={routeMode} />
       </Suspense>
     </AdminRouteStack>
   );

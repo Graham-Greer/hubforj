@@ -139,6 +139,9 @@ Current improvements already completed:
 - event detail/edit shell no longer loads full attendance rows only to render summary counts
 - event edit shell now skips the active-upcoming publish-limit count unless the current event is unpublished/non-active and the hub has a finite active-event limit
 - event and course detail action links opt out of automatic sibling-route prefetching for bookings, attendance, export, and edit destinations
+- read-only event/course detail routes no longer fetch media folders or payment setup for edit forms; those edit-only dependencies load only on `?mode=edit`
+- read-only recurring event series detail no longer fetches media folders for the edit form; that dependency loads only on `?mode=edit`
+- event/course list, detail, create-back, edit-cancel, create/delete redirects, and recurring-series action hrefs now use the current host/path route mode to avoid avoidable middleware slug-stripping redirects on subdomain admin URLs
 - course detail/edit shell now uses course registration summary counters instead of loading full registration rows and member records
 - course registration status and attendance mutations now maintain course-level summary counters
 - course registration summary projections now include a schema version; legacy or incomplete projections perform one lightweight status-only summary repair before being trusted

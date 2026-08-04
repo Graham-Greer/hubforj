@@ -16,6 +16,7 @@ import Surface from "@/components/primitives/surface/Surface";
 import WorkspaceSection from "@/components/patterns/workspace-section/WorkspaceSection";
 import SectionRichText from "@/components/sections/primitives/section-rich-text/SectionRichText";
 import { formatEventPrice, getEventStatusLabel, getEventStatusTone } from "@/lib/domain/events";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import styles from "./EventSeriesWorkspace.module.css";
 
 function formatWeekdayList(values = []) {
@@ -106,6 +107,7 @@ export default function EventSeriesWorkspace({
   occurrencesQuery = "",
   isEditing = false,
   editForm = null,
+  routeMode = "path",
 }) {
   const router = useRouter();
   const [dateFrom, setDateFrom] = useState("");
@@ -113,8 +115,8 @@ export default function EventSeriesWorkspace({
   const [bookingFilter, setBookingFilter] = useState("all");
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
-  const eventsListHref = `/${hub.slug}/admin/events${occurrencesQuery ? `?${occurrencesQuery}` : ""}`;
-  const editHref = `/${hub.slug}/admin/events/series/${series.id}?mode=edit`;
+  const eventsListHref = buildHubRuntimeHref(hub.slug, `/admin/events${occurrencesQuery ? `?${occurrencesQuery}` : ""}`, routeMode);
+  const editHref = buildHubRuntimeHref(hub.slug, `/admin/events/series/${series.id}?mode=edit`, routeMode);
   const recurrenceSummary = getRecurrenceSummary(series);
   const upcomingOccurrences = occurrences.filter((occurrence) => occurrence.status !== "cancelled").length;
   const preservedOccurrences = occurrences.filter((occurrence) => occurrence.isSeriesPreserved).length;
@@ -332,17 +334,19 @@ export default function EventSeriesWorkspace({
                                   {
                                     value: "open",
                                     label: "Open occurrence",
-                                    onSelect: () => router.push(`/${hub.slug}/admin/events/${occurrence.id}`),
+                                    onSelect: () => router.push(buildHubRuntimeHref(hub.slug, `/admin/events/${occurrence.id}`, routeMode)),
                                   },
                                   {
                                     value: "bookings",
                                     label: "Manage bookings",
-                                    onSelect: () => router.push(`/${hub.slug}/admin/events/${occurrence.id}/registrations`),
+                                    onSelect: () =>
+                                      router.push(buildHubRuntimeHref(hub.slug, `/admin/events/${occurrence.id}/registrations`, routeMode)),
                                   },
                                   {
                                     value: "attendance",
                                     label: "Manage attendance",
-                                    onSelect: () => router.push(`/${hub.slug}/admin/events/${occurrence.id}/attendance`),
+                                    onSelect: () =>
+                                      router.push(buildHubRuntimeHref(hub.slug, `/admin/events/${occurrence.id}/attendance`, routeMode)),
                                   },
                                 ]}
                               >

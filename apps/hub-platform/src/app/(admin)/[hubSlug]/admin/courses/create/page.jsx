@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { headers } from "next/headers";
 import Button from "@/components/ui/button/Button";
 import { AdminWizardFormFallback } from "@/components/patterns/admin-route-fallbacks/AdminRouteFallbacks";
 import WorkflowGuidance from "@/components/patterns/workflow-guidance/WorkflowGuidance";
@@ -7,6 +8,8 @@ import { requireHubBySlug, requireHubCoreBySlug } from "@/lib/data/hubs";
 import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
 import { listMediaFoldersByHubId } from "@/lib/data/media";
 import { getHubPaymentSetupState } from "@/lib/domain/hub-payment-configuration";
+import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import CreateCourseForm from "./CreateCourseForm";
 import styles from "./page.module.css";
 
@@ -25,6 +28,8 @@ async function CreateCourseWorkspace({ hubSlug }) {
 
 export default async function CreateCoursePage({ params }) {
   const { hubSlug } = await params;
+  const headerStore = await headers();
+  const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
   const hub = await requireHubCoreBySlug(hubSlug);
 
   return (
@@ -34,7 +39,7 @@ export default async function CreateCoursePage({ params }) {
         title="Create course"
         description="Set the structure, commitment, pricing, and enrolment rules before opening the course to members."
         actions={
-          <Button href={`/${hub.slug}/admin/courses`} variant="secondary">
+          <Button href={buildHubRuntimeHref(hub.slug, "/admin/courses", routeMode)} variant="secondary">
             Back to courses
           </Button>
         }

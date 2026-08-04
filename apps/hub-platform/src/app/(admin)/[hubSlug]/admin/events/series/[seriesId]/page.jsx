@@ -1,13 +1,17 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { listMediaFoldersByHubId } from "@/lib/data/media";
 import { requireHubBySlug } from "@/lib/data/hubs";
 import { getEventSeriesById, listEventSeriesOccurrences } from "@/lib/data/event-series";
+import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
 import EventSeriesWorkspace from "@/components/patterns/event-series-workspace/EventSeriesWorkspace";
 import EditEventSeriesForm from "./EditEventSeriesForm";
 
 export default async function EventSeriesDetailPage({ params, searchParams }) {
   const { hubSlug, seriesId } = await params;
   const query = await searchParams;
+  const headerStore = await headers();
+  const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
   const eventsSearchParams = new URLSearchParams();
 
   ["q", "status", "pricing", "visibility"].forEach((key) => {
@@ -20,10 +24,9 @@ export default async function EventSeriesDetailPage({ params, searchParams }) {
 
   const occurrencesQuery = eventsSearchParams.toString();
   const hub = await requireHubBySlug(hubSlug);
-  const [series, occurrences, mediaFolders] = await Promise.all([
+  const [series, occurrences] = await Promise.all([
     getEventSeriesById(hub.id, seriesId),
     listEventSeriesOccurrences(hub.id, seriesId),
-    listMediaFoldersByHubId(hub.id),
   ]);
   const isEditing = String(query?.mode || "") === "edit";
 
@@ -35,6 +38,17 @@ export default async function EventSeriesDetailPage({ params, searchParams }) {
     ...series,
     imageAsset: series.imageAsset || null,
   };
+  const editForm = isEditing
+    ? (
+        <EditEventSeriesForm
+          hub={hub}
+          series={enhancedSeries}
+          mediaAssets={enhancedSeries.imageAsset ? [enhancedSeries.imageAsset] : []}
+          mediaFolders={await listMediaFoldersByHubId(hub.id)}
+          routeMode={routeMode}
+        />
+      )
+    : null;
 
   return (
     <EventSeriesWorkspace
@@ -43,14 +57,8 @@ export default async function EventSeriesDetailPage({ params, searchParams }) {
       occurrences={occurrences}
       occurrencesQuery={occurrencesQuery}
       isEditing={isEditing}
-      editForm={
-        <EditEventSeriesForm
-          hub={hub}
-          series={enhancedSeries}
-          mediaAssets={enhancedSeries.imageAsset ? [enhancedSeries.imageAsset] : []}
-          mediaFolders={mediaFolders}
-        />
-      }
+      editForm={editForm}
+      routeMode={routeMode}
     />
   );
 }

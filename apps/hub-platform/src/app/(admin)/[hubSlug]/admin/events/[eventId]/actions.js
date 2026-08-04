@@ -2,12 +2,21 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { assertActionHubIdMatches, requireHubOperatorActionAccess } from "@/lib/auth/action-access";
 import { revalidatePublicEventsCache } from "@/lib/cache/public-content";
 import { deleteEventById, getEventById, updateEventById } from "@/lib/data/events";
+import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { assertHubRegionalSetupComplete } from "@/lib/domain/hub-regional-setup";
 import { getPackageUpgradeNotice } from "@/lib/domain/package-upgrade";
 import { queueEventCancelledByAdminNotifications } from "@/lib/server/booking-notification-outbox";
+
+async function buildAdminActionHref(hubSlug, pathname) {
+  const headerStore = await headers();
+  const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
+  return buildHubRuntimeHref(hubSlug, pathname, routeMode);
+}
 
 function revalidateEventPaths(hubSlug, eventId, hubId) {
   revalidatePath(`/${hubSlug}/admin/events`);
@@ -118,5 +127,5 @@ export async function deleteEventAction(_previousState, formData) {
   }
 
   revalidateEventPaths(hubSlug, eventId, hubId);
-  redirect(`/${hubSlug}/admin/events?deleted=1`);
+  redirect(await buildAdminActionHref(hubSlug, "/admin/events?deleted=1"));
 }

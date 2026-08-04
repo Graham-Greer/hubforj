@@ -10,6 +10,7 @@ import FormSectionTabs from "@/components/patterns/form-section-tabs/FormSection
 import PackageUpgradeNotice from "@/components/patterns/package-upgrade-notice/PackageUpgradeNotice";
 import SubmitButton from "@/components/ui/submit-button/SubmitButton";
 import useDirtyFormState from "@/hooks/use-dirty-form-state";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { parseSectionRichTextInput } from "@/lib/domain/section-rich-text";
 import {
   createFormSnapshotFromKeys,
@@ -83,8 +84,9 @@ function mapSeriesToFormValues(series) {
   };
 }
 
-export default function EditEventSeriesForm({ hub, series, mediaAssets, mediaFolders }) {
+export default function EditEventSeriesForm({ hub, series, mediaAssets, mediaFolders, routeMode = "path" }) {
   const [activeSectionId, setActiveSectionId] = useState(editTabs[0].id);
+  const seriesHref = buildHubRuntimeHref(hub.slug, `/admin/events/series/${series.id}`, routeMode);
   const canUsePaidEvents = hub?.packageCapabilities?.paidEventsEnabled === true;
   const canUseGroupBookings = hub?.packageCapabilities?.groupBookingsEnabled === true;
   const canUseRecurringEvents = hub?.packageCapabilities?.recurringEventsEnabled === true;
@@ -205,9 +207,9 @@ export default function EditEventSeriesForm({ hub, series, mediaAssets, mediaFol
       ) : null}
       <AdminFormFooter ref={feedbackRef} error={state?.error} success={state?.success}>
         {isDirty ? (
-          <AdminDiscardChangesButton href={`/${hub.slug}/admin/events/series/${series.id}`} label="Cancel" variant="secondary" />
+          <AdminDiscardChangesButton href={seriesHref} label="Cancel" variant="secondary" />
         ) : (
-          <Button href={`/${hub.slug}/admin/events/series/${series.id}`} variant="secondary">
+          <Button href={seriesHref} variant="secondary">
             Cancel
           </Button>
         )}

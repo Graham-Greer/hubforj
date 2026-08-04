@@ -12,6 +12,7 @@ import PackageUpgradeNotice from "@/components/patterns/package-upgrade-notice/P
 import SubmitButton from "@/components/ui/submit-button/SubmitButton";
 import useDirtyFormState from "@/hooks/use-dirty-form-state";
 import { getHubPaymentSetupState } from "@/lib/domain/hub-payment-configuration";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { parseSectionRichTextInput } from "@/lib/domain/section-rich-text";
 import {
   createFormSnapshotFromKeys,
@@ -46,9 +47,10 @@ function createFormSnapshot(form) {
   return createFormSnapshotFromKeys(form, fieldKeys);
 }
 
-export default function EditCourseForm({ hub, course, mediaAssets, mediaFolders, paymentSetupState = null }) {
+export default function EditCourseForm({ hub, course, mediaAssets, mediaFolders, paymentSetupState = null, routeMode = "path" }) {
   const router = useRouter();
   const [activeSectionId, setActiveSectionId] = useState(editTabs[0].id);
+  const courseHref = buildHubRuntimeHref(hub.slug, `/admin/courses/${course.id}`, routeMode);
   const canUsePaidCourses = hub?.packageCapabilities?.paidCoursesEnabled === true;
   const paymentProcessingMode = hub?.packagePaymentProcessingMode || "none";
   const nativePaymentsBlocked =
@@ -142,9 +144,9 @@ export default function EditCourseForm({ hub, course, mediaAssets, mediaFolders,
       return;
     }
 
-    router.push(`/${hub.slug}/admin/courses/${course.id}`);
+    router.push(courseHref);
     router.refresh();
-  }, [course.id, hub.slug, router, state?.success]);
+  }, [courseHref, router, state?.success]);
 
   const submitIdleLabel = state?.success && !isDirty ? "Course saved" : "Save course";
 
@@ -214,9 +216,9 @@ export default function EditCourseForm({ hub, course, mediaAssets, mediaFolders,
       />
       <AdminFormFooter ref={feedbackRef} error={state?.error} success={state?.success}>
         {isDirty ? (
-          <AdminDiscardChangesButton href={`/${hub.slug}/admin/courses/${course.id}`} label="Cancel" variant="secondary" />
+          <AdminDiscardChangesButton href={courseHref} label="Cancel" variant="secondary" />
         ) : (
-          <Button href={`/${hub.slug}/admin/courses/${course.id}`} variant="secondary">
+          <Button href={courseHref} variant="secondary">
             Cancel
           </Button>
         )}

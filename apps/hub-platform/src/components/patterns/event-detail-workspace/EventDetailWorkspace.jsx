@@ -7,6 +7,7 @@ import Icon from "@/components/ui/icon/Icon";
 import OfferingAdminSummaryPanel from "@/components/patterns/offering-admin-summary-panel/OfferingAdminSummaryPanel";
 import PageHeader from "@/components/patterns/page-header/PageHeader";
 import WorkspaceSection from "@/components/patterns/workspace-section/WorkspaceSection";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import {
   formatEventCapacity,
   formatEventDateRange,
@@ -35,6 +36,7 @@ export default function EventDetailWorkspace({
   eventsQuery = "",
   isEditing = false,
   editForm = null,
+  routeMode = "path",
   attendanceCount = 0,
   attendanceCountVerified = true,
   registrationCount = 0,
@@ -43,14 +45,14 @@ export default function EventDetailWorkspace({
   seriesWorkspaceHref = "",
   canEditEvent = true,
 }) {
-  const eventsListHref = `/${hub.slug}/admin/events${eventsQuery ? `?${eventsQuery}` : ""}`;
-  const registrationsHref = `/${hub.slug}/admin/events/${event.id}/registrations`;
-  const attendanceHref = `/${hub.slug}/admin/events/${event.id}/attendance`;
-  const attendanceExportHref = `/${hub.slug}/admin/events/${event.id}/attendance/export`;
-  const editHref = `/${hub.slug}/admin/events/${event.id}?${new URLSearchParams({
+  const eventsListHref = buildHubRuntimeHref(hub.slug, `/admin/events${eventsQuery ? `?${eventsQuery}` : ""}`, routeMode);
+  const registrationsHref = buildHubRuntimeHref(hub.slug, `/admin/events/${event.id}/registrations`, routeMode);
+  const attendanceHref = buildHubRuntimeHref(hub.slug, `/admin/events/${event.id}/attendance`, routeMode);
+  const attendanceExportHref = buildHubRuntimeHref(hub.slug, `/admin/events/${event.id}/attendance/export`, routeMode);
+  const editHref = buildHubRuntimeHref(hub.slug, `/admin/events/${event.id}?${new URLSearchParams({
     ...(eventsQuery ? Object.fromEntries(new URLSearchParams(eventsQuery)) : {}),
     mode: "edit",
-  }).toString()}#edit-event-details`;
+  }).toString()}#edit-event-details`, routeMode);
   const shouldShowVerifiedAttendance = attendanceCountVerified && hasEventHappened(event);
   const attendanceLabel = shouldShowVerifiedAttendance ? "Attended" : "Attending";
   const badges = (

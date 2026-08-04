@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { headers } from "next/headers";
 import Button from "@/components/ui/button/Button";
 import PageHeader from "@/components/patterns/page-header/PageHeader";
 import {
@@ -18,6 +19,8 @@ import {
   getCourseVisibilityLabel,
 } from "@/lib/domain/courses";
 import { getSectionRichTextPlainText } from "@/lib/domain/section-rich-text";
+import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { listCoursesByHubSlug } from "@/lib/data/courses";
 import { requireHubCoreBySlug } from "@/lib/data/hubs";
 
@@ -56,7 +59,11 @@ const filterDefinitions = [
   },
 ];
 
-async function CoursesWorkspace({ hub }) {
+function buildAdminHref(hubSlug, pathname, routeMode) {
+  return buildHubRuntimeHref(hubSlug, pathname, routeMode);
+}
+
+async function CoursesWorkspace({ hub, routeMode }) {
   const courses = await listCoursesByHubSlug(hub.slug);
   const registrationSummaries = await Promise.all(
     courses.map(async (course) => [
@@ -97,11 +104,11 @@ async function CoursesWorkspace({ hub }) {
         format: course.format || "in-person",
       },
       primaryAction: {
-        href: `/${hub.slug}/admin/courses/${course.id}`,
+        href: buildAdminHref(hub.slug, `/admin/courses/${course.id}`, routeMode),
         label: "Open course",
       },
       secondaryAction: {
-        href: `/${hub.slug}/admin/courses/${course.id}?mode=edit`,
+        href: buildAdminHref(hub.slug, `/admin/courses/${course.id}?mode=edit`, routeMode),
         label: "Edit course",
       },
       deleteMenuLabel: "Delete course",
@@ -121,7 +128,7 @@ async function CoursesWorkspace({ hub }) {
       eyebrow="Courses"
       title="Manage courses"
       description="Review published and draft courses, filter the list quickly, and open the one you need to edit or manage."
-      actions={<Button href={`/${hub.slug}/admin/courses/create`} data-onboarding="courses-create-button">Create course</Button>}
+      actions={<Button href={buildAdminHref(hub.slug, "/admin/courses/create", routeMode)} data-onboarding="courses-create-button">Create course</Button>}
       items={items}
       showHeader={false}
       onboardingKey="courses-list"
@@ -132,8 +139,8 @@ async function CoursesWorkspace({ hub }) {
         eyebrow: "Courses",
         title: "No courses yet",
         description: "Create the first course when you are ready to manage structure, pricing, and enrolments.",
-        primaryAction: { href: `/${hub.slug}/admin/courses/create`, label: "Create a course" },
-        secondaryAction: { href: `/${hub.slug}/admin`, label: "Back to overview" },
+        primaryAction: { href: buildAdminHref(hub.slug, "/admin/courses/create", routeMode), label: "Create a course" },
+        secondaryAction: { href: buildAdminHref(hub.slug, "/admin", routeMode), label: "Back to overview" },
       }}
     />
   );
@@ -141,6 +148,8 @@ async function CoursesWorkspace({ hub }) {
 
 export default async function CoursesPage({ params }) {
   const { hubSlug } = await params;
+  const headerStore = await headers();
+  const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
   const hub = await requireHubCoreBySlug(hubSlug);
 
   return (
@@ -149,10 +158,10 @@ export default async function CoursesPage({ params }) {
         eyebrow="Courses"
         title="Manage courses"
         description="Review published and draft courses, filter the list quickly, and open the one you need to edit or manage."
-        actions={<Button href={`/${hub.slug}/admin/courses/create`} data-onboarding="courses-create-button">Create course</Button>}
+        actions={<Button href={buildAdminHref(hub.slug, "/admin/courses/create", routeMode)} data-onboarding="courses-create-button">Create course</Button>}
       />
       <Suspense fallback={<AdminProgrammeListFallback rows={2} filters={3} />}>
-        <CoursesWorkspace hub={hub} />
+        <CoursesWorkspace hub={hub} routeMode={routeMode} />
       </Suspense>
     </AdminRouteStack>
   );
