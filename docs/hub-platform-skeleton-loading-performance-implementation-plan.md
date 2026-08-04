@@ -137,6 +137,7 @@ Current improvements already completed:
 - admin checklist only shows hydrate skeleton when the user explicitly requested the checklist
 - admin onboarding client state is now reused per hub/scope so ordinary admin route or query changes do not repeatedly fetch `onboarding?scope=route`
 - event detail/edit shell no longer loads full attendance rows only to render summary counts
+- event edit shell now skips the active-upcoming publish-limit count unless the current event is unpublished/non-active and the hub has a finite active-event limit
 - event and course detail action links opt out of automatic sibling-route prefetching for bookings, attendance, export, and edit destinations
 
 Known gaps:

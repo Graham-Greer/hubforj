@@ -12,6 +12,8 @@ import Input from "@/components/ui/input/Input";
 import Modal from "@/components/ui/modal/Modal";
 import styles from "./MediaAssetField.module.css";
 
+const EMBEDDED_PICKER_ASSET_PAGE_SIZE = 24;
+
 function formatSize(sizeBytes) {
   const value = Number(sizeBytes || 0);
   if (value <= 0) {
@@ -353,6 +355,7 @@ export default function MediaAssetField({
       if (cursor) {
         params.set("cursor", cursor);
       }
+      params.set("limit", String(EMBEDDED_PICKER_ASSET_PAGE_SIZE));
 
       const response = await fetch(`/api/admin/hubs/${encodeURIComponent(hubSlug)}/media/assets?${params.toString()}`);
       const payload = await response.json();
