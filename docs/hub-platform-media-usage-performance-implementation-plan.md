@@ -148,6 +148,7 @@ Acceptance criteria:
 - Existing selected media previews still render after the field hydrates the selected asset by id.
 - Opening the existing-media picker loads a bounded first page and supports loading more assets.
 - Batch media hydration for event/course/testimonial/list previews does not build the full usage graph.
+- Embedded picker first-page size should be smaller than the dedicated media library first-page size because picker users need quick selection, not full-library browsing.
 
 Implementation status:
 
@@ -158,12 +159,14 @@ Implementation status:
 - Updated `getMediaAssetsByIds` to return metadata-only assets without usage graph scanning.
 - Updated site settings admin form value readers to avoid media hydration because form values only require asset ids and alt text.
 - Fixed the selected-preview picker state so an edit form can hydrate the currently selected image without incorrectly marking the picker library page as loaded.
+- Set embedded picker first-page requests to 24 assets while keeping the dedicated media library route at the larger media-library page size.
 
 Production verification checklist:
 
 - Hard refresh each embedded media form route in production with Chrome DevTools Network open.
 - Confirm no route-level request calls the full media asset library before the form shell renders.
 - Confirm opening the existing-media picker triggers one bounded `/api/admin/hubs/[hubSlug]/media/assets` request.
+- Confirm embedded picker requests include `limit=24`.
 - Confirm a selected existing asset outside the first page still renders its preview through `/api/admin/hubs/[hubSlug]/media/assets/[assetId]`.
 - Confirm the picker first page contains the bounded media library page, not only the previously selected asset.
 - Confirm removing an existing selected asset and then opening the picker shows a first-page loading state until the bounded media library page arrives, rather than briefly presenting the previous selected asset as if it were the full library.

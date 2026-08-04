@@ -41,30 +41,28 @@ async function EventDetailContent({ hubSlug, eventId, query }) {
   let publishLocked = false;
   let publishUpgradeNotice = null;
 
-  if (isEditing) {
+  if (isEditing && !isActiveUpcomingPublishedEvent(event)) {
     const activeUpcomingEventsLimit = entitlements.limits?.activeUpcomingEvents;
-    const activeUpcomingPublishedEventCount = await countActiveUpcomingPublishedEventsByHub(hub.id, {
-      excludeEventId: event.id,
-    });
 
-    publishLocked =
-      !isActiveUpcomingPublishedEvent(event) &&
-      Number.isFinite(activeUpcomingEventsLimit) &&
-      activeUpcomingPublishedEventCount >= activeUpcomingEventsLimit;
+    if (Number.isFinite(activeUpcomingEventsLimit)) {
+      const activeUpcomingPublishedEventCount = await countActiveUpcomingPublishedEventsByHub(hub.id);
 
-    if (publishLocked) {
-      publishUpgradeNotice = {
-        title: "Active event limit reached",
-        description:
-          "This hub has filled its active upcoming event allowance. You can keep editing this event as a draft, but publishing it is locked until another active event passes or the hub upgrades.",
-        currentUsage: activeUpcomingPublishedEventCount,
-        limit: activeUpcomingEventsLimit,
-        unlocks: [
-          "Unlimited active upcoming events",
-          "Paid event capability",
-          "Access to broader monetisation features",
-        ],
-      };
+      publishLocked = activeUpcomingPublishedEventCount >= activeUpcomingEventsLimit;
+
+      if (publishLocked) {
+        publishUpgradeNotice = {
+          title: "Active event limit reached",
+          description:
+            "This hub has filled its active upcoming event allowance. You can keep editing this event as a draft, but publishing it is locked until another active event passes or the hub upgrades.",
+          currentUsage: activeUpcomingPublishedEventCount,
+          limit: activeUpcomingEventsLimit,
+          unlocks: [
+            "Unlimited active upcoming events",
+            "Paid event capability",
+            "Access to broader monetisation features",
+          ],
+        };
+      }
     }
   }
 
