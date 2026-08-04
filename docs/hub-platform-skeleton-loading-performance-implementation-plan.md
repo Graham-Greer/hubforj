@@ -135,6 +135,9 @@ Current improvements already completed:
 - onboarding route uses core hub data
 - admin checklist no longer reserves large skeleton space on normal `/admin` loads while dismissed/visible state is unknown
 - admin checklist only shows hydrate skeleton when the user explicitly requested the checklist
+- admin onboarding client state is now reused per hub/scope so ordinary admin route or query changes do not repeatedly fetch `onboarding?scope=route`
+- event detail/edit shell no longer loads full attendance rows only to render summary counts
+- event and course detail action links opt out of automatic sibling-route prefetching for bookings, attendance, export, and edit destinations
 
 Known gaps:
 
@@ -142,6 +145,7 @@ Known gaps:
 - route-family-specific skeleton contracts exist for the first audited admin slice, but need expansion per route family
 - most routes do not have route-specific `loading.jsx`
 - many routes still await full data before rendering title/content shell
+- course detail/edit still loads course registrations for summary counts; a stored course registration counter/projection is needed before removing that data dependency safely
 - public hub routes need a separate strategy from admin routes
 - member account routes need account-shell-specific loading
 - platform operator routes need dense operational skeletons

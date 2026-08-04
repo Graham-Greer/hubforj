@@ -40,6 +40,14 @@ function shouldHydrateChecklistForPath(pathname, adminBasePath) {
   return normalizeString(pathname) === normalizeString(adminBasePath);
 }
 
+function getRequiredOnboardingScope(shouldHydrateChecklist) {
+  return shouldHydrateChecklist ? "checklist" : "route";
+}
+
+function hasLoadedOnboardingScope(loadedScope, requiredScope) {
+  return loadedScope === "checklist" || loadedScope === requiredScope;
+}
+
 function cloneState(nextState) {
   return JSON.parse(JSON.stringify(nextState));
 }
@@ -98,7 +106,7 @@ export default function AdminOnboardingProvider({
   const currentJourneyKeyRef = useRef("");
   const checklistRevealIntentRef = useRef("");
   const loadedHubSlugRef = useRef("");
-  const lastLoadedRouteKeyRef = useRef("");
+  const loadedScopeRef = useRef("");
   const loadStateRef = useRef(async () => {});
 
   useEffect(() => {
@@ -110,16 +118,16 @@ export default function AdminOnboardingProvider({
 
     if (loadedHubSlugRef.current !== hub.slug) {
       loadedHubSlugRef.current = hub.slug;
-      lastLoadedRouteKeyRef.current = "";
+      loadedScopeRef.current = "";
     }
 
-    loadStateRef.current = async ({ silent = false, routeKey: nextRouteKey = "" } = {}) => {
+    loadStateRef.current = async ({ silent = false, scope = getRequiredOnboardingScope(shouldHydrateChecklist) } = {}) => {
       if (!silent) {
         setLoading(true);
       }
 
       try {
-        const scopeQuery = shouldHydrateChecklist ? "" : "?scope=route";
+        const scopeQuery = scope === "checklist" ? "" : "?scope=route";
         const response = await fetch(`/api/admin/hubs/${hub.slug}/onboarding${scopeQuery}`, {
           method: "GET",
           cache: "no-store",
@@ -127,41 +135,43 @@ export default function AdminOnboardingProvider({
         const payload = await response.json();
         if (!cancelled) {
           setState(payload?.state || null);
+          loadedScopeRef.current = scope;
         }
       } catch {
         if (!cancelled && !silent) {
           setState(null);
         }
       } finally {
-        if (!cancelled && nextRouteKey) {
-          lastLoadedRouteKeyRef.current = nextRouteKey;
-        }
         if (!cancelled && !silent) {
           setLoading(false);
         }
       }
     };
 
-    if (!lastLoadedRouteKeyRef.current) {
-      loadStateRef.current({ routeKey });
+    const requiredScope = getRequiredOnboardingScope(shouldHydrateChecklist);
+
+    if (!hasLoadedOnboardingScope(loadedScopeRef.current, requiredScope)) {
+      loadStateRef.current({ scope: requiredScope });
     }
 
     return () => {
       cancelled = true;
     };
-  }, [hub.slug, routeKey, shouldHydrateChecklist]);
+  }, [hub.slug, shouldHydrateChecklist]);
 
   useEffect(() => {
     if (!pathname) {
       return;
     }
 
-    if (loading || lastLoadedRouteKeyRef.current === routeKey) {
+    const requiredScope = getRequiredOnboardingScope(shouldHydrateChecklist);
+
+    if (loading || hasLoadedOnboardingScope(loadedScopeRef.current, requiredScope)) {
       return;
     }
 
-    loadStateRef.current({ silent: !shouldHydrateChecklist, routeKey });
-  }, [loading, pathname, routeKey, shouldHydrateChecklist]);
+    loadStateRef.current({ silent: !shouldHydrateChecklist, scope: requiredScope });
+  }, [loading, pathname, shouldHydrateChecklist]);
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {

@@ -109,6 +109,22 @@ Copy this block into the relevant implementation notes before starting a slice.
 - Target improvement:
 ```
 
+### Current Admin Detail Slice Notes
+
+- Event detail/edit route:
+  - sibling `registrations`, `attendance`, and `export` route prefetches have been disabled on the detail action buttons
+  - the detail/edit shell no longer calls `listEventAdminAttendanceRows`
+  - summary attendance now uses the event registration counter unless a future verified attendance count is explicitly loaded
+  - expected Network result: no attendance/registrations/export requests before the admin selects those actions
+- Course detail route:
+  - sibling registrations, attendance, export, and edit route prefetches have been disabled on detail action buttons
+  - course detail still reads registrations for summary counts because the course record does not yet expose equivalent counters
+  - next safe optimization is a course registration counter/projection, not a UI-only skeleton change
+- Admin onboarding:
+  - route-scoped onboarding state is reused per hub once loaded
+  - full checklist hydration still occurs only where the checklist is relevant
+  - expected Network result: route/query changes such as `?mode=edit` should not produce repeated `onboarding?scope=route` fetches for the same hub
+
 ## Per-Slice Rollout Checklist
 
 Every implementation slice must satisfy these gates.
@@ -236,4 +252,3 @@ After every implementation slice:
 - Add any changed rollout or rollback rules.
 - Add verification notes.
 - Keep this checklist current if the implementation pattern changes.
-
