@@ -1,8 +1,8 @@
 import ThemeScope from "@/components/primitives/theme-scope/ThemeScope";
 import PublicShell from "@/components/patterns/public-shell/PublicShell";
 import { getPublicHeaderModel } from "@/lib/data/public-header";
-import { requireHubCoreBySlug } from "@/lib/data/hubs";
-import { getCachedSiteSettingsByHub } from "@/lib/data/site-settings";
+import { requirePublicHubCoreBySlug } from "@/lib/data/hubs";
+import { getCachedPublicSiteSettingsByHub } from "@/lib/data/site-settings";
 import { resolvePublicBrandThemeTokens } from "@/lib/domain/public-brand-theme";
 import { resolvePublicFooterModel } from "@/lib/domain/public-footer";
 import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
@@ -16,12 +16,12 @@ export default async function HubLayout({ children, params }) {
   let hub;
 
   try {
-    hub = await requireHubCoreBySlug(hubSlug);
+    hub = await requirePublicHubCoreBySlug(hubSlug);
   } catch {
     notFound();
   }
 
-  const siteSettings = await getCachedSiteSettingsByHub(hub, {
+  const siteSettings = await getCachedPublicSiteSettingsByHub(hub, {
     routeMode,
     publicMedia: true,
     homeMedia: false,

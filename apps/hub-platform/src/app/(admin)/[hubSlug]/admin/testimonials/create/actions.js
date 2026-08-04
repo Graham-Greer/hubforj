@@ -1,8 +1,20 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireHubOperatorActionAccess } from "@/lib/auth/action-access";
+import { revalidatePublicTestimonialsCache } from "@/lib/cache/public-content";
 import { createTestimonialByHubSlug } from "@/lib/data/testimonials";
+
+function revalidateTestimonialPaths(hubSlug, hubId) {
+  revalidatePath(`/${hubSlug}/admin/testimonials`);
+  revalidatePath(`/${hubSlug}/testimonials`);
+  revalidatePath(`/${hubSlug}`);
+
+  if (hubId) {
+    revalidatePublicTestimonialsCache(hubId);
+  }
+}
 
 export async function createTestimonialAction(_previousState, formData) {
   const hubSlug = String(formData.get("hubSlug") || "").trim();
@@ -20,8 +32,9 @@ export async function createTestimonialAction(_previousState, formData) {
 
   let testimonial;
   try {
-    const { actorId } = await requireHubOperatorActionAccess(hubSlug);
+    const { hub, actorId } = await requireHubOperatorActionAccess(hubSlug);
     testimonial = await createTestimonialByHubSlug(hubSlug, values, actorId);
+    revalidateTestimonialPaths(hubSlug, hub.id);
   } catch (error) {
     return { error: String(error?.message || "Unable to create testimonial."), values };
   }

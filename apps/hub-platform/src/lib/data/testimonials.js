@@ -6,6 +6,7 @@ try {
 
 import crypto from "node:crypto";
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
+import { createPublicContentCache, getPublicContentCacheTags } from "@/lib/cache/public-content";
 import { requireHubBySlug } from "@/lib/data/hubs";
 import { getMediaAssetById, getMediaAssetsByIds, getPublicMediaAssetsByIds } from "@/lib/data/media";
 import { normalizeCreateTestimonialPayload } from "@/lib/domain/testimonials";
@@ -110,14 +111,25 @@ export async function listPublicTestimonialsByHub(hub) {
     return [];
   }
 
-  const snapshot = await getFirebaseAdminDb()
-    .collection("hubs")
-    .doc(hubId)
-    .collection("testimonials")
-    .where("status", "==", "published")
-    .get();
-  const testimonials = snapshot.docs.map((doc) => normalizeTestimonialRecord({ id: doc.id, hubId, ...doc.data() }));
-  return sortTestimonials(await attachPublicTestimonialMedia(hubId, testimonials));
+  const tags = getPublicContentCacheTags(hubId);
+  const readCachedPublicTestimonials = createPublicContentCache(
+    async (cachedHubId) => {
+      const snapshot = await getFirebaseAdminDb()
+        .collection("hubs")
+        .doc(cachedHubId)
+        .collection("testimonials")
+        .where("status", "==", "published")
+        .get();
+      const testimonials = snapshot.docs.map((doc) => normalizeTestimonialRecord({ id: doc.id, hubId: cachedHubId, ...doc.data() }));
+      return sortTestimonials(await attachPublicTestimonialMedia(cachedHubId, testimonials));
+    },
+    ["public-testimonials", hubId],
+    {
+      tags: [tags.hub, tags.home, tags.testimonials, tags.media],
+    }
+  );
+
+  return readCachedPublicTestimonials(hubId);
 }
 
 export async function getTestimonialById(hubId, testimonialId) {

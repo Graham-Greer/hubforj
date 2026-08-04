@@ -2,7 +2,19 @@
 
 import { revalidatePath } from "next/cache";
 import { assertActionHubIdMatches, requireHubOperatorActionAccess } from "@/lib/auth/action-access";
+import { revalidatePublicTestimonialsCache } from "@/lib/cache/public-content";
 import { updateTestimonial } from "@/lib/data/testimonials";
+
+function revalidateTestimonialPaths(hubSlug, hubId, testimonialId) {
+  revalidatePath(`/${hubSlug}/admin/testimonials`);
+  revalidatePath(`/${hubSlug}/admin/testimonials/${testimonialId}`);
+  revalidatePath(`/${hubSlug}/testimonials`);
+  revalidatePath(`/${hubSlug}`);
+
+  if (hubId) {
+    revalidatePublicTestimonialsCache(hubId);
+  }
+}
 
 export async function updateTestimonialAction(_previousState, formData) {
   const hubId = String(formData.get("hubId") || "").trim();
@@ -24,13 +36,10 @@ export async function updateTestimonialAction(_previousState, formData) {
     const { hub, actorId } = await requireHubOperatorActionAccess(hubSlug);
     assertActionHubIdMatches(hub, hubId, { allowEmpty: false });
     await updateTestimonial(hub.id, testimonialId, values, actorId);
+    revalidateTestimonialPaths(hubSlug, hub.id, testimonialId);
   } catch (error) {
     return { error: String(error?.message || "Unable to update testimonial."), success: "", values };
   }
-
-  revalidatePath(`/${hubSlug}/admin/testimonials`);
-  revalidatePath(`/${hubSlug}/admin/testimonials/${testimonialId}`);
-  revalidatePath(`/${hubSlug}/testimonials`);
 
   return { error: "", success: "Testimonial updated.", values };
 }
