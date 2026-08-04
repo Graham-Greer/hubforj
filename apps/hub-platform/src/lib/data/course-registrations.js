@@ -15,6 +15,7 @@ export {
   listCoursePaymentItemsByHub,
   listCourseRegistrations,
   listCourseRegistrationsByUser,
+  resolveCourseRegistrationSummary,
 } from "./course-registration-queries.js";
 export {
   createCourseRegistrationForMember,

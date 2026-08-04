@@ -6,6 +6,7 @@ try {
 
 import crypto from "node:crypto";
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
+import { COURSE_REGISTRATION_SUMMARY_SCHEMA_VERSION } from "@/lib/data/course-registration-shared";
 import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
 import { getHubById, getHubBySlug } from "@/lib/data/hubs";
 import { assertHubCapability } from "@/lib/domain/package-guards";
@@ -103,6 +104,7 @@ export async function createCourseByHubSlug(hubSlug, payload, actorId = "system"
     attendanceInProgressCount: 0,
     attendanceCompletedCount: 0,
     attendanceActiveCount: 0,
+    registrationSummarySchemaVersion: COURSE_REGISTRATION_SUMMARY_SCHEMA_VERSION,
     registrationSummaryUpdatedAt: now,
     registrationSummaryUpdatedBy: actorId,
     createdAt: now,

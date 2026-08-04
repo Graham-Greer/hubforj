@@ -141,7 +141,8 @@ Current improvements already completed:
 - event and course detail action links opt out of automatic sibling-route prefetching for bookings, attendance, export, and edit destinations
 - course detail/edit shell now uses course registration summary counters instead of loading full registration rows and member records
 - course registration status and attendance mutations now maintain course-level summary counters
-- existing courses without summary counters perform one lightweight status-only summary repair on detail load
+- course registration summary projections now include a schema version; legacy or incomplete projections perform one lightweight status-only summary repair before being trusted
+- admin course list badges now use the same resolved summary projection as course detail, avoiding per-course live enrolment count fan-out and preventing list/detail count drift
 
 Known gaps:
 
@@ -149,7 +150,7 @@ Known gaps:
 - route-family-specific skeleton contracts exist for the first audited admin slice, but need expansion per route family
 - most routes do not have route-specific `loading.jsx`
 - many routes still await full data before rendering title/content shell
-- course list enrolment counts and payment/reporting scans still need separate bounded query/projection work
+- course payment/reporting scans still need separate bounded query/projection work
 - public hub routes need a separate strategy from admin routes
 - member account routes need account-shell-specific loading
 - platform operator routes need dense operational skeletons

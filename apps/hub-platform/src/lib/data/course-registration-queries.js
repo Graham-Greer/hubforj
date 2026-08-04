@@ -10,15 +10,17 @@ import { getFallbackRegionalMarket } from "@/lib/domain/regional-markets";
 import {
   countEnrolledCourseRegistrations,
   getCourseRegistrationDoc,
+  getCourseRegistrationSummaryFromCourse,
   getLatestCourseRegistrationDocByUser,
   getCoursesByIds,
   getUsersByIds,
+  isCourseRegistrationSummaryProjectionCurrent,
   listCourseRegistrationDocsByUser,
   listUserCourseRegistrationsAcrossHub,
   normalizeCourseRegistrationRecord,
   normalizeString,
+  repairCourseRegistrationSummaryProjection,
   summarizeCourseRegistrationCounterRows,
-  updateCourseRegistrationSummaryProjection,
 } from "./course-registration-shared.js";
 
 export async function listCourseRegistrations(hubId, courseId) {
@@ -60,6 +62,13 @@ export async function getCourseRegistrationSummary(hubId, courseId, options = {}
     return summarizeCourseRegistrationCounterRows([]);
   }
 
+  if (options.repairProjection === true) {
+    return repairCourseRegistrationSummaryProjection(normalizedHubId, normalizedCourseId, {
+      actorId: options.actorId || "system",
+      updatedAt: options.updatedAt,
+    });
+  }
+
   const snapshot = await getFirebaseAdminDb()
     .collection("hubs")
     .doc(normalizedHubId)
@@ -68,16 +77,20 @@ export async function getCourseRegistrationSummary(hubId, courseId, options = {}
     .collection("registrations")
     .select("status", "attendanceStatus")
     .get();
-  const summary = summarizeCourseRegistrationCounterRows(snapshot.docs.map((doc) => doc.data() || {}));
 
-  if (options.repairProjection === true) {
-    await updateCourseRegistrationSummaryProjection(normalizedHubId, normalizedCourseId, summary, {
-      actorId: options.actorId || "system",
-      updatedAt: options.updatedAt,
-    });
+  return summarizeCourseRegistrationCounterRows(snapshot.docs.map((doc) => doc.data() || {}));
+}
+
+export async function resolveCourseRegistrationSummary(hubId, course, options = {}) {
+  if (isCourseRegistrationSummaryProjectionCurrent(course)) {
+    return getCourseRegistrationSummaryFromCourse(course);
   }
 
-  return summary;
+  return getCourseRegistrationSummary(hubId, course?.id, {
+    repairProjection: options.repairProjection !== false,
+    actorId: options.actorId || "course-registration-summary-repair",
+    updatedAt: options.updatedAt,
+  });
 }
 
 export async function listCourseRegistrationsByUser(hubId, userId) {

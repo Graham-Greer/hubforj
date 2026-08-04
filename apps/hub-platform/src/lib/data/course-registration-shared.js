@@ -7,6 +7,8 @@ try {
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
 import { normalizeCourseRecord, withCourseMedia } from "./course-shared.js";
 
+export const COURSE_REGISTRATION_SUMMARY_SCHEMA_VERSION = 1;
+
 export function normalizeString(value) {
   return String(value || "").trim();
 }
@@ -137,6 +139,43 @@ export function summarizeCourseRegistrationCounterRows(rows = []) {
   );
 }
 
+export function getCourseRegistrationSummaryFromCourse(course = {}) {
+  return {
+    ...summarizeCourseRegistrationCounterRows([]),
+    registrationCount: Number.parseInt(String(course?.registrationCount || "0"), 10) || 0,
+    enrolledRegistrationCount: Number.parseInt(String(course?.enrolledRegistrationCount || "0"), 10) || 0,
+    waitlistedRegistrationCount: Number.parseInt(String(course?.waitlistedRegistrationCount || "0"), 10) || 0,
+    cancelledRegistrationCount: Number.parseInt(String(course?.cancelledRegistrationCount || "0"), 10) || 0,
+    attendanceInProgressCount: Number.parseInt(String(course?.attendanceInProgressCount || "0"), 10) || 0,
+    attendanceCompletedCount: Number.parseInt(String(course?.attendanceCompletedCount || "0"), 10) || 0,
+    attendanceActiveCount:
+      Number.parseInt(String(course?.attendanceActiveCount || "0"), 10) ||
+      (Number.parseInt(String(course?.attendanceInProgressCount || "0"), 10) || 0) +
+        (Number.parseInt(String(course?.attendanceCompletedCount || "0"), 10) || 0),
+  };
+}
+
+export function isCourseRegistrationSummaryProjectionCurrent(course = {}) {
+  return (
+    Number.parseInt(String(course?.registrationSummarySchemaVersion || "0"), 10) ===
+      COURSE_REGISTRATION_SUMMARY_SCHEMA_VERSION &&
+    Boolean(normalizeString(course?.registrationSummaryUpdatedAt))
+  );
+}
+
+async function readCourseRegistrationSummaryRows(hubId, courseId) {
+  const snapshot = await getFirebaseAdminDb()
+    .collection("hubs")
+    .doc(hubId)
+    .collection("courses")
+    .doc(courseId)
+    .collection("registrations")
+    .select("status", "attendanceStatus")
+    .get();
+
+  return summarizeCourseRegistrationCounterRows(snapshot.docs.map((doc) => doc.data() || {}));
+}
+
 function getCounterDelta(previousRegistration, nextRegistration) {
   const previous = previousRegistration ? summarizeCourseRegistrationCounterRows([previousRegistration]) : summarizeCourseRegistrationCounterRows([]);
   const next = nextRegistration ? summarizeCourseRegistrationCounterRows([nextRegistration]) : summarizeCourseRegistrationCounterRows([]);
@@ -168,9 +207,27 @@ export async function updateCourseRegistrationSummaryProjection(hubId, courseId,
     .set({
       ...summarizeCourseRegistrationCounterRows([]),
       ...summary,
+      registrationSummarySchemaVersion: COURSE_REGISTRATION_SUMMARY_SCHEMA_VERSION,
       registrationSummaryUpdatedAt: now,
       registrationSummaryUpdatedBy: normalizeString(options.actorId) || "system",
     }, { merge: true });
+}
+
+export async function repairCourseRegistrationSummaryProjection(hubId, courseId, options = {}) {
+  const normalizedHubId = normalizeString(hubId);
+  const normalizedCourseId = normalizeString(courseId);
+
+  if (!normalizedHubId || !normalizedCourseId) {
+    return summarizeCourseRegistrationCounterRows([]);
+  }
+
+  const summary = await readCourseRegistrationSummaryRows(normalizedHubId, normalizedCourseId);
+  await updateCourseRegistrationSummaryProjection(normalizedHubId, normalizedCourseId, summary, {
+    actorId: options.actorId || "system",
+    updatedAt: options.updatedAt,
+  });
+
+  return summary;
 }
 
 export async function syncCourseRegistrationSummaryForChange({
@@ -192,6 +249,16 @@ export async function syncCourseRegistrationSummaryForChange({
   const courseRef = db.collection("hubs").doc(normalizedHubId).collection("courses").doc(normalizedCourseId);
   const delta = getCounterDelta(previousRegistration, nextRegistration);
   const now = normalizeString(updatedAt) || new Date().toISOString();
+  const courseSnapshot = await courseRef.get();
+  const course = courseSnapshot.exists ? courseSnapshot.data() || {} : {};
+
+  if (!isCourseRegistrationSummaryProjectionCurrent(course)) {
+    await repairCourseRegistrationSummaryProjection(normalizedHubId, normalizedCourseId, {
+      actorId,
+      updatedAt: now,
+    });
+    return;
+  }
 
   await db.runTransaction(async (transaction) => {
     const courseDoc = await transaction.get(courseRef);
@@ -205,6 +272,7 @@ export async function syncCourseRegistrationSummaryForChange({
       attendanceInProgressCount: applyCounterDelta(course.attendanceInProgressCount, delta.attendanceInProgressCount),
       attendanceCompletedCount: applyCounterDelta(course.attendanceCompletedCount, delta.attendanceCompletedCount),
       attendanceActiveCount: applyCounterDelta(course.attendanceActiveCount, delta.attendanceActiveCount),
+      registrationSummarySchemaVersion: COURSE_REGISTRATION_SUMMARY_SCHEMA_VERSION,
       registrationSummaryUpdatedAt: now,
       registrationSummaryUpdatedBy: normalizeString(actorId) || "system",
     }, { merge: true });
