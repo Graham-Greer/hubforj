@@ -5,7 +5,7 @@ import EditCourseForm from "./EditCourseForm";
 import { requireHubBySlug } from "@/lib/data/hubs";
 import { getCourseById } from "@/lib/data/courses";
 import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
-import { listCourseRegistrations } from "@/lib/data/course-registrations";
+import { getCourseRegistrationSummary } from "@/lib/data/course-registrations";
 import { resolveHubPackageEntitlements } from "@/lib/domain/hub-package";
 import { getHubPaymentSetupState } from "@/lib/domain/hub-payment-configuration";
 import { listMediaFoldersByHubId } from "@/lib/data/media";
@@ -25,10 +25,9 @@ async function CourseDetailContent({ hubSlug, courseId, query }) {
   const coursesQuery = coursesSearchParams.toString();
   const hub = await requireHubBySlug(hubSlug);
   const entitlements = resolveHubPackageEntitlements(hub);
-  const [course, mediaFolders, registrations, paymentConfiguration] = await Promise.all([
+  const [course, mediaFolders, paymentConfiguration] = await Promise.all([
     getCourseById(hub.id, courseId),
     listMediaFoldersByHubId(hub.id),
-    entitlements.capabilities?.coursesEnabled ? listCourseRegistrations(hub.id, courseId) : Promise.resolve([]),
     getHubPaymentConfigurationByHubId(hub.id),
   ]);
   const paymentSetupState = getHubPaymentSetupState(hub, paymentConfiguration);
@@ -38,10 +37,21 @@ async function CourseDetailContent({ hubSlug, courseId, query }) {
     notFound();
   }
 
-  const attendanceCount = registrations.filter((registration) =>
-    ["in_progress", "completed"].includes(String(registration.attendanceStatus || ""))
-  ).length;
-  const registrationCount = registrations.filter((registration) => registration.status === "enrolled").length;
+  const registrationSummary = course.registrationSummaryUpdatedAt
+    ? {
+        registrationCount: course.registrationCount,
+        enrolledRegistrationCount: course.enrolledRegistrationCount,
+        waitlistedRegistrationCount: course.waitlistedRegistrationCount,
+        cancelledRegistrationCount: course.cancelledRegistrationCount,
+        attendanceActiveCount: course.attendanceActiveCount,
+      }
+    : await getCourseRegistrationSummary(hub.id, course.id, {
+        repairProjection: entitlements.capabilities?.coursesEnabled === true,
+        actorId: "course-detail-summary-repair",
+      });
+  const attendanceCount = Number(registrationSummary.attendanceActiveCount || 0);
+  const registrationCount = Number(registrationSummary.enrolledRegistrationCount || 0);
+  const hasAttendanceRegistrations = Number(registrationSummary.registrationCount || 0) > 0;
 
   return (
     <CourseDetailWorkspace
@@ -52,7 +62,7 @@ async function CourseDetailContent({ hubSlug, courseId, query }) {
       attendanceCount={attendanceCount}
       registrationCount={registrationCount}
       canExportAttendanceReport={entitlements.capabilities?.reportingEnabled === true}
-      hasAttendanceRegistrations={registrations.length > 0}
+      hasAttendanceRegistrations={hasAttendanceRegistrations}
       editForm={
         <EditCourseForm
           hub={hub}
