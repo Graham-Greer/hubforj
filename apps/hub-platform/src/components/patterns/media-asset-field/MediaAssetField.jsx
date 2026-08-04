@@ -156,6 +156,7 @@ export default function MediaAssetField({
   );
   const selectedAsset = availableAssets.find((asset) => asset.id === selectedAssetId) || null;
   const canPickExistingMedia = Boolean(libraryHref);
+  const shouldShowPickerInitialLoading = showPickerModal && !pickerAssetsLoaded && isLoadingPickerAssets;
   const pickerFolderOptions = useMemo(
     () => [
       { id: "all", label: "All", count: availableAssets.length },
@@ -637,7 +638,13 @@ export default function MediaAssetField({
               </div>
               <div className={styles.assetPickerPanel}>
                 {pickerLoadError ? <FormMessage tone="danger">{pickerLoadError}</FormMessage> : null}
-                {pickerFilteredAssets.length ? (
+                {shouldShowPickerInitialLoading ? (
+                  <div className={styles.assetPickerEmpty}>
+                    <Icon name="imagesmode" size="lg" tone="muted" decorative />
+                    <strong>Loading media</strong>
+                    <span>Fetching the first page of assets.</span>
+                  </div>
+                ) : pickerFilteredAssets.length ? (
                   <div className={styles.assetPickerStack}>
                     <div className={styles.assetPickerGrid}>
                       {pickerFilteredAssets.map((asset) => (

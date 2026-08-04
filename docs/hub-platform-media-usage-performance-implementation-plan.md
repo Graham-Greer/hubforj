@@ -166,6 +166,7 @@ Production verification checklist:
 - Confirm opening the existing-media picker triggers one bounded `/api/admin/hubs/[hubSlug]/media/assets` request.
 - Confirm a selected existing asset outside the first page still renders its preview through `/api/admin/hubs/[hubSlug]/media/assets/[assetId]`.
 - Confirm the picker first page contains the bounded media library page, not only the previously selected asset.
+- Confirm removing an existing selected asset and then opening the picker shows a first-page loading state until the bounded media library page arrives, rather than briefly presenting the previous selected asset as if it were the full library.
 - Confirm the picker supports load-more pagination without replacing the selected preview.
 - Confirm create routes with no selected asset do not call the selected-asset metadata endpoint.
 - Confirm edit routes with selected media do not call the usage endpoint merely to render the form.
