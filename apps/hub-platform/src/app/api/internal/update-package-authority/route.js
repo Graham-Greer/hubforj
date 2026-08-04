@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
+import { revalidatePublicHubCoreCache, revalidatePublicShellCache } from "@/lib/cache/public-content";
 import { updateHubPackageAuthorityById } from "@/lib/data/hub-mutations";
 import {
   getInternalAutomationAuthorizationState,
@@ -33,6 +35,13 @@ export async function POST(request) {
       },
       "internal-product-site-billing"
     );
+    revalidatePublicHubCoreCache(hub);
+    revalidatePublicShellCache(hub.id);
+    revalidatePath(`/${hub.slug}`);
+    revalidatePath(`/${hub.slug}/events`);
+    revalidatePath(`/${hub.slug}/courses`);
+    revalidatePath(`/${hub.slug}/admin`);
+    revalidatePath(`/${hub.slug}/admin/settings/account`);
 
     return NextResponse.json({
       id: hub.id,

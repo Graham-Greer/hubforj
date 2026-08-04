@@ -6,6 +6,7 @@ try {
 
 import crypto from "node:crypto";
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
+import { createPublicContentCache, getPublicContentCacheTags } from "@/lib/cache/public-content";
 import { requireHubBySlug } from "@/lib/data/hubs";
 import { normalizeCreateWhatWeDoPayload } from "@/lib/domain/what-we-do";
 
@@ -69,14 +70,25 @@ export async function listPublicWhatWeDoItemsByHub(hub) {
     return [];
   }
 
-  const snapshot = await getFirebaseAdminDb()
-    .collection("hubs")
-    .doc(hubId)
-    .collection("whatWeDoItems")
-    .where("status", "==", "published")
-    .get();
-  const items = snapshot.docs.map((doc) => normalizeWhatWeDoRecord({ id: doc.id, hubId, ...doc.data() }));
-  return sortWhatWeDoItems(items).slice(0, 6);
+  const tags = getPublicContentCacheTags(hubId);
+  const readCachedPublicWhatWeDoItems = createPublicContentCache(
+    async (cachedHubId) => {
+      const snapshot = await getFirebaseAdminDb()
+        .collection("hubs")
+        .doc(cachedHubId)
+        .collection("whatWeDoItems")
+        .where("status", "==", "published")
+        .get();
+      const items = snapshot.docs.map((doc) => normalizeWhatWeDoRecord({ id: doc.id, hubId: cachedHubId, ...doc.data() }));
+      return sortWhatWeDoItems(items).slice(0, 6);
+    },
+    ["public-what-we-do", hubId],
+    {
+      tags: [tags.hub, tags.home, tags.whatWeDo],
+    }
+  );
+
+  return readCachedPublicWhatWeDoItems(hubId);
 }
 
 export async function getWhatWeDoItemById(hubId, itemId) {

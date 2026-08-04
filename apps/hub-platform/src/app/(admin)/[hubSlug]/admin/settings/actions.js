@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireHubOperatorActionAccess } from "@/lib/auth/action-access";
+import { revalidatePublicHubCoreCache, revalidatePublicShellCache } from "@/lib/cache/public-content";
 import {
   updateBrandingSettingsByHubSlug,
   updateCoursesPageSettingsByHubSlug,
@@ -35,6 +36,16 @@ function revalidateSettingsPaths(hubSlug) {
   revalidatePath(`/${hubSlug}/admin/settings/pages/home`);
   revalidatePath(`/${hubSlug}/admin/settings/pages/testimonials`);
   revalidatePath(`/${hubSlug}/admin/settings/site`);
+
+}
+
+function revalidateSettingsHubCaches(hub) {
+  if (!hub?.id) {
+    return;
+  }
+
+  revalidatePublicHubCoreCache(hub);
+  revalidatePublicShellCache(hub.id);
 }
 
 export async function updateBrandingSettingsAction(_previousState, formData) {
@@ -50,13 +61,14 @@ export async function updateBrandingSettingsAction(_previousState, formData) {
   };
 
   try {
-    const { actorId } = await requireHubOperatorActionAccess(hubSlug);
+    const { hub, actorId } = await requireHubOperatorActionAccess(hubSlug);
     await updateBrandingSettingsByHubSlug(hubSlug, values, actorId);
+    revalidateSettingsPaths(hubSlug);
+    revalidateSettingsHubCaches(hub);
   } catch (error) {
     return { error: String(error?.message || "Unable to update branding settings."), success: "", values };
   }
 
-  revalidateSettingsPaths(hubSlug);
   return { error: "", success: "Branding settings updated.", values };
 }
 
@@ -94,13 +106,14 @@ export async function updateSiteSettingsAction(_previousState, formData) {
   };
 
   try {
-    const { actorId } = await requireHubOperatorActionAccess(hubSlug);
+    const { hub, actorId } = await requireHubOperatorActionAccess(hubSlug);
     await updateSiteSettingsByHubSlug(hubSlug, values, actorId);
+    revalidateSettingsPaths(hubSlug);
+    revalidateSettingsHubCaches(hub);
   } catch (error) {
     return { error: String(error?.message || "Unable to update site settings."), success: "", values };
   }
 
-  revalidateSettingsPaths(hubSlug);
   return { error: "", success: "Site settings updated.", values };
 }
 
@@ -140,13 +153,14 @@ export async function updateHomepageSettingsAction(_previousState, formData) {
   };
 
   try {
-    const { actorId } = await requireHubOperatorActionAccess(hubSlug);
+    const { hub, actorId } = await requireHubOperatorActionAccess(hubSlug);
     await updateHomepageSettingsByHubSlug(hubSlug, values, actorId);
+    revalidateSettingsPaths(hubSlug);
+    revalidateSettingsHubCaches(hub);
   } catch (error) {
     return { error: String(error?.message || "Unable to update homepage settings."), success: "", values };
   }
 
-  revalidateSettingsPaths(hubSlug);
   return { error: "", success: "Homepage settings updated.", values };
 }
 
@@ -161,13 +175,14 @@ export async function updateEventsPageSettingsAction(_previousState, formData) {
   };
 
   try {
-    const { actorId } = await requireHubOperatorActionAccess(hubSlug);
+    const { hub, actorId } = await requireHubOperatorActionAccess(hubSlug);
     await updateEventsPageSettingsByHubSlug(hubSlug, values, actorId);
+    revalidateSettingsPaths(hubSlug);
+    revalidateSettingsHubCaches(hub);
   } catch (error) {
     return { error: String(error?.message || "Unable to update events page settings."), success: "", values };
   }
 
-  revalidateSettingsPaths(hubSlug);
   return { error: "", success: "Events page settings updated.", values };
 }
 
@@ -182,13 +197,14 @@ export async function updateCoursesPageSettingsAction(_previousState, formData) 
   };
 
   try {
-    const { actorId } = await requireHubOperatorActionAccess(hubSlug);
+    const { hub, actorId } = await requireHubOperatorActionAccess(hubSlug);
     await updateCoursesPageSettingsByHubSlug(hubSlug, values, actorId);
+    revalidateSettingsPaths(hubSlug);
+    revalidateSettingsHubCaches(hub);
   } catch (error) {
     return { error: String(error?.message || "Unable to update courses page settings."), success: "", values };
   }
 
-  revalidateSettingsPaths(hubSlug);
   return { error: "", success: "Courses page settings updated.", values };
 }
 
@@ -210,13 +226,14 @@ export async function updateTestimonialsPageSettingsAction(_previousState, formD
   };
 
   try {
-    const { actorId } = await requireHubOperatorActionAccess(hubSlug);
+    const { hub, actorId } = await requireHubOperatorActionAccess(hubSlug);
     await updateTestimonialsPageSettingsByHubSlug(hubSlug, values, actorId);
+    revalidateSettingsPaths(hubSlug);
+    revalidateSettingsHubCaches(hub);
   } catch (error) {
     return { error: String(error?.message || "Unable to update testimonials page settings."), success: "", values };
   }
 
-  revalidateSettingsPaths(hubSlug);
   return { error: "", success: "Testimonials page settings updated.", values };
 }
 
@@ -227,8 +244,10 @@ export async function requestCustomDomainAction(_previousState, formData) {
   };
 
   try {
-    const { actorId } = await requireHubOperatorActionAccess(hubSlug);
+    const { hub, actorId } = await requireHubOperatorActionAccess(hubSlug);
     await requestHubCustomDomainBySlug(hubSlug, values.hostname, actorId);
+    revalidateSettingsPaths(hubSlug);
+    revalidateSettingsHubCaches(hub);
   } catch (error) {
     return {
       error: String(error?.message || "Unable to start custom-domain setup."),
@@ -236,8 +255,6 @@ export async function requestCustomDomainAction(_previousState, formData) {
       values,
     };
   }
-
-  revalidateSettingsPaths(hubSlug);
 
   return {
     error: "",
@@ -250,9 +267,10 @@ export async function checkCustomDomainVerificationAction(_previousState, formDa
   const hubSlug = String(formData.get("hubSlug") || "").trim();
 
   try {
-    const { actorId } = await requireHubOperatorActionAccess(hubSlug);
+    const { hub, actorId } = await requireHubOperatorActionAccess(hubSlug);
     const result = await checkHubCustomDomainVerificationBySlug(hubSlug, actorId);
     revalidateSettingsPaths(hubSlug);
+    revalidateSettingsHubCaches(hub);
 
     return {
       error: "",
@@ -294,6 +312,7 @@ export async function disconnectCustomDomainAction(_previousState, formData) {
       reason: "manual_disconnect",
     });
     revalidateSettingsPaths(hubSlug);
+    revalidateSettingsHubCaches(hub);
 
     return {
       error: "",

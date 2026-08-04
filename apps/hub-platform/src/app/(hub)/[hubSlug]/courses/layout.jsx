@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
-import { requireHubCoreBySlug } from "@/lib/data/hubs";
+import { requirePublicHubCoreBySlug } from "@/lib/data/hubs";
 import { hasHubCapability } from "@/lib/domain/package-guards";
 
 export default async function CoursesLayout({ children, params }) {
   const { hubSlug } = await params;
-  const hub = await requireHubCoreBySlug(hubSlug);
+  const hub = await requirePublicHubCoreBySlug(hubSlug);
 
   if (!hasHubCapability(hub, "coursesEnabled")) {
     notFound();

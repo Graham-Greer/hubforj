@@ -6,8 +6,9 @@ try {
 
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
 import { cache } from "react";
+import { createPublicContentCache, getPublicContentCacheTags } from "@/lib/cache/public-content";
 import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
-import { requireHubBySlug } from "@/lib/data/hubs";
+import { requireHubBySlug, requireHubCoreById } from "@/lib/data/hubs";
 import { getMediaAssetById, getPublicMediaAssetById } from "@/lib/data/media";
 import {
   hasSectionRichTextContent,
@@ -133,6 +134,40 @@ export async function getCachedSiteSettingsByHub(hub, options = {}) {
     scopeKey,
     normalizedOptions.routeMode,
     normalizedOptions.publicMedia,
+    homeMediaKey !== "no-home",
+    pageHeroKeysCsv ?? "*"
+  );
+}
+
+export async function getCachedPublicSiteSettingsByHub(hub, options = {}) {
+  const normalizedOptions = {
+    ...options,
+    routeMode: options.routeMode || "path",
+    publicMedia: true,
+  };
+  const scopeKey = normalizeMediaScope(normalizedOptions);
+  const [, , homeMediaKey, pageHeroKeysCsv] = scopeKey.split("|");
+  const tags = getPublicContentCacheTags(hub.id);
+  const readCachedPublicSiteSettings = createPublicContentCache(
+    async (hubId, routeMode, shouldHydrateHomeMedia, normalizedPageHeroKeysCsv) => {
+      const publicHub = await requireHubCoreById(hubId);
+
+      return readSiteSettingsByHub(publicHub, {
+        routeMode,
+        publicMedia: true,
+        homeMedia: shouldHydrateHomeMedia,
+        pageHeroKeys: normalizedPageHeroKeysCsv === "*" ? undefined : normalizedPageHeroKeysCsv.split(",").filter(Boolean),
+      });
+    },
+    ["public-site-settings", hub.id, scopeKey],
+    {
+      tags: [tags.hub, tags.siteSettings, tags.publicShell, tags.home, tags.media],
+    }
+  );
+
+  return readCachedPublicSiteSettings(
+    hub.id,
+    normalizedOptions.routeMode,
     homeMediaKey !== "no-home",
     pageHeroKeysCsv ?? "*"
   );

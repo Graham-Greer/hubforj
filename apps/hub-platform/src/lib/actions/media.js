@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireHubBySlug } from "@/lib/data/hubs";
+import { revalidatePublicMediaCache } from "@/lib/cache/public-content";
 import {
   createMediaFolderForHub,
   deleteMediaAssetForHub,
@@ -22,7 +23,7 @@ async function requireMediaAccess(hubSlug) {
   return { hub, access };
 }
 
-function revalidateMediaPaths(hubSlug) {
+function revalidateMediaPaths(hubSlug, hubId) {
   revalidatePath(`/${hubSlug}/admin/media`);
   revalidatePath(`/${hubSlug}/admin/settings/branding`);
   revalidatePath(`/${hubSlug}/admin/testimonials`);
@@ -31,37 +32,41 @@ function revalidateMediaPaths(hubSlug) {
   revalidatePath(`/${hubSlug}/about`);
   revalidatePath(`/${hubSlug}/join`);
   revalidatePath(`/${hubSlug}/sign-in`);
+
+  if (hubId) {
+    revalidatePublicMediaCache(hubId);
+  }
 }
 
 export async function createMediaFolderAction({ hubSlug, name }) {
   const { hub, access } = await requireMediaAccess(hubSlug);
   const folder = await createMediaFolderForHub(hub.id, { name }, access.actorId);
-  revalidateMediaPaths(hub.slug);
+  revalidateMediaPaths(hub.slug, hub.id);
   return folder;
 }
 
 export async function updateMediaFolderAction({ hubSlug, folderId, name }) {
   const { hub, access } = await requireMediaAccess(hubSlug);
   const folder = await updateMediaFolderForHub(hub.id, folderId, { name }, access.actorId);
-  revalidateMediaPaths(hub.slug);
+  revalidateMediaPaths(hub.slug, hub.id);
   return folder;
 }
 
 export async function deleteMediaFolderAction({ hubSlug, folderId }) {
   const { hub } = await requireMediaAccess(hubSlug);
   await deleteMediaFolderForHub(hub.id, folderId);
-  revalidateMediaPaths(hub.slug);
+  revalidateMediaPaths(hub.slug, hub.id);
 }
 
 export async function updateMediaAssetAction({ hubSlug, assetId, displayName, alt, folderId }) {
   const { hub, access } = await requireMediaAccess(hubSlug);
   const asset = await updateMediaAssetForHub(hub.id, assetId, { displayName, alt, folderId }, access.actorId);
-  revalidateMediaPaths(hub.slug);
+  revalidateMediaPaths(hub.slug, hub.id);
   return asset;
 }
 
 export async function deleteMediaAssetAction({ hubSlug, assetId }) {
   const { hub } = await requireMediaAccess(hubSlug);
   await deleteMediaAssetForHub(hub.id, assetId);
-  revalidateMediaPaths(hub.slug);
+  revalidateMediaPaths(hub.slug, hub.id);
 }

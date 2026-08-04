@@ -6,6 +6,7 @@ try {
 
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
 import { cache } from "react";
+import { createPublicContentCache, getPublicHubSlugCacheTag } from "@/lib/cache/public-content";
 import { normalizeHubCustomDomain, normalizePlatformSubdomainLabel } from "@/lib/domain/hub-domains";
 import { getHubRegionalSetupStatus } from "@/lib/domain/hub-regional-setup";
 import { resolveHubPackageEntitlements } from "@/lib/domain/hub-package";
@@ -252,6 +253,24 @@ export async function getHubCoreBySlug(hubSlug) {
   return getCachedFirestoreHubCoreBySlug(normalizedHubSlug);
 }
 
+export async function getPublicHubCoreBySlug(hubSlug) {
+  const normalizedHubSlug = normalizeString(hubSlug);
+
+  if (!normalizedHubSlug) {
+    return null;
+  }
+
+  const readCachedPublicHubCore = createPublicContentCache(
+    getFirestoreHubCoreBySlug,
+    ["public-hub-core-by-slug", normalizedHubSlug],
+    {
+      tags: [getPublicHubSlugCacheTag(normalizedHubSlug)],
+    }
+  );
+
+  return readCachedPublicHubCore(normalizedHubSlug);
+}
+
 export async function getHubByPlatformSubdomainLabel(platformSubdomainLabel) {
   const normalizedLabel = normalizePlatformSubdomainLabel(platformSubdomainLabel);
 
@@ -308,6 +327,16 @@ export async function requireHubBySlug(hubSlug) {
 
 export async function requireHubCoreBySlug(hubSlug) {
   const hub = await getHubCoreBySlug(hubSlug);
+
+  if (!hub) {
+    throw new Error(`Unknown hub slug: ${hubSlug}`);
+  }
+
+  return hub;
+}
+
+export async function requirePublicHubCoreBySlug(hubSlug) {
+  const hub = await getPublicHubCoreBySlug(hubSlug);
 
   if (!hub) {
     throw new Error(`Unknown hub slug: ${hubSlug}`);
