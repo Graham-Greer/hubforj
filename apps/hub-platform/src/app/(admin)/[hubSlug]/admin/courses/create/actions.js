@@ -1,10 +1,19 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { requireHubOperatorActionAccess } from "@/lib/auth/action-access";
 import { revalidatePublicCoursesCache } from "@/lib/cache/public-content";
 import { createCourseByHubSlug } from "@/lib/data/courses";
+import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { assertHubRegionalSetupComplete } from "@/lib/domain/hub-regional-setup";
+
+async function buildAdminActionHref(hubSlug, pathname) {
+  const headerStore = await headers();
+  const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
+  return buildHubRuntimeHref(hubSlug, pathname, routeMode);
+}
 
 export async function createCourseAction(_previousState, formData) {
   const hubSlug = String(formData.get("hubSlug") || "").trim();
@@ -65,5 +74,5 @@ export async function createCourseAction(_previousState, formData) {
 
   revalidatePublicCoursesCache(hubId);
 
-  redirect(`/${hubSlug}/admin/courses/${course.id}`);
+  redirect(await buildAdminActionHref(hubSlug, `/admin/courses/${course.id}`));
 }

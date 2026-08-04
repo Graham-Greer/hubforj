@@ -2,11 +2,20 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { assertActionHubIdMatches, requireHubOperatorActionAccess } from "@/lib/auth/action-access";
 import { revalidatePublicCoursesCache } from "@/lib/cache/public-content";
 import { deleteCourseById, getCourseById, updateCourseById } from "@/lib/data/courses";
+import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { assertHubRegionalSetupComplete } from "@/lib/domain/hub-regional-setup";
 import { queueCourseCancelledByAdminNotifications } from "@/lib/server/booking-notification-outbox";
+
+async function buildAdminActionHref(hubSlug, pathname) {
+  const headerStore = await headers();
+  const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
+  return buildHubRuntimeHref(hubSlug, pathname, routeMode);
+}
 
 function revalidateCoursePaths(hubSlug, courseId, hubId) {
   revalidatePath(`/${hubSlug}/admin/courses`);
@@ -122,5 +131,5 @@ export async function deleteCourseAction(_previousState, formData) {
   }
 
   revalidateCoursePaths(hubSlug, courseId, hubId);
-  redirect(`/${hubSlug}/admin/courses?deleted=1`);
+  redirect(await buildAdminActionHref(hubSlug, "/admin/courses?deleted=1"));
 }

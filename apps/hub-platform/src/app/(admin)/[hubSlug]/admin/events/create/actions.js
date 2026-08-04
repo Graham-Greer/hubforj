@@ -1,12 +1,21 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { requireHubOperatorActionAccess } from "@/lib/auth/action-access";
 import { revalidatePublicEventsCache } from "@/lib/cache/public-content";
 import { createEventByHubSlug } from "@/lib/data/events";
 import { createEventSeriesByHubSlug } from "@/lib/data/event-series";
+import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { assertHubRegionalSetupComplete } from "@/lib/domain/hub-regional-setup";
 import { getPackageUpgradeNotice } from "@/lib/domain/package-upgrade";
+
+async function buildAdminActionHref(hubSlug, pathname) {
+  const headerStore = await headers();
+  const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
+  return buildHubRuntimeHref(hubSlug, pathname, routeMode);
+}
 
 export async function createEventAction(_previousState, formData) {
   const hubSlug = String(formData.get("hubSlug") || "").trim();
@@ -86,8 +95,8 @@ export async function createEventAction(_previousState, formData) {
   revalidatePublicEventsCache(hubId);
 
   if (series?.id) {
-    redirect(`/${hubSlug}/admin/events/series/${series.id}`);
+    redirect(await buildAdminActionHref(hubSlug, `/admin/events/series/${series.id}`));
   }
 
-  redirect(`/${hubSlug}/admin/events/${event.id}`);
+  redirect(await buildAdminActionHref(hubSlug, `/admin/events/${event.id}`));
 }
