@@ -3,7 +3,6 @@ import EventDetailWorkspace from "@/components/patterns/event-detail-workspace/E
 import { AdminProgrammeDetailFallback } from "@/components/patterns/admin-route-fallbacks/AdminRouteFallbacks";
 import EditEventForm from "./EditEventForm";
 import { countActiveUpcomingPublishedEventsByHub, getEventById } from "@/lib/data/events";
-import { listEventAdminAttendanceRows } from "@/lib/data/event-bookings";
 import { requireHubBySlug } from "@/lib/data/hubs";
 import { isActiveUpcomingPublishedEvent } from "@/lib/domain/events";
 import { resolveHubPackageEntitlements } from "@/lib/domain/hub-package";
@@ -26,10 +25,9 @@ async function EventDetailContent({ hubSlug, eventId, query }) {
   const eventsQuery = eventsSearchParams.toString();
   const hub = await requireHubBySlug(hubSlug);
   const entitlements = resolveHubPackageEntitlements(hub);
-  const [event, mediaFolders, attendanceRows, paymentConfiguration] = await Promise.all([
+  const [event, mediaFolders, paymentConfiguration] = await Promise.all([
     getEventById(hub.id, eventId),
     listMediaFoldersByHubId(hub.id),
-    entitlements.capabilities?.eventsEnabled ? listEventAdminAttendanceRows(hub.id, eventId) : Promise.resolve([]),
     getHubPaymentConfigurationByHubId(hub.id),
   ]);
   const paymentSetupState = getHubPaymentSetupState(hub, paymentConfiguration);
@@ -70,18 +68,9 @@ async function EventDetailContent({ hubSlug, eventId, query }) {
     }
   }
 
-  const attendanceCount = attendanceRows.filter((attendee) => attendee.attendanceStatus === "present").length;
-  const liveRegisteredCount = attendanceRows.filter((attendee) => attendee.status === "registered").length;
-  const liveWaitlistedCount = attendanceRows.filter((attendee) => attendee.status === "waitlisted").length;
-  const liveCancelledCount = attendanceRows.filter((attendee) => attendee.status === "cancelled").length;
-  const hasLiveAttendanceRows = attendanceRows.length > 0;
-  const registrationCount = hasLiveAttendanceRows ? liveRegisteredCount : Number(event.registeredAttendeeCount || 0);
-  const hasAttendanceRegistrations = hasLiveAttendanceRows
-    ? liveRegisteredCount + liveWaitlistedCount + liveCancelledCount > 0
-    : Number(event.registeredAttendeeCount || 0) +
-        Number(event.waitlistedAttendeeCount || 0) +
-        Number(event.cancelledAttendeeCount || 0) >
-      0;
+  const registrationCount = Number(event.registeredAttendeeCount || 0);
+  const hasAttendanceRegistrations =
+    registrationCount + Number(event.waitlistedAttendeeCount || 0) + Number(event.cancelledAttendeeCount || 0) > 0;
 
   return (
     <EventDetailWorkspace
@@ -89,8 +78,8 @@ async function EventDetailContent({ hubSlug, eventId, query }) {
       event={event}
       eventsQuery={eventsQuery}
       isEditing={isEditing}
-      attendanceCount={attendanceCount}
       registrationCount={registrationCount}
+      attendanceCountVerified={false}
       canExportAttendanceReport={entitlements.capabilities?.reportingEnabled === true}
       hasAttendanceRegistrations={hasAttendanceRegistrations}
       seriesWorkspaceHref={event.seriesId ? `/${hub.slug}/admin/events/series/${event.seriesId}` : ""}

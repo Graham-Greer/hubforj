@@ -60,18 +60,18 @@ export default function CourseDetailWorkspace({
   );
   const summaryActions = !isEditing ? (
     <>
-      <Button href={registrationsHref} variant="secondary">
+      <Button href={registrationsHref} prefetch={false} variant="secondary">
         Manage enrollments
       </Button>
-      <Button href={attendanceHref} variant="secondary">
+      <Button href={attendanceHref} prefetch={false} variant="secondary">
         Manage attendance
       </Button>
       {canExportAttendanceReport && hasAttendanceRegistrations ? (
-        <Button href={attendanceExportHref} variant="secondary">
+        <Button href={attendanceExportHref} prefetch={false} variant="secondary">
           Export attendance CSV
         </Button>
       ) : null}
-      <Button href={editHref} variant="ghost">
+      <Button href={editHref} prefetch={false} variant="ghost">
         <Icon name="edit" />
         <span>Edit course</span>
       </Button>

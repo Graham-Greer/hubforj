@@ -36,6 +36,7 @@ export default function EventDetailWorkspace({
   isEditing = false,
   editForm = null,
   attendanceCount = 0,
+  attendanceCountVerified = true,
   registrationCount = 0,
   canExportAttendanceReport = false,
   hasAttendanceRegistrations = false,
@@ -50,7 +51,8 @@ export default function EventDetailWorkspace({
     ...(eventsQuery ? Object.fromEntries(new URLSearchParams(eventsQuery)) : {}),
     mode: "edit",
   }).toString()}#edit-event-details`;
-  const attendanceLabel = hasEventHappened(event) ? "Attended" : "Attending";
+  const shouldShowVerifiedAttendance = attendanceCountVerified && hasEventHappened(event);
+  const attendanceLabel = shouldShowVerifiedAttendance ? "Attended" : "Attending";
   const badges = (
     <>
       <Badge tone={getEventStatusTone(event.status)}>{getEventStatusLabel(event.status)}</Badge>
@@ -61,23 +63,23 @@ export default function EventDetailWorkspace({
   const summaryActions = !isEditing ? (
     <>
       {seriesWorkspaceHref ? (
-        <Button href={seriesWorkspaceHref} variant="secondary">
+        <Button href={seriesWorkspaceHref} prefetch={false} variant="secondary">
           Open recurring series
         </Button>
       ) : null}
-      <Button href={registrationsHref} variant="secondary">
+      <Button href={registrationsHref} prefetch={false} variant="secondary">
         Manage bookings
       </Button>
-      <Button href={attendanceHref} variant="secondary">
+      <Button href={attendanceHref} prefetch={false} variant="secondary">
         Manage attendance
       </Button>
       {canExportAttendanceReport && hasAttendanceRegistrations ? (
-        <Button href={attendanceExportHref} variant="secondary">
+        <Button href={attendanceExportHref} prefetch={false} variant="secondary">
           Export attendance CSV
         </Button>
       ) : null}
       {canEditEvent ? (
-        <Button href={editHref} variant="ghost">
+        <Button href={editHref} prefetch={false} variant="ghost">
           <Icon name="edit" />
           <span>Edit event</span>
         </Button>
@@ -97,7 +99,7 @@ export default function EventDetailWorkspace({
     ...(event.eventKind === "series_occurrence" ? [{ label: "Series", value: "Managed by recurring series" }] : []),
     {
       label: "Attendance",
-      value: `${hasEventHappened(event) ? attendanceCount : registrationCount} ${attendanceLabel}`,
+      value: `${shouldShowVerifiedAttendance ? attendanceCount : registrationCount} ${attendanceLabel}`,
     },
     { label: "Category", value: event.category || "Event" },
   ];
