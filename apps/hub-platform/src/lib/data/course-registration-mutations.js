@@ -21,6 +21,7 @@ import {
   getCourseRegistrationDoc,
   normalizeCourseRegistrationRecord,
   normalizeString,
+  syncCourseRegistrationSummaryForChange,
 } from "./course-registration-shared.js";
 import { getCourseRegistrationByUser } from "./course-registration-queries.js";
 import { getPaymentRecordBySource, upsertPaymentRecordBySource } from "./payment-records.js";
@@ -268,6 +269,14 @@ export async function createCourseRegistrationForMember(hubId, courseId, userId,
   };
 
   await ref.set(writeModel);
+  await syncCourseRegistrationSummaryForChange({
+    hubId: normalizedHubId,
+    courseId: normalizedCourseId,
+    previousRegistration: null,
+    nextRegistration: { id: ref.id, ...writeModel },
+    actorId,
+    updatedAt: now,
+  });
   revalidateCourseListingCapacity(normalizedHubId);
 
   return normalizeCourseRegistrationRecord({ id: ref.id, ...writeModel });
@@ -313,6 +322,14 @@ export async function updateCourseRegistrationStatus(hubId, courseId, registrati
   }
 
   await doc.ref.update(update);
+  await syncCourseRegistrationSummaryForChange({
+    hubId: normalizedHubId,
+    courseId: normalizedCourseId,
+    previousRegistration: current,
+    nextRegistration: { ...current, ...update },
+    actorId,
+    updatedAt: now,
+  });
   revalidateCourseListingCapacity(normalizedHubId);
 
   return normalizeCourseRegistrationRecord({ ...current, ...update });
@@ -355,6 +372,14 @@ export async function updateCourseRegistrationAttendanceStatus(
   };
 
   await doc.ref.update(update);
+  await syncCourseRegistrationSummaryForChange({
+    hubId: normalizedHubId,
+    courseId: normalizedCourseId,
+    previousRegistration: current,
+    nextRegistration: { ...current, ...update },
+    actorId,
+    updatedAt: now,
+  });
 
   return normalizeCourseRegistrationRecord({ ...current, ...update });
 }

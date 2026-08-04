@@ -118,8 +118,11 @@ Copy this block into the relevant implementation notes before starting a slice.
   - expected Network result: no attendance/registrations/export requests before the admin selects those actions
 - Course detail route:
   - sibling registrations, attendance, export, and edit route prefetches have been disabled on detail action buttons
-  - course detail still reads registrations for summary counts because the course record does not yet expose equivalent counters
-  - next safe optimization is a course registration counter/projection, not a UI-only skeleton change
+  - course detail now uses course-level registration summary counters for enrolled and active attendance counts
+  - course registration create/status/attendance mutations maintain the summary counters
+  - existing courses without `registrationSummaryUpdatedAt` perform one lightweight status-only repair read, then subsequent detail loads use the course document counters
+  - counter maintenance updates `registrationSummaryUpdatedAt` and does not mutate normal course content `updatedAt`
+  - expected Network/server behavior: `/admin/courses/[courseId]` should not call `listCourseRegistrations` or hydrate member records for summary counts
 - Admin onboarding:
   - route-scoped onboarding state is reused per hub once loaded
   - full checklist hydration still occurs only where the checklist is relevant

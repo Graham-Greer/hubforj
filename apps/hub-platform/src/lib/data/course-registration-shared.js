@@ -109,6 +109,108 @@ export async function getCourseRegistrationDoc(hubId, courseId, registrationId) 
     .get();
 }
 
+export function summarizeCourseRegistrationCounterRows(rows = []) {
+  return rows.reduce(
+    (summary, row) => {
+      const status = normalizeString(row?.status) || "enrolled";
+      const attendanceStatus = normalizeString(row?.attendanceStatus) || "pending";
+
+      summary.registrationCount += 1;
+      if (status === "enrolled") summary.enrolledRegistrationCount += 1;
+      if (status === "waitlisted") summary.waitlistedRegistrationCount += 1;
+      if (status === "cancelled") summary.cancelledRegistrationCount += 1;
+      if (attendanceStatus === "in_progress") summary.attendanceInProgressCount += 1;
+      if (attendanceStatus === "completed") summary.attendanceCompletedCount += 1;
+      if (attendanceStatus === "in_progress" || attendanceStatus === "completed") summary.attendanceActiveCount += 1;
+
+      return summary;
+    },
+    {
+      registrationCount: 0,
+      enrolledRegistrationCount: 0,
+      waitlistedRegistrationCount: 0,
+      cancelledRegistrationCount: 0,
+      attendanceInProgressCount: 0,
+      attendanceCompletedCount: 0,
+      attendanceActiveCount: 0,
+    }
+  );
+}
+
+function getCounterDelta(previousRegistration, nextRegistration) {
+  const previous = previousRegistration ? summarizeCourseRegistrationCounterRows([previousRegistration]) : summarizeCourseRegistrationCounterRows([]);
+  const next = nextRegistration ? summarizeCourseRegistrationCounterRows([nextRegistration]) : summarizeCourseRegistrationCounterRows([]);
+
+  return Object.fromEntries(Object.keys(next).map((key) => [key, next[key] - previous[key]]));
+}
+
+function applyCounterDelta(currentValue, delta) {
+  const current = Number.parseInt(String(currentValue || "0"), 10) || 0;
+  const next = current + delta;
+  return Math.max(0, next);
+}
+
+export async function updateCourseRegistrationSummaryProjection(hubId, courseId, summary, options = {}) {
+  const normalizedHubId = normalizeString(hubId);
+  const normalizedCourseId = normalizeString(courseId);
+
+  if (!normalizedHubId || !normalizedCourseId) {
+    return;
+  }
+
+  const now = normalizeString(options.updatedAt) || new Date().toISOString();
+
+  await getFirebaseAdminDb()
+    .collection("hubs")
+    .doc(normalizedHubId)
+    .collection("courses")
+    .doc(normalizedCourseId)
+    .set({
+      ...summarizeCourseRegistrationCounterRows([]),
+      ...summary,
+      registrationSummaryUpdatedAt: now,
+      registrationSummaryUpdatedBy: normalizeString(options.actorId) || "system",
+    }, { merge: true });
+}
+
+export async function syncCourseRegistrationSummaryForChange({
+  hubId,
+  courseId,
+  previousRegistration = null,
+  nextRegistration = null,
+  actorId = "system",
+  updatedAt = "",
+} = {}) {
+  const normalizedHubId = normalizeString(hubId);
+  const normalizedCourseId = normalizeString(courseId);
+
+  if (!normalizedHubId || !normalizedCourseId) {
+    return;
+  }
+
+  const db = getFirebaseAdminDb();
+  const courseRef = db.collection("hubs").doc(normalizedHubId).collection("courses").doc(normalizedCourseId);
+  const delta = getCounterDelta(previousRegistration, nextRegistration);
+  const now = normalizeString(updatedAt) || new Date().toISOString();
+
+  await db.runTransaction(async (transaction) => {
+    const courseDoc = await transaction.get(courseRef);
+    const course = courseDoc.exists ? courseDoc.data() || {} : {};
+
+    transaction.set(courseRef, {
+      registrationCount: applyCounterDelta(course.registrationCount, delta.registrationCount),
+      enrolledRegistrationCount: applyCounterDelta(course.enrolledRegistrationCount, delta.enrolledRegistrationCount),
+      waitlistedRegistrationCount: applyCounterDelta(course.waitlistedRegistrationCount, delta.waitlistedRegistrationCount),
+      cancelledRegistrationCount: applyCounterDelta(course.cancelledRegistrationCount, delta.cancelledRegistrationCount),
+      attendanceInProgressCount: applyCounterDelta(course.attendanceInProgressCount, delta.attendanceInProgressCount),
+      attendanceCompletedCount: applyCounterDelta(course.attendanceCompletedCount, delta.attendanceCompletedCount),
+      attendanceActiveCount: applyCounterDelta(course.attendanceActiveCount, delta.attendanceActiveCount),
+      registrationSummaryUpdatedAt: now,
+      registrationSummaryUpdatedBy: normalizeString(actorId) || "system",
+    }, { merge: true });
+  });
+}
+
 export async function getCourseRegistrationDocByUser(hubId, courseId, userId) {
   const docs = await listCourseRegistrationDocsByUser(hubId, courseId, userId);
   return docs[0] || null;

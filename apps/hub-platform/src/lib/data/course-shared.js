@@ -99,6 +99,17 @@ export function normalizeCourseRecord(course) {
     registrationEligibility: normalizeString(course.registrationEligibility) || "members-only",
     visibility: normalizeString(course.visibility) || "public",
     allowWaitlist: normalizeBoolean(course.allowWaitlist, true),
+    registrationCount: normalizeCourseInteger(course.registrationCount, 0),
+    enrolledRegistrationCount: normalizeCourseInteger(course.enrolledRegistrationCount, 0),
+    waitlistedRegistrationCount: normalizeCourseInteger(course.waitlistedRegistrationCount, 0),
+    cancelledRegistrationCount: normalizeCourseInteger(course.cancelledRegistrationCount, 0),
+    attendanceInProgressCount: normalizeCourseInteger(course.attendanceInProgressCount, 0),
+    attendanceCompletedCount: normalizeCourseInteger(course.attendanceCompletedCount, 0),
+    attendanceActiveCount:
+      normalizeCourseInteger(course.attendanceActiveCount, 0) ||
+      normalizeCourseInteger(course.attendanceInProgressCount, 0) + normalizeCourseInteger(course.attendanceCompletedCount, 0),
+    registrationSummaryUpdatedAt: normalizeString(course.registrationSummaryUpdatedAt),
+    registrationSummaryUpdatedBy: normalizeString(course.registrationSummaryUpdatedBy),
     createdAt: normalizeString(course.createdAt),
     updatedAt: normalizeString(course.updatedAt),
   };

@@ -17,6 +17,8 @@ import {
   listUserCourseRegistrationsAcrossHub,
   normalizeCourseRegistrationRecord,
   normalizeString,
+  summarizeCourseRegistrationCounterRows,
+  updateCourseRegistrationSummaryProjection,
 } from "./course-registration-shared.js";
 
 export async function listCourseRegistrations(hubId, courseId) {
@@ -48,6 +50,34 @@ export async function listCourseRegistrations(hubId, courseId) {
   const usersById = await getUsersByIds(baseRows.map((row) => row.userId));
 
   return baseRows.map((row) => normalizeCourseRegistrationRecord(row, usersById.get(row.userId)));
+}
+
+export async function getCourseRegistrationSummary(hubId, courseId, options = {}) {
+  const normalizedHubId = normalizeString(hubId);
+  const normalizedCourseId = normalizeString(courseId);
+
+  if (!normalizedHubId || !normalizedCourseId) {
+    return summarizeCourseRegistrationCounterRows([]);
+  }
+
+  const snapshot = await getFirebaseAdminDb()
+    .collection("hubs")
+    .doc(normalizedHubId)
+    .collection("courses")
+    .doc(normalizedCourseId)
+    .collection("registrations")
+    .select("status", "attendanceStatus")
+    .get();
+  const summary = summarizeCourseRegistrationCounterRows(snapshot.docs.map((doc) => doc.data() || {}));
+
+  if (options.repairProjection === true) {
+    await updateCourseRegistrationSummaryProjection(normalizedHubId, normalizedCourseId, summary, {
+      actorId: options.actorId || "system",
+      updatedAt: options.updatedAt,
+    });
+  }
+
+  return summary;
 }
 
 export async function listCourseRegistrationsByUser(hubId, userId) {
