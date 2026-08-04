@@ -225,3 +225,24 @@ Pending:
 - Enable feature flag in preview/non-production.
 - Runtime verify public events and courses routes.
 - Plan server-side pagination/search/filtering as a later slice.
+
+### 2026-08-04 - Public Events/Courses Anonymous Cache And Fallback Follow-Up
+
+Status: implemented at source level, pending runtime verification.
+
+Completed:
+
+- Added anonymous durable cache for public events deferred listing data.
+- Added anonymous durable cache for public courses deferred listing data.
+- Kept signed-in member offering visibility dynamic.
+- Added cache tags that respond to hub, offering, and media invalidation.
+- Added event/course mutation invalidation and course registration capacity invalidation.
+- Replaced empty public offering Suspense fallbacks with route-specific listing skeletons.
+- Added implementation note:
+  [hub-platform-public-offering-cache-and-fallback-slice-2026-08-04.md](hub-platform-public-offering-cache-and-fallback-slice-2026-08-04.md)
+
+Pending:
+
+- Re-test `/events` anonymous hard refresh after production deployment.
+- Re-test `/courses` anonymous hard refresh after production deployment.
+- Confirm signed-in member-only offerings still bypass anonymous cache.

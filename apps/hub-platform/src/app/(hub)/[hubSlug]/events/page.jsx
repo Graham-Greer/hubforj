@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import HeroSection from "@/components/sections/hero-section/HeroSection";
 import EventsListingSection from "@/components/sections/events-listing-section/EventsListingSection";
 import FAQSection from "@/components/sections/faq-section/FAQSection";
+import { PublicOfferingListingFallback } from "@/components/patterns/public-offering-fallbacks";
 import { getPublicEventsDeferredData, getPublicEventsShellData } from "@/lib/data/public-site";
 import { buildPublicEventFaqItems } from "@/lib/domain/public-offering-faqs";
 import { getDefaultEventsPageHero } from "@/lib/domain/public-events";
@@ -63,7 +64,15 @@ export default async function EventsPage({ params }) {
         height={pageTemplate.hero.height}
         containerWidth={pageTemplate.hero.containerWidth}
       />
-      <Suspense fallback={null}>
+      <Suspense
+        fallback={
+          <PublicOfferingListingFallback
+            kind="events"
+            variant={pageTemplate.listing.variant}
+            containerWidth={contentWidth}
+          />
+        }
+      >
         <EventsDeferredContent
           deferredDataPromise={deferredDataPromise}
           hub={hub}

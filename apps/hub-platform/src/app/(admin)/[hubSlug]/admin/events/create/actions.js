@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { requireHubOperatorActionAccess } from "@/lib/auth/action-access";
+import { revalidatePublicEventsCache } from "@/lib/cache/public-content";
 import { createEventByHubSlug } from "@/lib/data/events";
 import { createEventSeriesByHubSlug } from "@/lib/data/event-series";
 import { assertHubRegionalSetupComplete } from "@/lib/domain/hub-regional-setup";
@@ -49,10 +50,12 @@ export async function createEventAction(_previousState, formData) {
   const isRecurring = scheduleMode === "recurring";
   let event;
   let series;
+  let hubId = "";
 
   try {
     const { hub, actorId } = await requireHubOperatorActionAccess(hubSlug);
     assertHubRegionalSetupComplete(hub);
+    hubId = hub.id;
 
     if (isRecurring) {
       series = await createEventSeriesByHubSlug(
@@ -79,6 +82,8 @@ export async function createEventAction(_previousState, formData) {
       values,
     };
   }
+
+  revalidatePublicEventsCache(hubId);
 
   if (series?.id) {
     redirect(`/${hubSlug}/admin/events/series/${series.id}`);

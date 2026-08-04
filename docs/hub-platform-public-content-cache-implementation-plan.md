@@ -295,3 +295,27 @@ Pending:
 - Runtime route verification on local or preview.
 - Before/after network comparison where measurable.
 - Expansion to events and courses query optimization.
+
+### 2026-08-04 - Public Events And Courses Anonymous Cache
+
+Status: implemented at source level, pending runtime verification.
+
+Completed:
+
+- Added durable anonymous cache wrappers for public `/events` deferred listing data.
+- Added durable anonymous cache wrappers for public `/courses` deferred listing data.
+- Preserved member-specific public offering visibility by bypassing the anonymous cache whenever a member session exists.
+- Added public offering cache tags for events and courses.
+- Added media invalidation coverage for events and courses card media.
+- Added event create/update/delete and recurring-series update invalidation.
+- Added course create/update/delete invalidation.
+- Added course registration create/status invalidation because public course cards display available-space labels.
+- Added route-specific public offering skeletons for `/events` and `/courses` Suspense fallbacks.
+- Added implementation note:
+  [hub-platform-public-offering-cache-and-fallback-slice-2026-08-04.md](hub-platform-public-offering-cache-and-fallback-slice-2026-08-04.md)
+
+Pending:
+
+- Runtime verify anonymous `/events` and `/courses` after deployment.
+- Runtime verify signed-in member-only visibility still works.
+- Compare warm anonymous hard-refresh waterfalls for `/events` and `/courses`.

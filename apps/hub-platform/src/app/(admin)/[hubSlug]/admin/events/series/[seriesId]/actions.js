@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { assertActionHubIdMatches, requireHubOperatorActionAccess } from "@/lib/auth/action-access";
+import { revalidatePublicEventsCache } from "@/lib/cache/public-content";
 import { updateEventSeriesById } from "@/lib/data/event-series";
 import { assertHubRegionalSetupComplete } from "@/lib/domain/hub-regional-setup";
 import { getPackageUpgradeNotice } from "@/lib/domain/package-upgrade";
@@ -117,6 +118,7 @@ export async function updateEventSeriesAction(_previousState, formData) {
   }
 
   revalidateEventSeriesPaths(hubSlug, seriesId, series?.occurrences || []);
+  revalidatePublicEventsCache(hubId);
 
   return {
     error: "",
