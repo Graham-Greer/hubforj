@@ -15,6 +15,7 @@ import {
   resolveCoursePaymentConfiguration,
 } from "@/lib/domain/courses";
 import { normalizeCourseRecord, normalizeString } from "./course-shared.js";
+import { createMediaUsageReference, removeMediaUsageReference, syncMediaUsageReferenceForAssetChange } from "./media-usage-projection.js";
 
 async function assertUniqueCourseSlug(hubId, slug, excludeCourseId = "") {
   const snapshot = await getFirebaseAdminDb()
@@ -102,6 +103,19 @@ export async function createCourseByHubSlug(hubSlug, payload, actorId = "system"
   };
 
   await ref.set(writeModel);
+  await syncMediaUsageReferenceForAssetChange({
+    hubId: hub.id,
+    previousAssetId: "",
+    nextAssetId: next.imageAssetId,
+    usageRef: createMediaUsageReference({
+      entityType: "course",
+      entityId: ref.id,
+      field: "image",
+      label: next.title || "Course image",
+      href: "",
+    }),
+    updatedAt: now,
+  });
 
   return normalizeCourseRecord({ id: ref.id, ...writeModel });
 }
@@ -182,6 +196,19 @@ export async function updateCourseById(hubId, courseId, payload, actorId = "syst
   };
 
   await ref.update(update);
+  await syncMediaUsageReferenceForAssetChange({
+    hubId: normalizedHubId,
+    previousAssetId: existing.data()?.imageAssetId,
+    nextAssetId: next.imageAssetId,
+    usageRef: createMediaUsageReference({
+      entityType: "course",
+      entityId: normalizedCourseId,
+      field: "image",
+      label: next.title || "Course image",
+      href: "",
+    }),
+    updatedAt: update.updatedAt,
+  });
   return normalizeCourseRecord({ id: normalizedCourseId, hubId: normalizedHubId, ...existing.data(), ...update });
 }
 
@@ -209,4 +236,15 @@ export async function deleteCourseById(hubId, courseId) {
   }
 
   await courseRef.delete();
+  await removeMediaUsageReference({
+    hubId: normalizedHubId,
+    assetId: existing.data()?.imageAssetId,
+    usageRef: createMediaUsageReference({
+      entityType: "course",
+      entityId: normalizedCourseId,
+      field: "image",
+      label: normalizeString(existing.data()?.title) || "Course image",
+      href: "",
+    }),
+  });
 }

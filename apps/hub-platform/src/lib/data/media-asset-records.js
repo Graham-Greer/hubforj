@@ -15,6 +15,7 @@ import {
 } from "@/lib/domain/media";
 import { folderCollection, mediaCollection, normalizeString } from "./media-shared.js";
 import { getMediaAssetById } from "./media-queries.js";
+import { deleteMediaUsageProjectionForAsset } from "./media-usage-projection.js";
 
 export async function updateMediaAssetForHub(hubId, assetId, payload, actorId = "system") {
   const normalizedHubId = normalizeString(hubId);
@@ -76,6 +77,7 @@ export async function deleteMediaAssetForHub(hubId, assetId) {
   const bucketName = getPublicEnv().firebaseStorageBucket;
   await getFirebaseAdminStorage().bucket(bucketName).file(asset.storagePath).delete({ ignoreNotFound: true });
   await mediaCollection(normalizedHubId).doc(normalizedAssetId).delete();
+  await deleteMediaUsageProjectionForAsset(normalizedHubId, normalizedAssetId);
 }
 
 export async function uploadMediaAssetForHub(hubId, payload, actorId = "system") {

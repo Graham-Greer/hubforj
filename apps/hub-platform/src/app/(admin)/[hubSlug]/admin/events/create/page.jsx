@@ -7,7 +7,7 @@ import WorkspaceSection from "@/components/patterns/workspace-section/WorkspaceS
 import { countActiveUpcomingPublishedEventsByHub } from "@/lib/data/events";
 import { requireHubBySlug, requireHubCoreBySlug } from "@/lib/data/hubs";
 import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
-import { listMediaAssetsByHubId, listMediaFoldersByHubId } from "@/lib/data/media";
+import { listMediaFoldersByHubId } from "@/lib/data/media";
 import { resolveHubPackageEntitlements } from "@/lib/domain/hub-package";
 import { getHubPaymentSetupState } from "@/lib/domain/hub-payment-configuration";
 import CreateEventForm from "./CreateEventForm";
@@ -37,15 +37,14 @@ async function CreateEventWorkspace({ hubSlug }) {
     );
   }
 
-  const [mediaAssets, mediaFolders, paymentConfiguration] = await Promise.all([
-    listMediaAssetsByHubId(hub.id),
+  const [mediaFolders, paymentConfiguration] = await Promise.all([
     listMediaFoldersByHubId(hub.id),
     getHubPaymentConfigurationByHubId(hub.id),
   ]);
   const paymentSetupState = getHubPaymentSetupState(hub, paymentConfiguration);
 
   return (
-    <CreateEventForm hub={hub} mediaAssets={mediaAssets} mediaFolders={mediaFolders} paymentSetupState={paymentSetupState} />
+    <CreateEventForm hub={hub} mediaAssets={[]} mediaFolders={mediaFolders} paymentSetupState={paymentSetupState} />
   );
 }
 

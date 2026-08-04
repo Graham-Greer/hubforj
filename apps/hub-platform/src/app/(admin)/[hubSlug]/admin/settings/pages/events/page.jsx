@@ -6,14 +6,13 @@ import WorkspaceSection from "@/components/patterns/workspace-section/WorkspaceS
 import EventsPageSettingsForm from "./EventsPageSettingsForm";
 import { requireHubBySlug, requireHubCoreBySlug } from "@/lib/data/hubs";
 import { getEventsPageSettingsFormValuesByHub } from "@/lib/data/site-settings";
-import { listMediaAssetsByHubId, listMediaFoldersByHubId } from "@/lib/data/media";
+import { listMediaFoldersByHubId } from "@/lib/data/media";
 import styles from "../../settings.module.css";
 
 async function EventsPageSettingsWorkspace({ hubSlug }) {
   const hub = await requireHubBySlug(hubSlug);
-  const [initialValues, mediaAssets, mediaFolders] = await Promise.all([
+  const [initialValues, mediaFolders] = await Promise.all([
     getEventsPageSettingsFormValuesByHub(hub),
-    listMediaAssetsByHubId(hub.id),
     listMediaFoldersByHubId(hub.id),
   ]);
 
@@ -21,7 +20,7 @@ async function EventsPageSettingsWorkspace({ hubSlug }) {
     <EventsPageSettingsForm
       hub={hub}
       initialValues={initialValues}
-      mediaAssets={mediaAssets}
+      mediaAssets={[]}
       mediaFolders={mediaFolders}
     />
   );

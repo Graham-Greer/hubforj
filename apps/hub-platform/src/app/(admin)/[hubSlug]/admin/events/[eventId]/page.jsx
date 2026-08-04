@@ -9,7 +9,7 @@ import { isActiveUpcomingPublishedEvent } from "@/lib/domain/events";
 import { resolveHubPackageEntitlements } from "@/lib/domain/hub-package";
 import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
 import { getHubPaymentSetupState } from "@/lib/domain/hub-payment-configuration";
-import { listMediaAssetsByHubId, listMediaFoldersByHubId } from "@/lib/data/media";
+import { listMediaFoldersByHubId } from "@/lib/data/media";
 import { notFound } from "next/navigation";
 
 async function EventDetailContent({ hubSlug, eventId, query }) {
@@ -26,9 +26,8 @@ async function EventDetailContent({ hubSlug, eventId, query }) {
   const eventsQuery = eventsSearchParams.toString();
   const hub = await requireHubBySlug(hubSlug);
   const entitlements = resolveHubPackageEntitlements(hub);
-  const [event, mediaAssets, mediaFolders, attendanceRows, paymentConfiguration] = await Promise.all([
+  const [event, mediaFolders, attendanceRows, paymentConfiguration] = await Promise.all([
     getEventById(hub.id, eventId),
-    listMediaAssetsByHubId(hub.id),
     listMediaFoldersByHubId(hub.id),
     entitlements.capabilities?.eventsEnabled ? listEventAdminAttendanceRows(hub.id, eventId) : Promise.resolve([]),
     getHubPaymentConfigurationByHubId(hub.id),
@@ -100,7 +99,7 @@ async function EventDetailContent({ hubSlug, eventId, query }) {
         <EditEventForm
           hub={hub}
           event={event}
-          mediaAssets={mediaAssets}
+          mediaAssets={event.imageAsset ? [event.imageAsset] : []}
           mediaFolders={mediaFolders}
           paymentSetupState={paymentSetupState}
           publishLocked={publishLocked}

@@ -6,9 +6,12 @@ try {
 
 export {
   getMediaAssetById,
+  getMediaAssetMetadataById,
   getMediaAssetsByIds,
+  getMediaAssetUsageById,
   getPublicMediaAssetById,
   getPublicMediaAssetsByIds,
+  listMediaAssetPageByHubId,
   listMediaAssetsByHubId,
   listMediaFoldersByHubId,
 } from "./media-queries.js";

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   createMediaFolderAction,
@@ -14,6 +14,8 @@ export function useMediaLibraryWorkspace({
   hub,
   assets,
   folders,
+  initialAssetCursor = "",
+  initialHasMoreAssets = false,
   mode = "manage",
   embedded = false,
   initialSelectedAssetId = "",
@@ -23,6 +25,11 @@ export function useMediaLibraryWorkspace({
   const router = useRouter();
   const [assetRows, setAssetRows] = useState(assets);
   const [folderRows, setFolderRows] = useState(folders);
+  const [assetCursor, setAssetCursor] = useState(initialAssetCursor);
+  const [hasMoreAssets, setHasMoreAssets] = useState(initialHasMoreAssets);
+  const [isLoadingMoreAssets, setIsLoadingMoreAssets] = useState(false);
+  const [usageLoadingAssetId, setUsageLoadingAssetId] = useState("");
+  const [usageErrorAssetId, setUsageErrorAssetId] = useState("");
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [folderFilter, setFolderFilter] = useState("all");
@@ -39,6 +46,7 @@ export function useMediaLibraryWorkspace({
     folderId: assets.find((asset) => asset.id === initialSelectedAssetId)?.folderId || assets[0]?.folderId || "",
   });
   const [isPending, startTransition] = useTransition();
+  const usageRequestedAssetIdsRef = useRef(new Set());
 
   const isPicker = mode === "pick" || Boolean(pickerContext?.returnTo);
 
@@ -111,6 +119,64 @@ export function useMediaLibraryWorkspace({
     }
   }, [filteredAssets, selectedAssetId]);
 
+  const selectedAssetUsageLoaded = Boolean(selectedAsset?.usageLoaded);
+
+  useEffect(() => {
+    const assetId = selectedAssetId;
+
+    if (!assetId || selectedAssetUsageLoaded || usageRequestedAssetIdsRef.current.has(assetId)) {
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    usageRequestedAssetIdsRef.current.add(assetId);
+    setUsageLoadingAssetId(assetId);
+    setUsageErrorAssetId("");
+
+    fetch(`/api/admin/hubs/${encodeURIComponent(hub.slug)}/media/assets/${encodeURIComponent(assetId)}/usage`, {
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const payload = await response.json();
+
+        if (!response.ok) {
+          throw new Error(payload.error || "Unable to load media usage.");
+        }
+
+        setAssetRows((current) =>
+          current.map((asset) =>
+            asset.id === assetId
+              ? {
+                  ...asset,
+                  usageRefs: Array.isArray(payload.usageRefs) ? payload.usageRefs : [],
+                  usageCount: Number.parseInt(String(payload.usageCount || 0), 10) || 0,
+                  usageLoaded: payload.usageVerificationComplete !== false,
+                }
+              : asset
+          )
+        );
+
+        if (payload.usageVerificationComplete === false) {
+          setUsageErrorAssetId(assetId);
+        }
+      })
+      .catch((error) => {
+        if (error.name === "AbortError") {
+          usageRequestedAssetIdsRef.current.delete(assetId);
+          return;
+        }
+
+        setUsageErrorAssetId(assetId);
+      })
+      .finally(() => {
+        setUsageLoadingAssetId((current) => (current === assetId ? "" : current));
+      });
+
+    return () => {
+      controller.abort();
+    };
+  }, [hub.slug, selectedAssetId, selectedAssetUsageLoaded]);
+
   async function runAction(task, successMessage) {
     setWorkspaceError("");
     setWorkspaceSuccess("");
@@ -173,7 +239,10 @@ export function useMediaLibraryWorkspace({
             throw new Error(payload.error || "Unable to upload asset.");
           }
 
-          setAssetRows((current) => [payload.asset, ...current.filter((asset) => asset.id !== payload.asset.id)]);
+          setAssetRows((current) => [
+            { ...payload.asset, usageRefs: [], usageCount: 0, usageLoaded: true },
+            ...current.filter((asset) => asset.id !== payload.asset.id),
+          ]);
         }
 
         setWorkspaceSuccess(files.length === 1 ? "Asset uploaded." : "Assets uploaded.");
@@ -185,6 +254,42 @@ export function useMediaLibraryWorkspace({
         setWorkspaceError(String(error?.message || "Unable to upload asset."));
       }
     });
+  }
+
+  async function handleLoadMoreAssets() {
+    if (!hasMoreAssets || isLoadingMoreAssets) {
+      return;
+    }
+
+    setWorkspaceError("");
+    setIsLoadingMoreAssets(true);
+
+    try {
+      const query = new URLSearchParams();
+
+      if (assetCursor) {
+        query.set("cursor", assetCursor);
+      }
+
+      const response = await fetch(`/api/admin/hubs/${encodeURIComponent(hub.slug)}/media/assets?${query.toString()}`);
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Unable to load more assets.");
+      }
+
+      const nextAssets = Array.isArray(payload.assets) ? payload.assets : [];
+      setAssetRows((current) => {
+        const seen = new Set(current.map((asset) => asset.id));
+        return [...current, ...nextAssets.filter((asset) => !seen.has(asset.id))];
+      });
+      setAssetCursor(payload.nextCursor || "");
+      setHasMoreAssets(Boolean(payload.hasMore));
+    } catch (error) {
+      setWorkspaceError(String(error?.message || "Unable to load more assets."));
+    } finally {
+      setIsLoadingMoreAssets(false);
+    }
   }
 
   function buildPickerReturnHref() {
@@ -296,6 +401,10 @@ export function useMediaLibraryWorkspace({
     detailValues,
     isPending,
     isPicker,
+    hasMoreAssets,
+    isLoadingMoreAssets,
+    usageLoadingAssetId,
+    usageErrorAssetId,
     folderCounts,
     filteredAssets,
     selectedAsset,
@@ -313,6 +422,7 @@ export function useMediaLibraryWorkspace({
     setDetailValues,
     handleFolderSubmit,
     handleUpload,
+    handleLoadMoreAssets,
     handleUseSelectedAsset,
     handleSaveDetails,
     handleConfirmFolderDelete,

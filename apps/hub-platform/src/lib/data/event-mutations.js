@@ -20,6 +20,7 @@ import {
 import { canHubUseGroupBookings } from "@/lib/domain/event-bookings";
 import { assertHubNativePaymentsReady } from "@/lib/domain/hub-payment-configuration";
 import { normalizeEventRecord, normalizeString } from "./event-shared.js";
+import { createMediaUsageReference, removeMediaUsageReference, syncMediaUsageReferenceForAssetChange } from "./media-usage-projection.js";
 
 async function assertUniqueEventSlug(hubId, slug, excludeEventId = "") {
   const snapshot = await getFirebaseAdminDb()
@@ -178,6 +179,19 @@ export async function createEventByHubSlug(hubSlug, payload, actorId = "system")
   };
 
   await ref.set(writeModel);
+  await syncMediaUsageReferenceForAssetChange({
+    hubId: hub.id,
+    previousAssetId: "",
+    nextAssetId: next.imageAssetId,
+    usageRef: createMediaUsageReference({
+      entityType: "event",
+      entityId: ref.id,
+      field: "image",
+      label: next.title || "Event image",
+      href: "",
+    }),
+    updatedAt: now,
+  });
 
   return normalizeEventRecord({ id: ref.id, ...writeModel });
 }
@@ -250,6 +264,19 @@ export async function updateEventById(hubId, eventId, payload, actorId = "system
   };
 
   await ref.update(update);
+  await syncMediaUsageReferenceForAssetChange({
+    hubId: normalizedHubId,
+    previousAssetId: existing.data()?.imageAssetId,
+    nextAssetId: next.imageAssetId,
+    usageRef: createMediaUsageReference({
+      entityType: "event",
+      entityId: normalizedEventId,
+      field: "image",
+      label: next.title || "Event image",
+      href: "",
+    }),
+    updatedAt: update.updatedAt,
+  });
   return normalizeEventRecord({ id: normalizedEventId, hubId: normalizedHubId, ...existing.data(), ...update });
 }
 
@@ -282,4 +309,15 @@ export async function deleteEventById(hubId, eventId) {
   batch.delete(eventRef);
   bookerSnapshot.docs.forEach((doc) => batch.delete(doc.ref));
   await batch.commit();
+  await removeMediaUsageReference({
+    hubId: normalizedHubId,
+    assetId: existing.data()?.imageAssetId,
+    usageRef: createMediaUsageReference({
+      entityType: "event",
+      entityId: normalizedEventId,
+      field: "image",
+      label: normalizeString(existing.data()?.title) || "Event image",
+      href: "",
+    }),
+  });
 }

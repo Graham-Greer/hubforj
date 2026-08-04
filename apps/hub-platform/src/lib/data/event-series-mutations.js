@@ -13,6 +13,7 @@ import { getFallbackRegionalMarket } from "@/lib/domain/regional-markets";
 import { normalizeEventSeriesRecord } from "./event-series-shared.js";
 import { listEventSeriesOccurrences } from "./event-series-queries.js";
 import { syncEventSeriesOccurrences } from "@/lib/server/event-series-generation.js";
+import { createMediaUsageReference, syncMediaUsageReferenceForAssetChange } from "./media-usage-projection.js";
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -111,6 +112,19 @@ export async function createEventSeriesByHubSlug(hubSlug, payload, actorId = "sy
     .doc(`series_${crypto.randomUUID().slice(0, 12)}`);
 
   await ref.set(writeModel);
+  await syncMediaUsageReferenceForAssetChange({
+    hubId: hub.id,
+    previousAssetId: "",
+    nextAssetId: writeModel.imageAssetId,
+    usageRef: createMediaUsageReference({
+      entityType: "eventSeries",
+      entityId: ref.id,
+      field: "image",
+      label: writeModel.title || "Event series image",
+      href: "",
+    }),
+    updatedAt: now,
+  });
 
   const record = normalizeEventSeriesRecord({
     id: ref.id,
@@ -161,6 +175,19 @@ export async function updateEventSeriesById(hubId, seriesId, payload, actorId = 
   await assertUniqueEventSeriesSlugBase(normalizedHubId, writeModel.slugBase, normalizedSeriesId);
 
   await existingSeriesDoc.ref.set(writeModel, { merge: true });
+  await syncMediaUsageReferenceForAssetChange({
+    hubId: normalizedHubId,
+    previousAssetId: existingSeries.imageAssetId,
+    nextAssetId: writeModel.imageAssetId,
+    usageRef: createMediaUsageReference({
+      entityType: "eventSeries",
+      entityId: normalizedSeriesId,
+      field: "image",
+      label: writeModel.title || "Event series image",
+      href: "",
+    }),
+    updatedAt: now,
+  });
 
   const record = normalizeEventSeriesRecord({
     ...existingSeries,

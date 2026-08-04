@@ -5,15 +5,14 @@ import { AdminFormRuntimeProvider } from "@/components/patterns/admin-form-runti
 import { AdminPublicPageSettingsFallback } from "@/components/patterns/admin-route-fallbacks/AdminRouteFallbacks";
 import WorkspaceSection from "@/components/patterns/workspace-section/WorkspaceSection";
 import { requireHubBySlug, requireHubCoreBySlug } from "@/lib/data/hubs";
-import { listMediaAssetsByHubId, listMediaFoldersByHubId } from "@/lib/data/media";
+import { listMediaFoldersByHubId } from "@/lib/data/media";
 import { getSiteSettingsFormValuesByHub } from "@/lib/data/site-settings";
 import styles from "../../settings.module.css";
 
 async function HomepageSettingsWorkspace({ hubSlug }) {
   const hub = await requireHubBySlug(hubSlug);
-  const [initialValues, mediaAssets, mediaFolders] = await Promise.all([
+  const [initialValues, mediaFolders] = await Promise.all([
     getSiteSettingsFormValuesByHub(hub),
-    listMediaAssetsByHubId(hub.id),
     listMediaFoldersByHubId(hub.id),
   ]);
 
@@ -21,7 +20,7 @@ async function HomepageSettingsWorkspace({ hubSlug }) {
     <HomepageSettingsForm
       hub={hub}
       initialValues={initialValues}
-      mediaAssets={mediaAssets}
+      mediaAssets={[]}
       mediaFolders={mediaFolders}
     />
   );

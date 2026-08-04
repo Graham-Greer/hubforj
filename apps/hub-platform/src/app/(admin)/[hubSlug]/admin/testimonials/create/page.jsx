@@ -3,19 +3,16 @@ import Button from "@/components/ui/button/Button";
 import { AdminTestimonialFormFallback } from "@/components/patterns/admin-route-fallbacks/AdminRouteFallbacks";
 import WorkspaceSection from "@/components/patterns/workspace-section/WorkspaceSection";
 import { requireHubBySlug, requireHubCoreBySlug } from "@/lib/data/hubs";
-import { listMediaAssetsByHubId, listMediaFoldersByHubId } from "@/lib/data/media";
+import { listMediaFoldersByHubId } from "@/lib/data/media";
 import CreateTestimonialForm from "./CreateTestimonialForm";
 import styles from "./page.module.css";
 
 async function CreateTestimonialWorkspace({ hubSlug }) {
   const hub = await requireHubBySlug(hubSlug);
-  const [mediaAssets, mediaFolders] = await Promise.all([
-    listMediaAssetsByHubId(hub.id),
-    listMediaFoldersByHubId(hub.id),
-  ]);
+  const mediaFolders = await listMediaFoldersByHubId(hub.id);
 
   return (
-    <CreateTestimonialForm hubId={hub.id} hubSlug={hub.slug} mediaAssets={mediaAssets} mediaFolders={mediaFolders} />
+    <CreateTestimonialForm hubId={hub.id} hubSlug={hub.slug} mediaAssets={[]} mediaFolders={mediaFolders} />
   );
 }
 

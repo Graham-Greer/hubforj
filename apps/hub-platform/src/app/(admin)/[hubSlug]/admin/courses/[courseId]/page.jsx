@@ -8,7 +8,7 @@ import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-config
 import { listCourseRegistrations } from "@/lib/data/course-registrations";
 import { resolveHubPackageEntitlements } from "@/lib/domain/hub-package";
 import { getHubPaymentSetupState } from "@/lib/domain/hub-payment-configuration";
-import { listMediaAssetsByHubId, listMediaFoldersByHubId } from "@/lib/data/media";
+import { listMediaFoldersByHubId } from "@/lib/data/media";
 import { notFound } from "next/navigation";
 
 async function CourseDetailContent({ hubSlug, courseId, query }) {
@@ -25,9 +25,8 @@ async function CourseDetailContent({ hubSlug, courseId, query }) {
   const coursesQuery = coursesSearchParams.toString();
   const hub = await requireHubBySlug(hubSlug);
   const entitlements = resolveHubPackageEntitlements(hub);
-  const [course, mediaAssets, mediaFolders, registrations, paymentConfiguration] = await Promise.all([
+  const [course, mediaFolders, registrations, paymentConfiguration] = await Promise.all([
     getCourseById(hub.id, courseId),
-    listMediaAssetsByHubId(hub.id),
     listMediaFoldersByHubId(hub.id),
     entitlements.capabilities?.coursesEnabled ? listCourseRegistrations(hub.id, courseId) : Promise.resolve([]),
     getHubPaymentConfigurationByHubId(hub.id),
@@ -54,7 +53,15 @@ async function CourseDetailContent({ hubSlug, courseId, query }) {
       registrationCount={registrationCount}
       canExportAttendanceReport={entitlements.capabilities?.reportingEnabled === true}
       hasAttendanceRegistrations={registrations.length > 0}
-      editForm={<EditCourseForm hub={hub} course={course} mediaAssets={mediaAssets} mediaFolders={mediaFolders} paymentSetupState={paymentSetupState} />}
+      editForm={
+        <EditCourseForm
+          hub={hub}
+          course={course}
+          mediaAssets={course.imageAsset ? [course.imageAsset] : []}
+          mediaFolders={mediaFolders}
+          paymentSetupState={paymentSetupState}
+        />
+      }
     />
   );
 }

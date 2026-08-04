@@ -78,7 +78,7 @@ export default function MediaLibraryWorkspace(props) {
             onClick={() => workspace.setFolderFilter("all")}
           >
             <strong>All assets</strong>
-            <span>{workspace.assetRows.length} assets</span>
+            <span>{workspace.assetRows.length} loaded</span>
           </Surface>
           <Surface
             as="button"
@@ -89,7 +89,7 @@ export default function MediaLibraryWorkspace(props) {
             onClick={() => workspace.setFolderFilter("unfiled")}
           >
             <strong>Unfiled</strong>
-            <span>{workspace.unfiledCount} assets</span>
+            <span>{workspace.unfiledCount} loaded</span>
           </Surface>
           {workspace.folderRows.map((folder) => (
             <div key={folder.id} className={styles.folderWrap}>
@@ -102,7 +102,7 @@ export default function MediaLibraryWorkspace(props) {
                 onClick={() => workspace.setFolderFilter(folder.id)}
               >
                 <strong>{folder.name}</strong>
-                <span>{workspace.folderCounts.get(folder.id) || 0} assets</span>
+                <span>{workspace.folderCounts.get(folder.id) || 0} loaded</span>
               </Surface>
               <div className={styles.folderActions}>
                 <button
@@ -127,15 +127,31 @@ export default function MediaLibraryWorkspace(props) {
         </div>
 
         <div className={styles.content}>
-          <MediaAssetGrid
-            filteredAssets={workspace.filteredAssets}
-            selectedAssetId={workspace.selectedAsset?.id || ""}
-            onSelectAsset={workspace.setSelectedAssetId}
-          />
+          <div className={styles.assetColumn}>
+            <MediaAssetGrid
+              filteredAssets={workspace.filteredAssets}
+              selectedAssetId={workspace.selectedAsset?.id || ""}
+              onSelectAsset={workspace.setSelectedAssetId}
+            />
+            {workspace.hasMoreAssets ? (
+              <div className={styles.loadMoreRow}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={workspace.handleLoadMoreAssets}
+                  disabled={workspace.isLoadingMoreAssets}
+                >
+                  {workspace.isLoadingMoreAssets ? "Loading assets" : "Load more assets"}
+                </Button>
+              </div>
+            ) : null}
+          </div>
           <MediaAssetDetailsPanel
             hub={props.hub}
             isPicker={workspace.isPicker}
             selectedAsset={workspace.selectedAsset}
+            usageLoading={workspace.usageLoadingAssetId === workspace.selectedAsset?.id}
+            usageError={workspace.usageErrorAssetId === workspace.selectedAsset?.id}
             folderRows={workspace.folderRows}
             detailValues={workspace.detailValues}
             setDetailValues={workspace.setDetailValues}
@@ -153,7 +169,6 @@ export default function MediaLibraryWorkspace(props) {
         folderRows={workspace.folderRows}
         confirmFolder={workspace.confirmFolder}
         confirmAsset={workspace.confirmAsset}
-        folderCounts={workspace.folderCounts}
         workspaceError={workspace.workspaceError}
         isPending={workspace.isPending}
         onCloseFolderModal={() => workspace.setFolderModal({ mode: "", folderId: "" })}

@@ -5,7 +5,7 @@ try {
 }
 
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
-import { getMediaAssetById, getMediaAssetsByIds } from "@/lib/data/media";
+import { getMediaAssetMetadataById, getMediaAssetsByIds } from "@/lib/data/media";
 import { normalizeString, normalizeUserRecord, sortUsers } from "./user-shared.js";
 
 async function listFirestoreUsersByHub(hubId, role = "") {
@@ -69,7 +69,7 @@ async function getFirestoreUserById(hubId, userId) {
 
   return {
     ...user,
-    avatarAsset: await getMediaAssetById(hubId, user.avatarAssetId),
+    avatarAsset: await getMediaAssetMetadataById(hubId, user.avatarAssetId),
   };
 }
 
@@ -109,7 +109,7 @@ async function getFirestoreUserByAuthUid(hubId, uid) {
 
   return {
     ...user,
-    avatarAsset: await getMediaAssetById(hubId, user.avatarAssetId),
+    avatarAsset: await getMediaAssetMetadataById(hubId, user.avatarAssetId),
   };
 }
 

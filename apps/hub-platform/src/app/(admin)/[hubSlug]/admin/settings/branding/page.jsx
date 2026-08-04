@@ -6,14 +6,13 @@ import { AdminSettingsEditorFallback } from "@/components/patterns/admin-route-f
 import WorkspaceSection from "@/components/patterns/workspace-section/WorkspaceSection";
 import { requireHubBySlug, requireHubCoreBySlug } from "@/lib/data/hubs";
 import { getBrandingSettingsFormValuesByHub } from "@/lib/data/site-settings";
-import { listMediaAssetsByHubId, listMediaFoldersByHubId } from "@/lib/data/media";
+import { listMediaFoldersByHubId } from "@/lib/data/media";
 import styles from "../settings.module.css";
 
 async function BrandingSettingsWorkspace({ hubSlug }) {
   const hub = await requireHubBySlug(hubSlug);
-  const [brandingFormValues, mediaAssets, mediaFolders] = await Promise.all([
+  const [brandingFormValues, mediaFolders] = await Promise.all([
     getBrandingSettingsFormValuesByHub(hub),
-    listMediaAssetsByHubId(hub.id),
     listMediaFoldersByHubId(hub.id),
   ]);
 
@@ -21,7 +20,7 @@ async function BrandingSettingsWorkspace({ hubSlug }) {
     <BrandingSettingsForm
       hub={hub}
       initialValues={brandingFormValues}
-      mediaAssets={mediaAssets}
+      mediaAssets={[]}
       mediaFolders={mediaFolders}
     />
   );
