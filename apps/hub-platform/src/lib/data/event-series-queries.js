@@ -6,7 +6,7 @@ try {
 
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
 import { getHubBySlug } from "@/lib/data/hubs";
-import { getMediaAssetsByIds } from "@/lib/data/media";
+import { getMediaAssetsByIds, getPublicMediaAssetsByIds } from "@/lib/data/media";
 import { normalizeEventRecord, withEventMedia } from "@/lib/data/event-shared";
 import { normalizeEventSeriesRecord } from "./event-series-shared.js";
 
@@ -26,6 +26,17 @@ function canViewPublishedEventSeries(series, { isMember = false } = {}) {
 async function attachSeriesMedia(hubId, series = []) {
   const assetIds = [...new Set(series.map((item) => item.imageAssetId).filter(Boolean))];
   const assets = await getMediaAssetsByIds(hubId, assetIds);
+  const assetsById = new Map(assets.map((asset) => [asset.id, asset]));
+
+  return series.map((item) => ({
+    ...item,
+    imageAsset: item.imageAssetId ? assetsById.get(item.imageAssetId) || null : null,
+  }));
+}
+
+async function attachPublicSeriesMedia(hubId, series = []) {
+  const assetIds = [...new Set(series.map((item) => item.imageAssetId).filter(Boolean))];
+  const assets = await getPublicMediaAssetsByIds(hubId, assetIds);
   const assetsById = new Map(assets.map((asset) => [asset.id, asset]));
 
   return series.map((item) => ({
@@ -62,6 +73,27 @@ export async function listEventSeriesByHub(hub) {
     .map((doc) => normalizeEventSeriesRecord({ id: doc.id, hubId, ...doc.data() }))
     .filter(Boolean);
   return attachSeriesMedia(hubId, series);
+}
+
+export async function listVisibleEventSeriesByIdsForHub(hub, seriesIds = [], { isMember = false } = {}) {
+  const hubId = normalizeString(hub?.id);
+  const uniqueSeriesIds = [...new Set(Array.isArray(seriesIds) ? seriesIds.map(normalizeString).filter(Boolean) : [])];
+
+  if (!hubId || !uniqueSeriesIds.length) {
+    return [];
+  }
+
+  const docs = await Promise.all(
+    uniqueSeriesIds.map((seriesId) =>
+      getFirebaseAdminDb().collection("hubs").doc(hubId).collection("eventSeries").doc(seriesId).get()
+    )
+  );
+  const series = docs
+    .filter((doc) => doc.exists)
+    .map((doc) => normalizeEventSeriesRecord({ id: doc.id, hubId, ...doc.data() }))
+    .filter((record) => canViewPublishedEventSeries(record, { isMember }));
+
+  return attachPublicSeriesMedia(hubId, series);
 }
 
 export async function getEventSeriesById(hubId, seriesId) {

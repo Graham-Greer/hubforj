@@ -14,8 +14,8 @@ import {
 } from "@/lib/data/events";
 import {
   getVisibleEventSeriesBySlugBaseForHub,
-  listEventSeriesByHub,
   listEventSeriesOccurrences,
+  listVisibleEventSeriesByIdsForHub,
 } from "@/lib/data/event-series";
 import {
   getCourseBySlugForHub,
@@ -41,15 +41,6 @@ import {
 import { canViewPublishedEvent } from "@/lib/domain/events";
 import { groupPublicEventListings } from "@/lib/domain/public-events";
 import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
-
-function canViewPublishedEventSeries(series, { isMember = false } = {}) {
-  if (!series || String(series.status || "").trim() !== "published") {
-    return false;
-  }
-
-  const visibility = String(series.visibility || "").trim() || "public";
-  return visibility === "public" || (visibility === "members-only" && isMember);
-}
 
 export async function getPublicSiteContext(hubSlug, options = {}) {
   const hubRecord = await requirePublicHubCoreBySlug(hubSlug);
@@ -101,17 +92,15 @@ export async function getPublicEventsShellData(hubSlug) {
 export async function getPublicEventsDeferredData(hub) {
   const currentMemberSession = await getCurrentMemberSessionForHub(hub);
   const isMember = Boolean(currentMemberSession);
-  const [events, eventSeries] = await Promise.all([
-    listVisibleEventsByHub(hub, { isMember }),
-    listEventSeriesByHub(hub),
-  ]);
+  const events = await listVisibleEventsByHub(hub, { isMember });
+  const eventSeries = await listVisibleEventSeriesByIdsForHub(
+    hub,
+    events.map((event) => event.seriesId).filter(Boolean),
+    { isMember }
+  );
 
   return {
-    events: groupPublicEventListings(
-      events,
-      eventSeries.filter((series) => canViewPublishedEventSeries(series, { isMember })),
-      hub.locale
-    ),
+    events: groupPublicEventListings(events, eventSeries, hub.locale),
   };
 }
 
