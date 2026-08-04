@@ -51,7 +51,8 @@ export default function CourseDetailWorkspace({
     ...(coursesQuery ? Object.fromEntries(new URLSearchParams(coursesQuery)) : {}),
     mode: "edit",
   }).toString()}#edit-course-details`;
-  const attendanceLabel = hasCourseHappened(course) ? "Attended" : "Attending";
+  const shouldShowVerifiedAttendance = hasCourseHappened(course);
+  const attendanceLabel = shouldShowVerifiedAttendance ? "Attended" : "Attending";
   const badges = (
     <>
       <Badge tone={getCourseStatusTone(course.status)}>{getCourseStatusLabel(course.status)}</Badge>
@@ -87,7 +88,10 @@ export default function CourseDetailWorkspace({
     { label: "Sessions", value: formatCourseSessionCount(course.sessionCount) },
     { label: "Level", value: getCourseLevelLabel(course) },
     { label: "Visibility", value: getCourseVisibilityLabel(course.visibility) },
-    { label: "Attendance", value: `${attendanceCount} ${attendanceLabel}` },
+    {
+      label: "Attendance",
+      value: `${shouldShowVerifiedAttendance ? attendanceCount : registrationCount} ${attendanceLabel}`,
+    },
     { label: "Waitlist", value: course.allowWaitlist ? "Enabled" : "Disabled" },
     { label: "Timezone", value: course.timezone || "To be confirmed" },
   ];
