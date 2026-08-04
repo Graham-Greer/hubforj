@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { requireHubOperatorActionAccess } from "@/lib/auth/action-access";
+import { revalidatePublicCoursesCache } from "@/lib/cache/public-content";
 import { createCourseByHubSlug } from "@/lib/data/courses";
 import { assertHubRegionalSetupComplete } from "@/lib/domain/hub-regional-setup";
 
@@ -49,9 +50,11 @@ export async function createCourseAction(_previousState, formData) {
   };
 
   let course;
+  let hubId = "";
   try {
     const { hub, actorId } = await requireHubOperatorActionAccess(hubSlug);
     assertHubRegionalSetupComplete(hub);
+    hubId = hub.id;
     course = await createCourseByHubSlug(hubSlug, values, actorId);
   } catch (error) {
     return {
@@ -59,6 +62,8 @@ export async function createCourseAction(_previousState, formData) {
       values,
     };
   }
+
+  revalidatePublicCoursesCache(hubId);
 
   redirect(`/${hubSlug}/admin/courses/${course.id}`);
 }

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import HeroSection from "@/components/sections/hero-section/HeroSection";
 import CoursesListingSection from "@/components/sections/courses-listing-section/CoursesListingSection";
+import { PublicOfferingListingFallback } from "@/components/patterns/public-offering-fallbacks";
 import { getPublicCoursesDeferredData, getPublicCoursesShellData } from "@/lib/data/public-site";
 import FAQSection from "@/components/sections/faq-section/FAQSection";
 import { buildPublicCourseFaqItems } from "@/lib/domain/public-offering-faqs";
@@ -63,7 +64,15 @@ export default async function CoursesPage({ params }) {
         height={pageTemplate.hero.height}
         containerWidth={pageTemplate.hero.containerWidth}
       />
-      <Suspense fallback={null}>
+      <Suspense
+        fallback={
+          <PublicOfferingListingFallback
+            kind="courses"
+            variant={pageTemplate.listing.variant}
+            containerWidth={contentWidth}
+          />
+        }
+      >
         <CoursesDeferredContent
           deferredDataPromise={deferredDataPromise}
           hub={hub}

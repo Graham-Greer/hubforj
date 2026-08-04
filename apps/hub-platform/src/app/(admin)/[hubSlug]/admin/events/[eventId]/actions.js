@@ -3,16 +3,18 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { assertActionHubIdMatches, requireHubOperatorActionAccess } from "@/lib/auth/action-access";
+import { revalidatePublicEventsCache } from "@/lib/cache/public-content";
 import { deleteEventById, getEventById, updateEventById } from "@/lib/data/events";
 import { assertHubRegionalSetupComplete } from "@/lib/domain/hub-regional-setup";
 import { getPackageUpgradeNotice } from "@/lib/domain/package-upgrade";
 import { queueEventCancelledByAdminNotifications } from "@/lib/server/booking-notification-outbox";
 
-function revalidateEventPaths(hubSlug, eventId) {
+function revalidateEventPaths(hubSlug, eventId, hubId) {
   revalidatePath(`/${hubSlug}/admin/events`);
   revalidatePath(`/${hubSlug}/admin/events/${eventId}`);
   revalidatePath(`/${hubSlug}/events`);
   revalidatePath(`/${hubSlug}/admin/media`);
+  revalidatePublicEventsCache(hubId);
 }
 
 async function queueEventCancelledByAdminNotificationsSafely(args) {
@@ -87,7 +89,7 @@ export async function updateEventAction(_previousState, formData) {
     };
   }
 
-  revalidateEventPaths(hubSlug, eventId);
+  revalidateEventPaths(hubSlug, eventId, hubId);
   if (previousSlug) {
     revalidatePath(`/${hubSlug}/events/${previousSlug}`);
   }
@@ -115,6 +117,6 @@ export async function deleteEventAction(_previousState, formData) {
     return { error: String(error?.message || "Unable to delete event.") };
   }
 
-  revalidateEventPaths(hubSlug, eventId);
+  revalidateEventPaths(hubSlug, eventId, hubId);
   redirect(`/${hubSlug}/admin/events?deleted=1`);
 }

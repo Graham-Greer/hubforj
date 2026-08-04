@@ -3,15 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { assertActionHubIdMatches, requireHubOperatorActionAccess } from "@/lib/auth/action-access";
+import { revalidatePublicCoursesCache } from "@/lib/cache/public-content";
 import { deleteCourseById, getCourseById, updateCourseById } from "@/lib/data/courses";
 import { assertHubRegionalSetupComplete } from "@/lib/domain/hub-regional-setup";
 import { queueCourseCancelledByAdminNotifications } from "@/lib/server/booking-notification-outbox";
 
-function revalidateCoursePaths(hubSlug, courseId) {
+function revalidateCoursePaths(hubSlug, courseId, hubId) {
   revalidatePath(`/${hubSlug}/admin/courses`);
   revalidatePath(`/${hubSlug}/admin/courses/${courseId}`);
   revalidatePath(`/${hubSlug}/courses`);
   revalidatePath(`/${hubSlug}/admin/media`);
+  revalidatePublicCoursesCache(hubId);
 }
 
 async function queueCourseCancelledByAdminNotificationsSafely(args) {
@@ -91,7 +93,7 @@ export async function updateCourseAction(_previousState, formData) {
     return { error: String(error?.message || "Unable to update course."), success: "", values };
   }
 
-  revalidateCoursePaths(hubSlug, courseId);
+  revalidateCoursePaths(hubSlug, courseId, hubId);
   if (previousSlug) {
     revalidatePath(`/${hubSlug}/courses/${previousSlug}`);
   }
@@ -119,6 +121,6 @@ export async function deleteCourseAction(_previousState, formData) {
     return { error: String(error?.message || "Unable to delete course.") };
   }
 
-  revalidateCoursePaths(hubSlug, courseId);
+  revalidateCoursePaths(hubSlug, courseId, hubId);
   redirect(`/${hubSlug}/admin/courses?deleted=1`);
 }

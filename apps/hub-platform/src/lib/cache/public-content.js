@@ -79,7 +79,15 @@ export function revalidatePublicShellCache(hubId) {
 }
 
 export function revalidatePublicMediaCache(hubId) {
-  revalidatePublicContentTags(hubId, ["media", "siteSettings", "publicShell", "home", "testimonials"]);
+  revalidatePublicContentTags(hubId, ["media", "siteSettings", "publicShell", "home", "events", "courses", "testimonials"]);
+}
+
+export function revalidatePublicEventsCache(hubId) {
+  revalidatePublicContentTags(hubId, ["events"]);
+}
+
+export function revalidatePublicCoursesCache(hubId) {
+  revalidatePublicContentTags(hubId, ["courses"]);
 }
 
 export function revalidatePublicTestimonialsCache(hubId) {

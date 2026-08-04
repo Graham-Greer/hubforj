@@ -5,6 +5,7 @@ try {
 }
 
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
+import { revalidatePublicCoursesCache } from "@/lib/cache/public-content";
 import {
   assertCourseAttendanceStatusTransition,
   assertCourseCanAcceptRegistration,
@@ -28,6 +29,10 @@ import { getFallbackRegionalMarket } from "@/lib/domain/regional-markets";
 function normalizeInteger(value, fallback = 0) {
   const next = Number.parseInt(String(value || ""), 10);
   return Number.isFinite(next) ? next : fallback;
+}
+
+function revalidateCourseListingCapacity(hubId) {
+  revalidatePublicCoursesCache(hubId);
 }
 
 function parsePriceToMinor(price) {
@@ -263,6 +268,7 @@ export async function createCourseRegistrationForMember(hubId, courseId, userId,
   };
 
   await ref.set(writeModel);
+  revalidateCourseListingCapacity(normalizedHubId);
 
   return normalizeCourseRegistrationRecord({ id: ref.id, ...writeModel });
 }
@@ -307,6 +313,7 @@ export async function updateCourseRegistrationStatus(hubId, courseId, registrati
   }
 
   await doc.ref.update(update);
+  revalidateCourseListingCapacity(normalizedHubId);
 
   return normalizeCourseRegistrationRecord({ ...current, ...update });
 }

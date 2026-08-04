@@ -1689,3 +1689,25 @@ The hub-platform skeleton strategy is complete when:
 - before/after Network waterfalls show fewer blocking waits or better progressive rendering
 - mobile and desktop transitions are visually stable
 - no broad one-off skeleton CSS has been scattered through unrelated routes
+
+## Implementation Progress
+
+### 2026-08-04 - Public Events/Courses Listing Fallbacks
+
+Status: implemented at source level, pending runtime visual verification.
+
+Completed:
+
+- Added `PublicOfferingListingFallback` for public `/events` and `/courses` deferred listing sections.
+- Used public section/card surface tokens instead of admin skeleton tokens.
+- Kept the public hero/title shell outside the skeleton boundary so above-the-fold content can render quickly.
+- Reserved search/filter toolbar space before the card area.
+- Reserved card media, title, description, and metadata row space to reduce layout jumping.
+- Matched default, studio, and editorial listing variants closely enough for first-pass route stability.
+- Replaced the previous empty `fallback={null}` public offering boundaries.
+
+Locked Behaviour:
+
+- Public offering skeletons must be route-specific and public-token based.
+- Public offering skeletons should sit only around the data-rich listing/FAQ area below the fast hero shell.
+- Future public route skeletons should reuse the same public fallback family where possible instead of introducing route-local one-off skeleton styling.

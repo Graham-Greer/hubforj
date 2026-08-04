@@ -5,6 +5,7 @@ try {
 }
 
 import { headers } from "next/headers";
+import { createPublicContentCache, getPublicContentCacheTags } from "@/lib/cache/public-content";
 import { requirePublicHubCoreBySlug } from "@/lib/data/hubs";
 import { getCachedPublicSiteSettingsByHub } from "@/lib/data/site-settings";
 import {
@@ -92,6 +93,11 @@ export async function getPublicEventsShellData(hubSlug) {
 export async function getPublicEventsDeferredData(hub) {
   const currentMemberSession = await getCurrentMemberSessionForHub(hub);
   const isMember = Boolean(currentMemberSession);
+
+  if (!isMember) {
+    return getCachedAnonymousPublicEventsDeferredData(hub);
+  }
+
   const events = await listVisibleEventsByHub(hub, { isMember });
   const eventSeries = await listVisibleEventSeriesByIdsForHub(
     hub,
@@ -102,6 +108,32 @@ export async function getPublicEventsDeferredData(hub) {
   return {
     events: groupPublicEventListings(events, eventSeries, hub.locale),
   };
+}
+
+async function readAnonymousPublicEventsDeferredData(hub) {
+  const events = await listVisibleEventsByHub(hub, { isMember: false });
+  const eventSeries = await listVisibleEventSeriesByIdsForHub(
+    hub,
+    events.map((event) => event.seriesId).filter(Boolean),
+    { isMember: false }
+  );
+
+  return {
+    events: groupPublicEventListings(events, eventSeries, hub.locale),
+  };
+}
+
+async function getCachedAnonymousPublicEventsDeferredData(hub) {
+  const tags = getPublicContentCacheTags(hub.id);
+  const readCachedAnonymousPublicEvents = createPublicContentCache(
+    () => readAnonymousPublicEventsDeferredData(hub),
+    ["hub-public-events-deferred", hub.id, hub.locale || "default"],
+    {
+      tags: [tags.hub, tags.events, tags.media],
+    }
+  );
+
+  return readCachedAnonymousPublicEvents();
 }
 
 export async function getPublicEventsData(hubSlug) {
@@ -120,13 +152,16 @@ export async function getPublicCoursesShellData(hubSlug) {
 
 export async function getPublicCoursesDeferredData(hub) {
   const currentMemberSession = await getCurrentMemberSessionForHub(hub);
-  const courses = await listVisibleCoursesByHub(hub, {
-    isMember: Boolean(currentMemberSession),
-  });
-  const enrolledCountByCourseId = await countEnrolledCourseRegistrationsByCourseIds(
-    hub.id,
-    courses.map((course) => course.id)
-  );
+  const isMember = Boolean(currentMemberSession);
+  const courses = isMember
+    ? await listVisibleCoursesByHub(hub, { isMember: true })
+    : await getCachedAnonymousPublicCourses(hub);
+  const enrolledCountByCourseId = isMember
+    ? await countEnrolledCourseRegistrationsByCourseIds(
+        hub.id,
+        courses.map((course) => course.id)
+      )
+    : new Map(courses.map((course) => [course.id, course.enrolledCount || 0]));
 
   return {
     courses: courses.map((course) => ({
@@ -134,6 +169,34 @@ export async function getPublicCoursesDeferredData(hub) {
       enrolledCount: enrolledCountByCourseId.get(course.id) || 0,
     })),
   };
+}
+
+async function readAnonymousPublicCourses(hub) {
+  const courses = await listVisibleCoursesByHub(hub, {
+    isMember: false,
+  });
+  const enrolledCountByCourseId = await countEnrolledCourseRegistrationsByCourseIds(
+    hub.id,
+    courses.map((course) => course.id)
+  );
+
+  return courses.map((course) => ({
+    ...course,
+    enrolledCount: enrolledCountByCourseId.get(course.id) || 0,
+  }));
+}
+
+async function getCachedAnonymousPublicCourses(hub) {
+  const tags = getPublicContentCacheTags(hub.id);
+  const readCachedAnonymousPublicCourses = createPublicContentCache(
+    () => readAnonymousPublicCourses(hub),
+    ["hub-public-courses-deferred", hub.id, hub.locale || "default"],
+    {
+      tags: [tags.hub, tags.courses, tags.media],
+    }
+  );
+
+  return readCachedAnonymousPublicCourses();
 }
 
 export async function getPublicCoursesData(hubSlug) {
