@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import CompactMenu from "@/components/ui/compact-menu/CompactMenu";
 import EmptyState from "@/components/patterns/empty-state/EmptyState";
 import FormMessage from "@/components/ui/form-message/FormMessage";
@@ -67,6 +68,9 @@ export default function HubPaymentsWorkspace({
   adminBasePath = "",
   items,
   summary,
+  paymentReadModelEnabled = false,
+  paymentFilters = null,
+  paymentPageInfo = null,
   view = "setup",
   paymentSetupState = null,
   stripeConnectEnvironment = null,
@@ -85,12 +89,18 @@ export default function HubPaymentsWorkspace({
   successMessage = "",
   errorMessage = "",
 }) {
+  const router = useRouter();
   const workspace = useHubPaymentsWorkspace(items);
   const [exportError, setExportError] = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const hubFallbackCurrency = hub?.defaultCurrency || fallbackRegionalMarket.defaultCurrency;
+  const activeItems = paymentReadModelEnabled ? items : workspace.filteredItems;
+  const visibleItems = workspace.filteredItems;
+  const activeTypeFilter = paymentReadModelEnabled ? paymentFilters?.type || "all" : workspace.typeFilter;
+  const activeStatusFilter = paymentReadModelEnabled ? paymentFilters?.status || "all" : workspace.statusFilter;
+  const activePageSize = paymentReadModelEnabled ? Number(paymentFilters?.pageSize || 20) : workspace.pageSize;
   const reportingSummary = buildVisibleReportingSummary(
-    workspace.filteredItems,
+    visibleItems,
     hub?.locale || fallbackRegionalMarket.defaultLocale,
     hubFallbackCurrency,
   );
@@ -99,11 +109,11 @@ export default function HubPaymentsWorkspace({
   if (workspace.searchTerm) {
     exportParams.set("search", workspace.searchTerm);
   }
-  if (workspace.typeFilter !== "all") {
-    exportParams.set("type", workspace.typeFilter);
+  if (activeTypeFilter !== "all") {
+    exportParams.set("type", activeTypeFilter);
   }
-  if (workspace.statusFilter !== "all") {
-    exportParams.set("status", workspace.statusFilter);
+  if (activeStatusFilter !== "all") {
+    exportParams.set("status", activeStatusFilter);
   }
   if (workspace.dateFrom) {
     exportParams.set("date_from", workspace.dateFrom);
@@ -113,6 +123,47 @@ export default function HubPaymentsWorkspace({
   }
   const paymentsBasePath = adminBasePath || `/${hub.slug}/admin/payments`;
   const exportHref = `${paymentsBasePath}/export${exportParams.toString() ? `?${exportParams.toString()}` : ""}`;
+
+  function encodeCursorStack(stack = []) {
+    return JSON.stringify(stack.map((value) => String(value || "").trim()));
+  }
+
+  function buildPaymentsHref(overrides = {}) {
+    const params = new URLSearchParams();
+    const nextType = overrides.type !== undefined ? overrides.type : activeTypeFilter;
+    const nextStatus = overrides.status !== undefined ? overrides.status : activeStatusFilter;
+    const nextPageSize = overrides.pageSize !== undefined ? overrides.pageSize : activePageSize;
+    const nextCursor = overrides.cursor !== undefined ? overrides.cursor : paymentPageInfo?.currentCursor || "";
+    const nextCursorStack = overrides.cursorStack !== undefined ? overrides.cursorStack : paymentFilters?.cursorStack || [];
+
+    params.set("view", "payments");
+
+    if (nextType && nextType !== "all") {
+      params.set("type", nextType);
+    }
+
+    if (nextStatus && nextStatus !== "all") {
+      params.set("status", nextStatus);
+    }
+
+    if (Number(nextPageSize) && Number(nextPageSize) !== 20) {
+      params.set("pageSize", String(nextPageSize));
+    }
+
+    if (nextCursor) {
+      params.set("cursor", nextCursor);
+    }
+
+    if (Array.isArray(nextCursorStack) && nextCursorStack.length) {
+      params.set("cursorStack", encodeCursorStack(nextCursorStack));
+    }
+
+    return `${paymentsBasePath}?${params.toString()}`;
+  }
+
+  function navigatePayments(overrides = {}) {
+    router.push(buildPaymentsHref(overrides));
+  }
 
   async function handleExportCsv() {
     setExportError("");
@@ -268,12 +319,14 @@ export default function HubPaymentsWorkspace({
                   triggerTooltip="Record type"
                   items={typeFilters.map((filter) => ({
                     ...filter,
-                    active: workspace.typeFilter === filter.value,
-                    onSelect: workspace.setTypeFilter,
+                    active: activeTypeFilter === filter.value,
+                    onSelect: paymentReadModelEnabled
+                      ? (value) => navigatePayments({ type: value, status: "all", cursor: "", cursorStack: [] })
+                      : workspace.setTypeFilter,
                   }))}
                 >
                   <Icon name="filter_alt" size="sm" decorative />
-                  <span>{getTypeFilterLabel(workspace.typeFilter)}</span>
+                  <span>{getTypeFilterLabel(activeTypeFilter)}</span>
                 </CompactMenu>
 
                 <CompactMenu
@@ -281,12 +334,14 @@ export default function HubPaymentsWorkspace({
                   triggerTooltip="Payment status"
                   items={statusFilters.map((filter) => ({
                     ...filter,
-                    active: workspace.statusFilter === filter.value,
-                    onSelect: workspace.setStatusFilter,
+                    active: activeStatusFilter === filter.value,
+                    onSelect: paymentReadModelEnabled
+                      ? (value) => navigatePayments({ status: value, type: "all", cursor: "", cursorStack: [] })
+                      : workspace.setStatusFilter,
                   }))}
                 >
                   <Icon name="payments" size="sm" decorative />
-                  <span>{getStatusFilterLabel(workspace.statusFilter)}</span>
+                  <span>{getStatusFilterLabel(activeStatusFilter)}</span>
                 </CompactMenu>
 
                 <Button type="button" variant="secondary" size="sm" onClick={handleExportCsv} disabled={isExporting}>
@@ -296,21 +351,49 @@ export default function HubPaymentsWorkspace({
             </div>
           </div>
 
-          {workspace.filteredItems.length ? (
+          {visibleItems.length ? (
             <div className={styles.listSection} data-onboarding="payments-records-list">
-              <PaginationControls
-                totalCount={workspace.filteredItems.length}
-                currentPage={workspace.currentPage}
-                pageSize={workspace.pageSize}
-                pageSizeOptions={[5, 10, 20]}
-                itemLabel="payment records"
-                onPageChange={workspace.setCurrentPage}
-                onPageSizeChange={workspace.setPageSize}
-              />
+              {paymentReadModelEnabled ? (
+                <PaginationControls
+                  totalCount={activeItems.length + (paymentPageInfo?.hasNextPage ? 1 : 0)}
+                  currentPage={1}
+                  pageSize={activePageSize}
+                  pageSizeOptions={[10, 20, 50]}
+                  itemLabel="payment records"
+                  onPageSizeChange={(value) => navigatePayments({ pageSize: value, cursor: "", cursorStack: [] })}
+                  previousHref={
+                    paymentPageInfo?.hasPreviousPage
+                      ? buildPaymentsHref({
+                          cursor: paymentPageInfo.previousCursor,
+                          cursorStack: paymentPageInfo.previousCursorStack,
+                        })
+                      : ""
+                  }
+                  nextHref={
+                    paymentPageInfo?.hasNextPage
+                      ? buildPaymentsHref({
+                          cursor: paymentPageInfo.nextCursor,
+                          cursorStack: paymentPageInfo.nextCursorStack,
+                        })
+                      : ""
+                  }
+                  cursorMode
+                />
+              ) : (
+                <PaginationControls
+                  totalCount={workspace.filteredItems.length}
+                  currentPage={workspace.currentPage}
+                  pageSize={workspace.pageSize}
+                  pageSizeOptions={[5, 10, 20]}
+                  itemLabel="payment records"
+                  onPageChange={workspace.setCurrentPage}
+                  onPageSizeChange={workspace.setPageSize}
+                />
+              )}
 
               <PaymentItemsTable
                 hub={hub}
-                items={workspace.paginatedItems}
+                items={paymentReadModelEnabled ? visibleItems : workspace.paginatedItems}
               />
             </div>
           ) : (

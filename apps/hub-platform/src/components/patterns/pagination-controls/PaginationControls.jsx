@@ -12,15 +12,22 @@ export default function PaginationControls({
   pageSizeOptions = [5, 10],
   onPageChange,
   onPageSizeChange,
+  previousHref = "",
+  nextHref = "",
+  cursorMode = false,
   itemLabel = "items",
   className = "",
 }) {
   const safePageSize = Math.max(1, Number(pageSize) || 1);
   const safeTotalCount = Math.max(0, Number(totalCount) || 0);
-  const totalPages = Math.max(1, Math.ceil(safeTotalCount / safePageSize));
+  const totalPages = cursorMode ? 1 : Math.max(1, Math.ceil(safeTotalCount / safePageSize));
   const safeCurrentPage = Math.min(Math.max(1, Number(currentPage) || 1), totalPages);
   const startItem = safeTotalCount ? (safeCurrentPage - 1) * safePageSize + 1 : 0;
-  const endItem = safeTotalCount ? Math.min(safeCurrentPage * safePageSize, safeTotalCount) : 0;
+  const endItem = cursorMode
+    ? Math.min(safePageSize, safeTotalCount)
+    : safeTotalCount
+      ? Math.min(safeCurrentPage * safePageSize, safeTotalCount)
+      : 0;
   const classes = [styles.root, className].filter(Boolean).join(" ");
   const menuItems = pageSizeOptions.map((value) => ({
     value: String(value),
@@ -33,7 +40,9 @@ export default function PaginationControls({
     <div className={classes}>
       <div className={styles.summary}>
         <p className={styles.summaryText}>
-          {safeTotalCount
+          {cursorMode && safeTotalCount
+            ? `Showing ${startItem}-${endItem}${nextHref ? "+" : ""} ${itemLabel}`
+            : safeTotalCount
             ? `Showing ${startItem}-${endItem} of ${safeTotalCount} ${itemLabel}`
             : `No ${itemLabel} to show`}
         </p>
@@ -53,26 +62,51 @@ export default function PaginationControls({
 
         <div className={styles.nav}>
           <span className={styles.pageText}>
-            Page {safeCurrentPage} of {totalPages}
+            {cursorMode ? "More results" : `Page ${safeCurrentPage} of ${totalPages}`}
           </span>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={() => onPageChange?.(safeCurrentPage - 1)}
-            disabled={safeCurrentPage <= 1}
-          >
-            Previous
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={() => onPageChange?.(safeCurrentPage + 1)}
-            disabled={safeCurrentPage >= totalPages}
-          >
-            Next
-          </Button>
+          {cursorMode ? (
+            <>
+              {previousHref ? (
+                <Button href={previousHref} prefetch={false} variant="secondary" size="sm">
+                  Previous
+                </Button>
+              ) : (
+                <Button type="button" variant="secondary" size="sm" disabled>
+                  Previous
+                </Button>
+              )}
+              {nextHref ? (
+                <Button href={nextHref} prefetch={false} variant="secondary" size="sm">
+                  Next
+                </Button>
+              ) : (
+                <Button type="button" variant="secondary" size="sm" disabled>
+                  Next
+                </Button>
+              )}
+            </>
+          ) : (
+            <>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => onPageChange?.(safeCurrentPage - 1)}
+                disabled={safeCurrentPage <= 1}
+              >
+                Previous
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => onPageChange?.(safeCurrentPage + 1)}
+                disabled={safeCurrentPage >= totalPages}
+              >
+                Next
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </div>

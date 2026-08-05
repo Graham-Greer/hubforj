@@ -47,6 +47,24 @@ export function isPaymentItemsReadModelEnabled() {
   return normalizeString(process.env.HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED).toLowerCase() === "true";
 }
 
+export function mapAdminPaymentTypeFilterToPaymentItemQuery(value) {
+  const normalizedValue = normalizeString(value);
+
+  if (normalizedValue === "event") {
+    return { type: "eventBooking" };
+  }
+
+  if (normalizedValue === "course") {
+    return { type: "courseRegistration" };
+  }
+
+  if (normalizedValue === "membership") {
+    return { typeValues: ["membership", "upgradeRequest"] };
+  }
+
+  return {};
+}
+
 function parseDisplayAmountToMinor(amount, currency = getFallbackRegionalMarket().defaultCurrency) {
   const numeric = Number.parseFloat(normalizeString(amount));
   if (!Number.isFinite(numeric) || numeric <= 0) {
@@ -879,7 +897,7 @@ export async function getHubPaymentProjectionReportByHub(hub, options = {}) {
     status: options.status,
     paymentStatus: options.paymentStatus,
     attentionStatus: options.attentionStatus,
-    type: options.type,
+    ...mapAdminPaymentTypeFilterToPaymentItemQuery(options.type),
     userId: options.userId,
     memberId: options.memberId,
   });

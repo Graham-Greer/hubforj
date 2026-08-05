@@ -277,13 +277,16 @@ export async function listPaymentItemPageByHubId(hubId, options = {}) {
   const paymentStatus = normalizeString(options.paymentStatus);
   const attentionStatus = normalizeString(options.attentionStatus);
   const type = normalizeString(options.type);
+  const typeValues = Array.isArray(options.typeValues)
+    ? options.typeValues.map(normalizeString).filter(Boolean).slice(0, 10)
+    : [];
   const userId = normalizeString(options.userId);
   const memberId = normalizeString(options.memberId);
   const activeFilters = [
     ["status", status],
     ["paymentStatus", paymentStatus],
     ["attentionStatus", attentionStatus],
-    ["type", type],
+    ["type", type || typeValues.join("|")],
     ["userId", userId],
     ["memberId", memberId],
   ].filter(([, value]) => value);
@@ -304,8 +307,11 @@ export async function listPaymentItemPageByHubId(hubId, options = {}) {
     query = query.where("attentionStatus", "==", attentionStatus);
   }
 
-  if (type) {
-    query = query.where("type", "==", type);
+  if (typeValues.length > 1) {
+    query = query.where("type", "in", typeValues);
+  } else if (type || typeValues.length === 1) {
+    const resolvedType = type || typeValues[0];
+    query = query.where("type", "==", resolvedType);
   }
 
   if (userId) {

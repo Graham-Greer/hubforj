@@ -154,6 +154,8 @@ Verification notes:
   - support-only reconciliation now checks `paymentRecords` to `paymentItems` projection parity
   - Firebase `paymentItems` indexes must finish building before admin/member payment UI read paths are cut over
   - admin payments has an opt-in projection-backed report path behind `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true`
+  - in read-model mode, admin payments status/type filters are URL-driven server queries and pagination uses opaque cursor tokens
+  - global search/date filtering and CSV export remain separate Phase 5 follow-up work and must not fall back to broad reads as the permanent enterprise path
   - payment UI still uses the legacy report builder by default until sync and dual-read parity are verified
 
 ## Per-Slice Rollout Checklist
