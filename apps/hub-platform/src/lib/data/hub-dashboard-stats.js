@@ -516,6 +516,89 @@ function normalizeDashboardOverviewRecord(record = {}, hub = null, routeMode = "
   };
 }
 
+function stableJson(value) {
+  if (Array.isArray(value)) {
+    return `[${value.map(stableJson).join(",")}]`;
+  }
+
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`)
+      .join(",")}}`;
+  }
+
+  return JSON.stringify(value);
+}
+
+function valuesMatch(left, right) {
+  return stableJson(left) === stableJson(right);
+}
+
+function pickStatsComparableFields(stats = {}) {
+  const normalized = normalizeDashboardStatsRecord(stats);
+
+  return {
+    schemaVersion: normalized.schemaVersion,
+    memberCount: normalized.memberCount,
+    activeMemberCount: normalized.activeMemberCount,
+    pendingInviteCount: normalized.pendingInviteCount,
+    pendingUpgradeRequestCount: normalized.pendingUpgradeRequestCount,
+    suspendedMemberCount: normalized.suspendedMemberCount,
+    openPaymentAttentionCount: normalized.openPaymentAttentionCount,
+    activeUpcomingPublishedEventCount: normalized.activeUpcomingPublishedEventCount,
+    activeUpcomingPublishedCourseCount: normalized.activeUpcomingPublishedCourseCount,
+    totalRevenue: {
+      amount: normalized.totalRevenue?.amount ?? null,
+      currency: normalizeString(normalized.totalRevenue?.currency),
+      formatted: normalizeString(normalized.totalRevenue?.formatted),
+      isMixedCurrency: normalized.totalRevenue?.isMixedCurrency === true,
+    },
+  };
+}
+
+function stripRuntimeHref(item = {}) {
+  const { href, ...rest } = item || {};
+  return rest;
+}
+
+function pickOverviewComparableFields(overview = {}) {
+  return {
+    schemaVersion: parseInteger(overview.schemaVersion),
+    recentEvents: Array.isArray(overview.recentEvents) ? overview.recentEvents.map(stripRuntimeHref) : [],
+    topCourses: Array.isArray(overview.topCourses) ? overview.topCourses.map(stripRuntimeHref) : [],
+    attentionItems: Array.isArray(overview.attentionItems) ? overview.attentionItems.map(stripRuntimeHref) : [],
+    newestMembers: Array.isArray(overview.newestMembers) ? overview.newestMembers.map(stripRuntimeHref) : [],
+  };
+}
+
+function createReconciliationIssue(code, title, detail, severity = "warning") {
+  return {
+    code,
+    title,
+    detail,
+    severity,
+  };
+}
+
+function summarizeIssues(issues = []) {
+  const byCode = new Map();
+
+  issues.forEach((issue) => {
+    const existing = byCode.get(issue.code) || {
+      code: issue.code,
+      title: issue.title,
+      count: 0,
+      severity: issue.severity,
+    };
+
+    existing.count += 1;
+    byCode.set(issue.code, existing);
+  });
+
+  return [...byCode.values()];
+}
+
 async function buildDashboardStatsFromSources(hub, options = {}) {
   const normalizedHubId = normalizeString(hub?.id);
 
@@ -744,4 +827,150 @@ export async function getHubAdminDashboardStatsWithFallback(hub, options = {}) {
         readModelState: "fallback",
       }
     : null;
+}
+
+export async function getHubAdminDashboardProjectionReconciliationReport(hubOrSlug, options = {}) {
+  const hub = typeof hubOrSlug === "string" ? await getHubCoreBySlug(hubOrSlug) : hubOrSlug;
+  const generatedAt = new Date().toISOString();
+
+  if (!hub?.id) {
+    return {
+      generatedAt,
+      totalIssues: 1,
+      summary: [
+        {
+          code: "hub_missing",
+          title: "Hub missing",
+          count: 1,
+          severity: "danger",
+        },
+      ],
+      issues: [
+        createReconciliationIssue(
+          "hub_missing",
+          "Hub missing",
+          "Dashboard projection reconciliation could not run because the hub was not found.",
+          "danger"
+        ),
+      ],
+    };
+  }
+
+  const issues = [];
+  const expectedStats = await buildDashboardStatsFromSources(hub, options);
+  const expectedOverview = await buildDashboardOverviewFromSources(hub, {
+    ...options,
+    stats: expectedStats,
+  });
+  const [statsSnapshot, overviewSnapshot] = await Promise.all([
+    getDashboardStatsRef(hub.id).get(),
+    getDashboardOverviewRef(hub.id).get(),
+  ]);
+  const projectedStats = statsSnapshot.exists ? normalizeDashboardStatsRecord(statsSnapshot.data(), hub) : null;
+  const projectedOverview = overviewSnapshot.exists
+    ? normalizeDashboardOverviewRecord(overviewSnapshot.data(), hub, options.routeMode)
+    : null;
+
+  if (!statsSnapshot.exists) {
+    issues.push(
+      createReconciliationIssue(
+        "dashboard_stats_missing",
+        "Dashboard stats missing",
+        "`stats/current` does not exist. Run Sync dashboard stats.",
+        "danger"
+      )
+    );
+  } else if (projectedStats.schemaVersion !== HUB_ADMIN_DASHBOARD_STATS_SCHEMA_VERSION) {
+    issues.push(
+      createReconciliationIssue(
+        "dashboard_stats_schema",
+        "Dashboard stats schema mismatch",
+        `Expected schema ${HUB_ADMIN_DASHBOARD_STATS_SCHEMA_VERSION}, found ${projectedStats.schemaVersion || "none"}.`,
+        "danger"
+      )
+    );
+  }
+
+  if (!overviewSnapshot.exists) {
+    issues.push(
+      createReconciliationIssue(
+        "dashboard_overview_missing",
+        "Dashboard overview missing",
+        "`stats/dashboardOverview` does not exist. Run Sync dashboard stats.",
+        "danger"
+      )
+    );
+  } else if (projectedOverview.schemaVersion !== HUB_ADMIN_DASHBOARD_OVERVIEW_SCHEMA_VERSION) {
+    issues.push(
+      createReconciliationIssue(
+        "dashboard_overview_schema",
+        "Dashboard overview schema mismatch",
+        `Expected schema ${HUB_ADMIN_DASHBOARD_OVERVIEW_SCHEMA_VERSION}, found ${projectedOverview.schemaVersion || "none"}.`,
+        "danger"
+      )
+    );
+  }
+
+  if (projectedStats && !normalizeString(projectedStats.reconciledAt)) {
+    issues.push(
+      createReconciliationIssue(
+        "dashboard_stats_unreconciled",
+        "Dashboard stats missing reconciliation metadata",
+        "`stats/current` is missing reconciledAt metadata."
+      )
+    );
+  }
+
+  if (projectedOverview && !normalizeString(projectedOverview.reconciledAt)) {
+    issues.push(
+      createReconciliationIssue(
+        "dashboard_overview_unreconciled",
+        "Dashboard overview missing reconciliation metadata",
+        "`stats/dashboardOverview` is missing reconciledAt metadata."
+      )
+    );
+  }
+
+  if (
+    projectedStats &&
+    expectedStats &&
+    !valuesMatch(pickStatsComparableFields(projectedStats), pickStatsComparableFields(expectedStats))
+  ) {
+    issues.push(
+      createReconciliationIssue(
+        "dashboard_stats_drift",
+        "Dashboard stats drift",
+        "`stats/current` does not match the rebuilt source-derived counters. Run Sync dashboard stats.",
+        "danger"
+      )
+    );
+  }
+
+  if (
+    projectedOverview &&
+    expectedOverview &&
+    !valuesMatch(pickOverviewComparableFields(projectedOverview), pickOverviewComparableFields(expectedOverview))
+  ) {
+    issues.push(
+      createReconciliationIssue(
+        "dashboard_overview_drift",
+        "Dashboard overview drift",
+        "`stats/dashboardOverview` does not match the rebuilt source-derived panel payload. Run Sync dashboard stats.",
+        "danger"
+      )
+    );
+  }
+
+  return {
+    generatedAt,
+    totalIssues: issues.length,
+    summary: summarizeIssues(issues),
+    issues,
+    projected: {
+      statsExists: statsSnapshot.exists,
+      overviewExists: overviewSnapshot.exists,
+      statsReconciledAt: projectedStats?.reconciledAt || "",
+      overviewReconciledAt: projectedOverview?.reconciledAt || "",
+    },
+  };
 }

@@ -209,7 +209,6 @@ Completed:
 
 Remaining:
 
-- Add a formal reconciliation report for `stats/current` and `stats/dashboardOverview`.
 - Add incremental or scheduled maintenance after the projected source of truth has been verified in production.
 - Consider a multi-hub support job before operating large production fleets.
 
@@ -225,6 +224,47 @@ Acceptance criteria:
 - Recompute counters from authoritative sources or projections.
 - Write reconciliation metadata.
 - Log differences before overwriting values.
+
+Status: implemented for support-only read-only reconciliation, with manual repair through the existing sync action.
+
+Completed:
+
+- Added `getHubAdminDashboardProjectionReconciliationReport`.
+- The report compares `hubs/{hubId}/stats/current` against a fresh source-derived rebuild payload.
+- The report compares `hubs/{hubId}/stats/dashboardOverview` against a fresh source-derived rebuild payload.
+- Comparable fields deliberately exclude runtime-only URL fields such as `href` so route mode, custom domains, and hosted domains do not create false drift.
+- Comparable stats fields include:
+  - schema version
+  - member counters
+  - invite counters
+  - upgrade request counters
+  - suspended member counters
+  - payment attention counters
+  - active upcoming published event/course counters
+  - total revenue display payload
+- Comparable overview fields include:
+  - schema version
+  - recent events compact payload
+  - top courses compact payload
+  - attention required compact payload
+  - newest members compact payload
+- The report flags:
+  - missing hub
+  - missing stats projection
+  - missing overview projection
+  - schema mismatch
+  - missing reconciliation metadata
+  - stats drift
+  - overview drift
+- The report is exposed only in support diagnostics on `/admin/members`.
+- The existing support-only **Sync dashboard stats** action remains the repair path and rebuilds both projection documents.
+- Normal admin dashboard reads remain fast and do not run the reconciliation comparison.
+
+Remaining:
+
+- Add a scheduled reconciliation runner if operational monitoring shows manual support diagnostics is not enough.
+- Add a multi-hub reconciliation command/job before operating a large production fleet.
+- Add incremental counter maintenance on mutation paths after production parity is stable.
 
 Acceptance criteria:
 
