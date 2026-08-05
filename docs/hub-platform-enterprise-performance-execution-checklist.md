@@ -151,6 +151,7 @@ Verification notes:
   - `createPaymentRecord`, `upsertPaymentRecordBySource`, and `updatePaymentRecord` now maintain the projection
   - manual ledger sync now backfills `paymentItems` after existing membership/native payment normalization
   - the payment item page helper uses stable `sortAt` + document id cursors and currently allows one indexed secondary filter at a time
+  - `sortAt` orders by paid/refunded/recorded activity before future `dueAt`, so the admin payments route is naturally ordered by latest paid activity without future event/renewal dates floating above actual payments
   - support-only reconciliation now checks `paymentRecords` to `paymentItems` projection parity
   - projection parity includes lifecycle fields (`occurredAt`, `paidAt`, `dueAt`) so the optimized admin ledger cannot silently display a renewal/event date as a paid date
   - live payment item writes hydrate denormalized member `displayName`/`email` from the hub user record when `userId` exists, preventing active members from appearing as former members in the payments table
