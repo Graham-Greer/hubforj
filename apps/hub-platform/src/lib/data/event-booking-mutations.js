@@ -124,6 +124,17 @@ function buildBookingLedgerState(paymentStatus, bookingStatus, amountMinor, exis
     };
   }
 
+  if (normalizedPaymentStatus === "not_required") {
+    return {
+      operationalStatus: normalizedBookingStatus === "cancelled" ? "cancelled" : "completed",
+      financialStatus: "not_required",
+      paidAt: "",
+      refundedAt: "",
+      refundAmountMinor: 0,
+      refundDisplay: "",
+    };
+  }
+
   return {
     operationalStatus: normalizedBookingStatus === "cancelled" ? "cancelled" : "open",
     financialStatus: "unpaid",
@@ -134,7 +145,7 @@ function buildBookingLedgerState(paymentStatus, bookingStatus, amountMinor, exis
   };
 }
 
-async function syncEventBookingPaymentRecord(hubId, eventId, booking, actorId = "system") {
+export async function syncEventBookingPaymentRecord(hubId, eventId, booking, actorId = "system", options = {}) {
   const normalizedHubId = normalizeString(hubId);
   const normalizedEventId = normalizeString(eventId);
 
@@ -215,8 +226,62 @@ async function syncEventBookingPaymentRecord(hubId, eventId, booking, actorId = 
         normalizeString(existingRecord?.sourceConfidence) || (nativeTransactionId ? "authoritative" : "declared"),
       reportingEligibility: resolvePaymentRecordReportingEligibility(amountMinor, booking.paymentStatus),
     },
-    actorId
+    actorId,
+    options
   );
+}
+
+export async function backfillEventBookingPaymentRecordsToLedger(hubId, actorId = "event-booking-payment-backfill", options = {}) {
+  const normalizedHubId = normalizeString(hubId);
+
+  if (!normalizedHubId) {
+    return { total: 0, scanned: 0, synced: 0, skipped: 0, latestSourceTimestamp: "" };
+  }
+
+  const db = getFirebaseAdminDb();
+  const eventSnapshot = await db.collection("hubs").doc(normalizedHubId).collection("events").get();
+  let scanned = 0;
+  let synced = 0;
+  let skipped = 0;
+  let latestSourceTimestamp = "";
+  const since = normalizeString(options.since);
+
+  for (const eventDoc of eventSnapshot.docs) {
+    const bookingSnapshot = await eventDoc.ref.collection("bookings").get();
+
+    for (const bookingDoc of bookingSnapshot.docs) {
+      scanned += 1;
+      const booking = normalizeEventBookingRecord({
+        id: bookingDoc.id,
+        hubId: normalizedHubId,
+        eventId: eventDoc.id,
+        ...bookingDoc.data(),
+      });
+      const candidateTimestamp = normalizeString(booking.updatedAt || booking.createdAt);
+
+      if (candidateTimestamp && (!latestSourceTimestamp || candidateTimestamp > latestSourceTimestamp)) {
+        latestSourceTimestamp = candidateTimestamp;
+      }
+
+      if (since && candidateTimestamp && candidateTimestamp <= since) {
+        skipped += 1;
+        continue;
+      }
+
+      await syncEventBookingPaymentRecord(normalizedHubId, eventDoc.id, booking, actorId, {
+        rebuildPaymentSummary: false,
+      });
+      synced += 1;
+    }
+  }
+
+  return {
+    total: scanned,
+    scanned,
+    synced,
+    skipped,
+    latestSourceTimestamp,
+  };
 }
 
 function buildGuestEligibleAttendees(booker, inputAttendees = []) {

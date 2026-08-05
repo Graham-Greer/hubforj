@@ -169,9 +169,10 @@ Verification notes:
   - event/course payment record writes now include `sourceSlug` for future precise member-facing billing actions
   - older projected rows without `sourceSlug` intentionally fall back to `/events` or `/courses` rather than adding per-row public content reads
   - member billing includes informational-only/free rows because it is a member activity/payment-history surface, not an admin revenue report
-  - temporary correctness fallback: missing historical rows are merged from user-scoped legacy sources until historical free/not-required records are fully backfilled into the read model
+  - historical free/not-required event bookings and course registrations are backfilled into canonical `paymentRecords`/`paymentItems` by the support-only ledger sync
+  - member billing no longer performs a runtime legacy-source merge when the read-model flag is enabled
   - member account nav and billing item action links disable prefetch so sibling account routes and event/course pages are not fetched before navigation
-  - expected Network/server result: member billing primarily reads user-scoped `paymentItems`; any legacy fallback reads must remain user-scoped and should be removed after historical read-model coverage is complete
+  - expected Network/server result: member billing reads user-scoped `paymentItems` only when the read-model flag is enabled and support sync has completed
 
 ## Per-Slice Rollout Checklist
 

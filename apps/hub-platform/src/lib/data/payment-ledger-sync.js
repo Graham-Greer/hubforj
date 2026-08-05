@@ -9,6 +9,8 @@ import { backfillMembershipPaymentRecordsToLedger } from "@/lib/data/memberships
 import { backfillNativeMembershipUpgradeTransactionsToLedger } from "@/lib/data/native-payment-transactions";
 import { backfillPaymentRecordsToPaymentItems } from "@/lib/data/payment-records";
 import { rebuildPaymentSummaryFromPaymentItems } from "@/lib/data/payment-summary";
+import { backfillEventBookingPaymentRecordsToLedger } from "@/lib/data/event-booking-mutations";
+import { backfillCourseRegistrationPaymentRecordsToLedger } from "@/lib/data/course-registration-mutations";
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -50,6 +52,16 @@ export async function getHubPaymentLedgerSyncStatus(hubId) {
     nativeMembershipUpgradesSynced: Number.parseInt(String(data.nativeMembershipUpgradesSynced || ""), 10) || 0,
     nativeMembershipUpgradesSkipped: Number.parseInt(String(data.nativeMembershipUpgradesSkipped || ""), 10) || 0,
     nativeMembershipUpgradesLatestSourceTimestamp: normalizeString(data.nativeMembershipUpgradesLatestSourceTimestamp),
+    eventBookingPaymentsTotal: Number.parseInt(String(data.eventBookingPaymentsTotal || ""), 10) || 0,
+    eventBookingPaymentsScanned: Number.parseInt(String(data.eventBookingPaymentsScanned || ""), 10) || 0,
+    eventBookingPaymentsSynced: Number.parseInt(String(data.eventBookingPaymentsSynced || ""), 10) || 0,
+    eventBookingPaymentsSkipped: Number.parseInt(String(data.eventBookingPaymentsSkipped || ""), 10) || 0,
+    eventBookingPaymentsLatestSourceTimestamp: normalizeString(data.eventBookingPaymentsLatestSourceTimestamp),
+    courseRegistrationPaymentsTotal: Number.parseInt(String(data.courseRegistrationPaymentsTotal || ""), 10) || 0,
+    courseRegistrationPaymentsScanned: Number.parseInt(String(data.courseRegistrationPaymentsScanned || ""), 10) || 0,
+    courseRegistrationPaymentsSynced: Number.parseInt(String(data.courseRegistrationPaymentsSynced || ""), 10) || 0,
+    courseRegistrationPaymentsSkipped: Number.parseInt(String(data.courseRegistrationPaymentsSkipped || ""), 10) || 0,
+    courseRegistrationPaymentsLatestSourceTimestamp: normalizeString(data.courseRegistrationPaymentsLatestSourceTimestamp),
     paymentItemsTotal: Number.parseInt(String(data.paymentItemsTotal || ""), 10) || 0,
     paymentItemsScanned: Number.parseInt(String(data.paymentItemsScanned || ""), 10) || 0,
     paymentItemsSynced: Number.parseInt(String(data.paymentItemsSynced || ""), 10) || 0,
@@ -91,9 +103,13 @@ export async function syncHubPaymentLedger(hubId, actorId = "ledger-sync") {
   );
 
   try {
-    const [membershipPayments, nativeMembershipUpgrades] = await Promise.all([
+    const eventBookingSince = previousStatus?.eventBookingPaymentsLatestSourceTimestamp ? since : "";
+    const courseRegistrationSince = previousStatus?.courseRegistrationPaymentsLatestSourceTimestamp ? since : "";
+    const [membershipPayments, nativeMembershipUpgrades, eventBookingPayments, courseRegistrationPayments] = await Promise.all([
       backfillMembershipPaymentRecordsToLedger(normalizedHubId, normalizedActorId, { since }),
       backfillNativeMembershipUpgradeTransactionsToLedger(normalizedHubId, normalizedActorId, { since }),
+      backfillEventBookingPaymentRecordsToLedger(normalizedHubId, normalizedActorId, { since: eventBookingSince }),
+      backfillCourseRegistrationPaymentRecordsToLedger(normalizedHubId, normalizedActorId, { since: courseRegistrationSince }),
     ]);
     const paymentItems = await backfillPaymentRecordsToPaymentItems(normalizedHubId, normalizedActorId, { since });
     const completedAt = new Date().toISOString();
@@ -120,6 +136,16 @@ export async function syncHubPaymentLedger(hubId, actorId = "ledger-sync") {
         nativeMembershipUpgradesSynced: nativeMembershipUpgrades.synced,
         nativeMembershipUpgradesSkipped: nativeMembershipUpgrades.skipped,
         nativeMembershipUpgradesLatestSourceTimestamp: nativeMembershipUpgrades.latestSourceTimestamp,
+        eventBookingPaymentsTotal: eventBookingPayments.total,
+        eventBookingPaymentsScanned: eventBookingPayments.scanned,
+        eventBookingPaymentsSynced: eventBookingPayments.synced,
+        eventBookingPaymentsSkipped: eventBookingPayments.skipped,
+        eventBookingPaymentsLatestSourceTimestamp: eventBookingPayments.latestSourceTimestamp,
+        courseRegistrationPaymentsTotal: courseRegistrationPayments.total,
+        courseRegistrationPaymentsScanned: courseRegistrationPayments.scanned,
+        courseRegistrationPaymentsSynced: courseRegistrationPayments.synced,
+        courseRegistrationPaymentsSkipped: courseRegistrationPayments.skipped,
+        courseRegistrationPaymentsLatestSourceTimestamp: courseRegistrationPayments.latestSourceTimestamp,
         paymentItemsTotal: paymentItems.total,
         paymentItemsScanned: paymentItems.scanned,
         paymentItemsSynced: paymentItems.synced,
@@ -136,6 +162,8 @@ export async function syncHubPaymentLedger(hubId, actorId = "ledger-sync") {
     return {
       membershipPayments,
       nativeMembershipUpgrades,
+      eventBookingPayments,
+      courseRegistrationPayments,
       paymentItems,
       status: {
         lastStartedAt: startedAt,

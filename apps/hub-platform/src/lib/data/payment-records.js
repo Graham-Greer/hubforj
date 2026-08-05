@@ -277,7 +277,7 @@ export async function getPaymentRecordBySource(hubId, sourceType, sourceId) {
   });
 }
 
-export async function upsertPaymentRecordBySource(hubId, payload, actorId = "system") {
+export async function upsertPaymentRecordBySource(hubId, payload, actorId = "system", options = {}) {
   const normalizedHubId = normalizeString(hubId);
   const normalizedSourceType = normalizeString(payload?.sourceType);
   const normalizedSourceId = normalizeString(payload?.sourceId);
@@ -353,10 +353,12 @@ export async function upsertPaymentRecordBySource(hubId, payload, actorId = "sys
       },
       { updatedAt: now }
     );
-    await rebuildPaymentSummaryFromPaymentItems(normalizedHubId, {
-      actorId: normalizedActorId,
-      updatedAt: now,
-    });
+    if (options.rebuildPaymentSummary !== false) {
+      await rebuildPaymentSummaryFromPaymentItems(normalizedHubId, {
+        actorId: normalizedActorId,
+        updatedAt: now,
+      });
+    }
 
     return normalizePaymentRecord({
       id: documentId,
@@ -377,10 +379,12 @@ export async function upsertPaymentRecordBySource(hubId, payload, actorId = "sys
     },
     { updatedAt: now }
   );
-  await rebuildPaymentSummaryFromPaymentItems(normalizedHubId, {
-    actorId: normalizedActorId,
-    updatedAt: now,
-  });
+  if (options.rebuildPaymentSummary !== false) {
+    await rebuildPaymentSummaryFromPaymentItems(normalizedHubId, {
+      actorId: normalizedActorId,
+      updatedAt: now,
+    });
+  }
 
   return normalizePaymentRecord({
     id: documentId,

@@ -114,41 +114,7 @@ async function listMemberProjectedPaymentItems(hubId, userId, options = {}) {
     .map(mapProjectionToMemberPaymentItem)
     .sort((left, right) => String(right.dueDate || "").localeCompare(String(left.dueDate || "")));
 
-  if (options.includeLegacySourceFallback === false) {
-    return projectedItems;
-  }
-
-  const legacyItems = await listMemberLegacyPaymentItems(normalizedHubId, normalizedUserId);
-  const projectedKeys = new Set(projectedItems.flatMap(buildMemberPaymentItemDeduplicationKeys).filter(Boolean));
-  const missingLegacyItems = legacyItems.filter((item) => {
-    const keys = buildMemberPaymentItemDeduplicationKeys(item);
-    return !keys.some((key) => projectedKeys.has(key));
-  });
-
-  return [...projectedItems, ...missingLegacyItems]
-    .sort((left, right) => String(right.dueDate || "").localeCompare(String(left.dueDate || "")))
-    .slice(0, options.limit || 100);
-}
-
-function buildMemberPaymentItemDeduplicationKeys(item = {}) {
-  const kind = normalizeString(item.kind);
-  const keys = [];
-
-  [
-    item.id,
-    item.recordId,
-    item.sourceId,
-    normalizeString(item.kind) === "membership" ? item.membershipId : "",
-    item.nativePaymentTransactionId,
-  ].forEach((value) => {
-    const normalizedValue = normalizeString(value);
-
-    if (normalizedValue) {
-      keys.push(`${kind}:id:${normalizedValue}`);
-    }
-  });
-
-  return keys;
+  return projectedItems;
 }
 
 async function listMemberLegacyPaymentItems(hubId, userId) {
