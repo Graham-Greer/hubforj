@@ -275,6 +275,31 @@ Expected Network/server result:
 - Normal `/admin/members` route navigation should perform one bounded `memberDirectory` page query and one small `memberDirectorySummary` document read.
 - Page-size changes should produce one RSC navigation for the selected limit, not a `limit=10 -> limit=20 -> limit=10` sequence.
 
+### 2026-08-05 - Export And Reconciliation Polish
+
+Status: implemented.
+
+Completed:
+
+- Added an authorized `/admin/members/export` CSV route.
+- Server-driven member export uses the `memberDirectory` projection and current search/status/membership/attention filters.
+- Normal `/admin/members` page load remains bounded; export is an explicit route request and does not preload all rows.
+- Export is capped at 10,000 projected rows for the current implementation slice. Larger hubs should move to a background export job before exceeding that scale.
+- The workspace export button now calls the server export route in read-model mode and keeps the legacy current-list export only for the fallback path.
+- Added support-only member directory reconciliation reporting.
+- Reconciliation detects:
+  - missing projected rows for source members
+  - stale projected fields
+  - orphaned projected rows without source members
+- Added support-only safe repair by rebuilding the projection and deleting orphaned directory rows.
+- Support member-directory sync also rebuilds `memberDirectorySummary`.
+- Support payment ledger diagnostics now include member-directory orphan cleanup counts.
+
+Expected Network/server result:
+
+- Clicking export should create one explicit `/admin/members/export` request and should not affect normal route navigation.
+- Support diagnostics may perform broad source comparison, but only in support mode.
+
 Rollout order:
 
 1. Deploy the new Firebase `memberDirectory` indexes.

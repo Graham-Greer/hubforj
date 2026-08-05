@@ -187,7 +187,8 @@ Verification notes:
   - payment attention state is sourced from `paymentItems`, not legacy event/course payment scans
   - summary cards read `hubs/{hubId}/system/memberDirectorySummary`; count queries are rollout fallback only when the summary has not been built
   - expected steady-state Network/server result: `/admin/members` performs one bounded `memberDirectory` page query plus one small `memberDirectorySummary` document read
-  - full CSV export remains a separate follow-up and must not make normal page load fetch all members
+  - CSV export is a dedicated authorized route and must remain outside normal page load
+  - support-only reconciliation detects missing, stale, and orphaned projection rows; safe repair rebuilds the projection and summary
 
 ## Per-Slice Rollout Checklist
 

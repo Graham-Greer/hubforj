@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { requireHubOperatorRouteAccess } from "@/lib/auth/action-access";
 import { listHubPaymentItemsBySlug } from "@/lib/data/hub-payments";
 import { assertHubCapability } from "@/lib/domain/package-guards";
-import { getOperationalPaymentStatus } from "@/components/patterns/hub-payments-workspace/hub-payments-helpers";
+import {
+  formatPaymentAmount,
+  getOperationalPaymentStatus,
+} from "@/components/patterns/hub-payments-workspace/hub-payments-helpers";
 
 export const runtime = "nodejs";
 
@@ -20,7 +23,7 @@ function escapeCsvValue(value) {
   return text;
 }
 
-function buildCsv(items = []) {
+function buildCsv(items = [], locale) {
   const headers = [
     "Member",
     "Title",
@@ -39,7 +42,7 @@ function buildCsv(items = []) {
     item.kind || "",
     item.paymentStatus || "",
     item.status || "",
-    item.amount || "",
+    formatPaymentAmount(item, locale),
     item.currency || "",
     item.lifecycleDate || item.dueDate || "",
     item.lifecycleLabel || "",
@@ -122,7 +125,7 @@ export async function GET(request, { params }) {
       request.nextUrl.searchParams.get("date_from") || "",
       request.nextUrl.searchParams.get("date_to") || ""
     );
-    const csv = buildCsv(filteredItems);
+    const csv = buildCsv(filteredItems, hub.locale);
     const filename = `${normalizeString(hub.slug) || "hub"}-payments-export.csv`;
 
     return new Response(csv, {

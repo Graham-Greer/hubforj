@@ -238,7 +238,7 @@ export default function PaymentSetupWorkspace({
                 />
                 <DetailRow
                   label="Member directory"
-                  value={`${Number(syncStatus?.memberDirectorySynced || 0)} synced · ${Number(syncStatus?.memberDirectoryScanned || 0)} scanned · ${formatSyncDate(syncStatus?.memberDirectoryRebuiltAt, hub?.locale || fallbackRegionalMarket.defaultLocale)}`}
+                  value={`${Number(syncStatus?.memberDirectorySynced || 0)} synced · ${Number(syncStatus?.memberDirectoryScanned || 0)} scanned · ${Number(syncStatus?.memberDirectoryOrphaned || 0)} orphaned · ${formatSyncDate(syncStatus?.memberDirectoryRebuiltAt, hub?.locale || fallbackRegionalMarket.defaultLocale)}`}
                 />
                 <DetailRow label="Last actor" value={syncStatus?.lastActorId || "Not recorded"} />
               </div>

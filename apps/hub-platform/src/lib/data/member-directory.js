@@ -474,6 +474,41 @@ function buildMemberDirectoryWriteModel({ user, membership = null, pendingUpgrad
   });
 }
 
+async function buildExpectedMemberDirectoryRows(hubId, now = new Date().toISOString()) {
+  const normalizedHubId = normalizeString(hubId);
+
+  if (!normalizedHubId) {
+    return [];
+  }
+
+  const [usersSnapshot, memberships, plansById, pendingUpgradeUserIds, paymentAttentionCounts] = await Promise.all([
+    getUsersCollection()
+      .where("hubId", "==", normalizedHubId)
+      .where("role", "==", "member")
+      .select("hubId", "role", "status", "email", "name", "createdAt", "lastSignedInAt", "updatedAt")
+      .get(),
+    listMembershipRowsByHub(normalizedHubId),
+    getMembershipPlansById(normalizedHubId),
+    listPendingUpgradeRequestUserIds(normalizedHubId),
+    buildPaymentAttentionCountsByUser(normalizedHubId),
+  ]);
+  const membershipByUserId = buildMembershipByUserId(memberships, plansById);
+  const pendingUpgradeUserIdSet = new Set(pendingUpgradeUserIds);
+
+  return usersSnapshot.docs.map((doc) =>
+    buildMemberDirectoryWriteModel({
+      user: {
+        id: doc.id,
+        ...doc.data(),
+      },
+      membership: membershipByUserId.get(doc.id) || null,
+      pendingUpgradeRequest: pendingUpgradeUserIdSet.has(doc.id),
+      paymentAttentionCount: paymentAttentionCounts.get(doc.id) || 0,
+      now,
+    })
+  );
+}
+
 async function rebuildMemberDirectoryForUserStrict(hubId, userId, actorId = "member-directory-sync") {
   const normalizedHubId = normalizeString(hubId);
   const normalizedUserId = normalizeString(userId);
@@ -567,35 +602,14 @@ export async function syncHubMemberDirectory(hubId, actorId = "member-directory-
   }
 
   const now = new Date().toISOString();
-  const [usersSnapshot, memberships, plansById, pendingUpgradeUserIds, paymentAttentionCounts] = await Promise.all([
-    getUsersCollection()
-      .where("hubId", "==", normalizedHubId)
-      .where("role", "==", "member")
-      .select("hubId", "role", "status", "email", "name", "createdAt", "lastSignedInAt", "updatedAt")
-      .get(),
-    listMembershipRowsByHub(normalizedHubId),
-    getMembershipPlansById(normalizedHubId),
-    listPendingUpgradeRequestUserIds(normalizedHubId),
-    buildPaymentAttentionCountsByUser(normalizedHubId),
-  ]);
-  const membershipByUserId = buildMembershipByUserId(memberships, plansById);
-  const pendingUpgradeUserIdSet = new Set(pendingUpgradeUserIds);
-  const rows = usersSnapshot.docs.map((doc) =>
-    buildMemberDirectoryWriteModel({
-      user: {
-        id: doc.id,
-        ...doc.data(),
-      },
-      membership: membershipByUserId.get(doc.id) || null,
-      pendingUpgradeRequest: pendingUpgradeUserIdSet.has(doc.id),
-      paymentAttentionCount: paymentAttentionCounts.get(doc.id) || 0,
-      now,
-    })
-  );
+  const rows = await buildExpectedMemberDirectoryRows(normalizedHubId, now);
+  const expectedIds = new Set(rows.map((row) => row.id).filter(Boolean));
+  const existingSnapshot = await getMemberDirectoryCollection(normalizedHubId).select("userId").get();
   const collection = getMemberDirectoryCollection(normalizedHubId);
   let batch = getFirebaseAdminDb().batch();
   let batchCount = 0;
   let synced = 0;
+  let orphaned = 0;
 
   for (const row of rows) {
     batch.set(
@@ -608,6 +622,22 @@ export async function syncHubMemberDirectory(hubId, actorId = "member-directory-
     );
     batchCount += 1;
     synced += 1;
+
+    if (batchCount >= 450) {
+      await batch.commit();
+      batch = getFirebaseAdminDb().batch();
+      batchCount = 0;
+    }
+  }
+
+  for (const doc of existingSnapshot.docs) {
+    if (expectedIds.has(doc.id)) {
+      continue;
+    }
+
+    batch.delete(doc.ref);
+    batchCount += 1;
+    orphaned += 1;
 
     if (batchCount >= 450) {
       await batch.commit();
@@ -632,7 +662,8 @@ export async function syncHubMemberDirectory(hubId, actorId = "member-directory-
   return {
     hubId: normalizedHubId,
     synced,
-    scanned: usersSnapshot.size,
+    scanned: rows.length,
+    orphaned,
     summary,
     generatedAt: now,
   };
@@ -681,6 +712,28 @@ export async function getMemberDirectorySummaryByHubId(hubId) {
   };
 }
 
+function applyMemberDirectoryQueryFilters(query, filters) {
+  let nextQuery = query;
+
+  if (filters.status !== "all") {
+    nextQuery = nextQuery.where("status", "==", filters.status);
+  }
+
+  if (filters.membership !== "all") {
+    nextQuery = nextQuery.where("membershipType", "==", filters.membership);
+  }
+
+  if (filters.attention !== "all") {
+    nextQuery = nextQuery.where("attentionStatus", "==", filters.attention);
+  }
+
+  if (filters.q) {
+    nextQuery = nextQuery.where("searchPrefixes", "array-contains", filters.q);
+  }
+
+  return nextQuery;
+}
+
 function normalizePageSize(value) {
   const numeric = Number.parseInt(String(value || ""), 10);
   return Math.min(Math.max(Number.isFinite(numeric) ? numeric : 10, 5), 50);
@@ -711,23 +764,10 @@ export async function listMemberDirectoryPageByHubId(hubId, options = {}) {
     return { items: [], nextCursor: "", hasMore: false, filters };
   }
 
-  let query = getMemberDirectoryCollection(normalizedHubId).where("hubId", "==", normalizedHubId);
-
-  if (filters.status !== "all") {
-    query = query.where("status", "==", filters.status);
-  }
-
-  if (filters.membership !== "all") {
-    query = query.where("membershipType", "==", filters.membership);
-  }
-
-  if (filters.attention !== "all") {
-    query = query.where("attentionStatus", "==", filters.attention);
-  }
-
-  if (filters.q) {
-    query = query.where("searchPrefixes", "array-contains", filters.q);
-  }
+  let query = applyMemberDirectoryQueryFilters(
+    getMemberDirectoryCollection(normalizedHubId).where("hubId", "==", normalizedHubId),
+    filters
+  );
 
   query = query.orderBy("displayNameLower", "asc").orderBy(FieldPath.documentId(), "asc");
 
@@ -755,4 +795,151 @@ export async function listMemberDirectoryPageByHubId(hubId, options = {}) {
 
 export function isMemberDirectoryReadModelEnabled() {
   return isReadModelEnabled();
+}
+
+export async function listMemberDirectoryExportRowsByHubId(hubId, options = {}) {
+  const normalizedHubId = normalizeString(hubId);
+  const filters = normalizeMemberDirectoryFilters({
+    ...options,
+    limit: 50,
+  });
+  const maxRows = Math.min(Math.max(parseInteger(options.maxRows) || 5000, 1), 10000);
+
+  if (!normalizedHubId) {
+    return [];
+  }
+
+  const query = applyMemberDirectoryQueryFilters(
+    getMemberDirectoryCollection(normalizedHubId).where("hubId", "==", normalizedHubId),
+    filters
+  )
+    .orderBy("displayNameLower", "asc")
+    .orderBy(FieldPath.documentId(), "asc")
+    .limit(maxRows);
+  const snapshot = await query.get();
+
+  return snapshot.docs.map((doc) =>
+    normalizeMemberDirectoryRecord({
+      id: doc.id,
+      ...doc.data(),
+    })
+  );
+}
+
+function getComparableMemberDirectoryFields(row = {}) {
+  const normalized = normalizeMemberDirectoryRecord(row);
+
+  return {
+    displayName: normalized.displayName,
+    email: normalized.email,
+    status: normalized.status,
+    membershipPlanId: normalized.membershipPlanId,
+    membershipPlanName: normalized.membershipPlanName,
+    membershipStatus: normalized.membershipStatus,
+    membershipType: normalized.membershipType,
+    pendingUpgradeRequest: normalized.pendingUpgradeRequest,
+    paymentAttentionCount: normalized.paymentAttentionCount,
+    attentionStatus: normalized.attentionStatus,
+  };
+}
+
+function getChangedMemberDirectoryFields(expected, actual) {
+  const expectedComparable = getComparableMemberDirectoryFields(expected);
+  const actualComparable = getComparableMemberDirectoryFields(actual);
+
+  return Object.keys(expectedComparable).filter((key) => expectedComparable[key] !== actualComparable[key]);
+}
+
+export async function getHubMemberDirectoryReconciliationReport(hubId, options = {}) {
+  const normalizedHubId = normalizeString(hubId);
+  const issueLimit = Math.min(Math.max(parseInteger(options.issueLimit) || 25, 1), 100);
+
+  if (!normalizedHubId) {
+    return {
+      generatedAt: new Date().toISOString(),
+      totalIssues: 0,
+      summary: [],
+      issues: [],
+    };
+  }
+
+  const [expectedRows, actualSnapshot] = await Promise.all([
+    buildExpectedMemberDirectoryRows(normalizedHubId),
+    getMemberDirectoryCollection(normalizedHubId).get(),
+  ]);
+  const expectedById = new Map(expectedRows.map((row) => [row.id, row]));
+  const actualRows = actualSnapshot.docs.map((doc) =>
+    normalizeMemberDirectoryRecord({
+      id: doc.id,
+      ...doc.data(),
+    })
+  );
+  const actualById = new Map(actualRows.map((row) => [row.id, row]));
+  const issues = [];
+
+  expectedRows.forEach((expected) => {
+    const actual = actualById.get(expected.id);
+
+    if (!actual) {
+      issues.push({
+        code: "missing_directory_row",
+        severity: "repairable",
+        userId: expected.id,
+        title: "Missing member directory row",
+        detail: "A source member exists but has no projected member directory row.",
+      });
+      return;
+    }
+
+    const changedFields = getChangedMemberDirectoryFields(expected, actual);
+
+    if (changedFields.length) {
+      issues.push({
+        code: "stale_directory_row",
+        severity: "repairable",
+        userId: expected.id,
+        title: "Stale member directory row",
+        detail: `Projected fields differ from source data: ${changedFields.join(", ")}.`,
+      });
+    }
+  });
+
+  actualRows.forEach((actual) => {
+    if (expectedById.has(actual.id)) {
+      return;
+    }
+
+    issues.push({
+      code: "orphan_directory_row",
+      severity: "repairable",
+      userId: actual.id,
+      title: "Orphaned member directory row",
+      detail: "A projected member directory row exists without a matching source member.",
+    });
+  });
+
+  const summaryByCode = new Map();
+  issues.forEach((issue) => {
+    const current = summaryByCode.get(issue.code) || {
+      code: issue.code,
+      title: issue.title,
+      count: 0,
+    };
+
+    current.count += 1;
+    summaryByCode.set(issue.code, current);
+  });
+
+  return {
+    generatedAt: new Date().toISOString(),
+    totalIssues: issues.length,
+    expectedRows: expectedRows.length,
+    actualRows: actualRows.length,
+    summary: [...summaryByCode.values()],
+    issues: issues.slice(0, issueLimit),
+  };
+}
+
+export async function repairHubMemberDirectoryReconciliation(hubId, actorId = "member-directory-repair") {
+  return syncHubMemberDirectory(hubId, actorId);
 }
