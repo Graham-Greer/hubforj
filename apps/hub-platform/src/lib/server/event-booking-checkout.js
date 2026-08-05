@@ -183,6 +183,7 @@ export async function startEventBookingCheckout({
       kind: "event_booking",
       sourceType: "eventBooking",
       sourceId: booking.id,
+      sourceSlug: event.slug,
       title: event.title || "Event booking",
       description: normalizeString(hub?.name) ? `Event booking for ${hub.name}` : "Event booking",
       amountMinor,

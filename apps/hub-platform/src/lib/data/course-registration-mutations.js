@@ -168,6 +168,7 @@ async function syncCourseRegistrationPaymentRecord(hubId, courseId, registration
       kind: "course_registration",
       sourceType: "courseRegistration",
       sourceId: registration.id,
+      sourceSlug: normalizeString(course?.slug) || normalizeString(existingRecord?.sourceSlug),
       title:
         normalizeString(course?.title) ||
         normalizeString(existingRecord?.title) ||

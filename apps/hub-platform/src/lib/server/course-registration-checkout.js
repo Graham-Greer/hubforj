@@ -174,6 +174,7 @@ export async function startCourseRegistrationCheckout({
       kind: "course_registration",
       sourceType: "courseRegistration",
       sourceId: registration.id,
+      sourceSlug: course.slug,
       title: course.title || "Course enrolment",
       description: normalizeString(hub?.name) ? `Course enrolment for ${hub.name}` : "Course enrolment",
       amountMinor,

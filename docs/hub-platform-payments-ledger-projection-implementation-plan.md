@@ -81,12 +81,13 @@ Privacy rule:
 - Phase 3, backfill: first implementation slice complete through the existing support-only payment ledger sync action.
 - Phase 4, maintain on writes: first implementation slice complete for `createPaymentRecord`, `upsertPaymentRecordBySource`, and `updatePaymentRecord`.
 - Phase 5, replace admin payments report reads: projection-backed admin route is implemented behind `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true` with URL-driven status/type filters, cursor pagination, and an aggregate `paymentSummary` read model for summary cards.
-- Phase 6, replace member billing reads: not started; must follow admin payments read-model verification.
+- Phase 6, replace member billing reads: first implementation slice complete behind `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true`.
 - Phase 7, reconciliation and repair: support-only projection parity diagnostics are in progress; repair mode is not started.
 
 Current migration rule:
 
-- Keep member payment UI on the legacy report builder until the member billing read-model slice is implemented and verified.
+- Keep member payment UI on the legacy report builder when `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED` is unset or false.
+- With `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true`, member billing reads use the user-scoped `paymentItems` read model.
 - Keep admin payment UI on the projection-backed read model only after all `paymentItems` indexes are enabled, ledger sync has populated payment items, payment summary diagnostics are present, and support diagnostics show no unresolved projection parity issues.
 - Enable `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true` only after the admin checks pass.
 
@@ -310,6 +311,37 @@ Acceptance criteria:
 
 - `/account/billing` uses bounded user-scoped reads.
 - Member cannot access another member's ledger items.
+
+Implementation note:
+
+- `listMemberPaymentItems` now chooses the projection-backed path when `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true`.
+- Projection-backed member billing queries `hubs/{hubId}/paymentItems` with:
+  - `hubId == current hub id`
+  - `userId == current authenticated member user id`
+  - `orderBy sortAt desc`
+  - stable document id ordering through the shared payment item page helper
+- The member account overview calls the same helper with a smaller limit because it renders only recent billing and an attention count.
+- The full `/account/billing` route remains bounded and currently loads the first 100 user-scoped ledger items, matching the existing client-side search/filter workspace without introducing broad hub reads.
+- The projection mapper preserves the existing member billing UI shape:
+  - membership, event, and course `kind`
+  - title
+  - payment status
+  - amount/currency
+  - billing date
+  - contextual detail text
+  - event/course source ids where available
+- `sourceSlug` has been added to the payment record and payment item projection contract for future precise member-facing event/course links.
+- New event/course checkout and payment-sync writes populate `sourceSlug`.
+- Existing projected records created before this slice may not have `sourceSlug`; those member billing actions safely fall back to `/events` or `/courses` instead of performing extra per-row lookup reads.
+- Duplicate paid membership upgrade versus membership-cycle suppression is applied to the user-scoped projection list before rendering.
+- Informational-only payment items remain excluded from member billing.
+- If the read-model flag is false, the legacy composer remains available as rollback and still reads membership, event bookings, course registrations, and payment records.
+
+Remaining Phase 6 follow-up:
+
+- Add cursor pagination to the member billing UI before the route needs to show more than the bounded first-page result set.
+- Backfill `sourceSlug` for existing event/course payment records if precise historical “View event/course” links become important enough to justify the migration.
+- Consider a small member billing summary aggregate only if individual members regularly exceed the bounded result size.
 
 ### Phase 7: Reconciliation And Repair
 
