@@ -77,6 +77,7 @@ function mapProjectionToMemberPaymentItem(item = {}) {
   return {
     id: item.id,
     recordId: item.paymentRecordId || item.sourceId || item.id,
+    sourceId: item.sourceId,
     userId: item.userId,
     kind,
     title: item.title || (kind === "course" ? "Course enrolment" : kind === "event" ? "Event booking" : "Membership"),
@@ -91,6 +92,7 @@ function mapProjectionToMemberPaymentItem(item = {}) {
     eventSlug: kind === "event" ? sourceSlug : "",
     courseId: kind === "course" ? item.sourceParentId : "",
     courseSlug: kind === "course" ? sourceSlug : "",
+    membershipId: kind === "membership" ? item.sourceParentId : "",
     nativePaymentTransactionId: item.nativeTransactionId,
   };
 }
@@ -108,10 +110,45 @@ async function listMemberProjectedPaymentItems(hubId, userId, options = {}) {
     limit: options.limit || 100,
   });
 
-  return filterDuplicateProjectedMembershipCyclePaymentItems(page.items)
-    .filter((item) => normalizeString(item.reportingEligibility) !== "informational_only")
+  const projectedItems = filterDuplicateProjectedMembershipCyclePaymentItems(page.items)
     .map(mapProjectionToMemberPaymentItem)
     .sort((left, right) => String(right.dueDate || "").localeCompare(String(left.dueDate || "")));
+
+  if (options.includeLegacySourceFallback === false) {
+    return projectedItems;
+  }
+
+  const legacyItems = await listMemberLegacyPaymentItems(normalizedHubId, normalizedUserId);
+  const projectedKeys = new Set(projectedItems.flatMap(buildMemberPaymentItemDeduplicationKeys).filter(Boolean));
+  const missingLegacyItems = legacyItems.filter((item) => {
+    const keys = buildMemberPaymentItemDeduplicationKeys(item);
+    return !keys.some((key) => projectedKeys.has(key));
+  });
+
+  return [...projectedItems, ...missingLegacyItems]
+    .sort((left, right) => String(right.dueDate || "").localeCompare(String(left.dueDate || "")))
+    .slice(0, options.limit || 100);
+}
+
+function buildMemberPaymentItemDeduplicationKeys(item = {}) {
+  const kind = normalizeString(item.kind);
+  const keys = [];
+
+  [
+    item.id,
+    item.recordId,
+    item.sourceId,
+    normalizeString(item.kind) === "membership" ? item.membershipId : "",
+    item.nativePaymentTransactionId,
+  ].forEach((value) => {
+    const normalizedValue = normalizeString(value);
+
+    if (normalizedValue) {
+      keys.push(`${kind}:id:${normalizedValue}`);
+    }
+  });
+
+  return keys;
 }
 
 async function listMemberLegacyPaymentItems(hubId, userId) {

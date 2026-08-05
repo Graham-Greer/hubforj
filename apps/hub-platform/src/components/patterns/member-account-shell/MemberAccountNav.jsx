@@ -42,6 +42,7 @@ export default function MemberAccountNav({ items = [] }) {
             <Link
               key={item.href}
               href={item.href}
+              prefetch={false}
               className={[styles.navLink, activeHref === item.href ? styles.navLinkActive : ""].filter(Boolean).join(" ")}
               aria-current={activeHref === item.href ? "page" : undefined}
               data-active={activeHref === item.href ? "true" : undefined}

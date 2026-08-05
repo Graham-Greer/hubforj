@@ -104,6 +104,10 @@ function isUpcomingOrCurrentBooking(item) {
 }
 
 function getBillingStatusLabel(item) {
+  if (normalizeString(item?.paymentStatus) === "not_required") {
+    return "Free";
+  }
+
   const kind = normalizeString(item?.kind);
 
   if (kind === "course") {
@@ -115,6 +119,18 @@ function getBillingStatusLabel(item) {
   }
 
   return getMembershipPaymentStatusLabel(item?.paymentStatus);
+}
+
+function getMemberBookingPaymentStatusLabel(kind, paymentStatus) {
+  if (normalizeString(paymentStatus) === "not_required") {
+    return "Free";
+  }
+
+  if (normalizeString(kind) === "course") {
+    return getCoursePaymentStatusLabel(paymentStatus);
+  }
+
+  return getEventBookingPaymentStatusLabel(paymentStatus);
 }
 
 function getBillingStatusTone(item) {
@@ -385,18 +401,18 @@ export function buildUnifiedBookingItems({
     dateSortValue: registration.eventStartAt || registration.eventStartDate || "",
     endSortValue: registration.eventEndAt || registration.eventEndDate || "",
     locationLabel: registration.eventLocation || "Location to be confirmed",
-    amountLabel: Number.isFinite(Number(registration.amountMinor))
-      ? formatMoneyFromMinor(registration.amountMinor, registration.currency || getFallbackRegionalMarket().defaultCurrency, locale)
-      : normalizeString(registration.amountDisplay)
-        ? formatMoney(registration.amountDisplay, registration.currency || getFallbackRegionalMarket().defaultCurrency, locale)
-        : normalizeString(registration.paymentStatus) === "not_required"
-          ? "Free"
+    amountLabel: normalizeString(registration.paymentStatus) === "not_required"
+      ? "Free"
+      : Number.isFinite(Number(registration.amountMinor))
+        ? formatMoneyFromMinor(registration.amountMinor, registration.currency || getFallbackRegionalMarket().defaultCurrency, locale)
+        : normalizeString(registration.amountDisplay)
+          ? formatMoney(registration.amountDisplay, registration.currency || getFallbackRegionalMarket().defaultCurrency, locale)
           : "",
     status: registration.status,
     statusLabel: getEventBookingStatusLabel(registration.status),
     statusTone: getEventBookingStatusTone(registration.status),
     paymentStatus: registration.paymentStatus,
-    paymentStatusLabel: getEventBookingPaymentStatusLabel(registration.paymentStatus),
+    paymentStatusLabel: getMemberBookingPaymentStatusLabel("event", registration.paymentStatus),
     paymentStatusTone: getEventBookingPaymentStatusTone(registration.paymentStatus),
     showPaymentBadge: normalizeString(registration.paymentStatus) !== "not_required",
     attendanceStatus: "",
@@ -442,18 +458,18 @@ export function buildUnifiedBookingItems({
     dateSortValue: registration.courseStartAt || "",
     endSortValue: registration.courseEndAt || "",
     locationLabel: formatCourseBookingMeta(registration),
-    amountLabel: Number.isFinite(Number(registration.amountMinor))
-      ? formatMoneyFromMinor(registration.amountMinor, registration.currency || getFallbackRegionalMarket().defaultCurrency, locale)
-      : normalizeString(registration.price)
-        ? formatMoney(registration.price, registration.currency || getFallbackRegionalMarket().defaultCurrency, locale)
-        : normalizeString(registration.paymentStatus) === "not_required"
-          ? "Free"
+    amountLabel: normalizeString(registration.paymentStatus) === "not_required"
+      ? "Free"
+      : Number.isFinite(Number(registration.amountMinor))
+        ? formatMoneyFromMinor(registration.amountMinor, registration.currency || getFallbackRegionalMarket().defaultCurrency, locale)
+        : normalizeString(registration.price)
+          ? formatMoney(registration.price, registration.currency || getFallbackRegionalMarket().defaultCurrency, locale)
           : "",
     status: registration.status,
     statusLabel: getCourseRegistrationStatusLabel(registration.status),
     statusTone: getCourseRegistrationStatusTone(registration.status),
     paymentStatus: registration.paymentStatus,
-    paymentStatusLabel: getCoursePaymentStatusLabel(registration.paymentStatus),
+    paymentStatusLabel: getMemberBookingPaymentStatusLabel("course", registration.paymentStatus),
     paymentStatusTone: getCoursePaymentStatusTone(registration.paymentStatus),
     showPaymentBadge: normalizeString(registration.paymentStatus) !== "not_required",
     attendanceStatus: registration.attendanceStatus,
