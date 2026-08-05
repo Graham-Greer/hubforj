@@ -223,6 +223,10 @@ export default function PaymentSetupWorkspace({
                   label="Payment items"
                   value={`${Number(syncStatus?.paymentItemsSynced || 0)} synced · ${Number(syncStatus?.paymentItemsSkipped || 0)} skipped · ${Number(syncStatus?.paymentItemsScanned || 0)} scanned`}
                 />
+                <DetailRow
+                  label="Payment summary"
+                  value={`${Number(syncStatus?.paymentSummaryReportableItems || 0)} reportable · ${Number(syncStatus?.paymentSummaryTotalSourceItems || 0)} source items · ${formatSyncDate(syncStatus?.paymentSummaryRebuiltAt, hub?.locale || fallbackRegionalMarket.defaultLocale)}`}
+                />
                 <DetailRow label="Last actor" value={syncStatus?.lastActorId || "Not recorded"} />
               </div>
               {syncStatus?.lastSince ? (

@@ -77,17 +77,18 @@ Privacy rule:
 ### Current Phase Status
 
 - Phase 1, ledger contract: first implementation slice complete for canonical `paymentRecords` projected into `paymentItems`.
-- Phase 2, indexes: committed in `firestore.indexes.json`; Firebase index build is currently in progress and UI read paths must not depend on these indexes until they are enabled.
+- Phase 2, indexes: committed in `firestore.indexes.json`; Firebase indexes have been built for the current planned payment item query shapes.
 - Phase 3, backfill: first implementation slice complete through the existing support-only payment ledger sync action.
 - Phase 4, maintain on writes: first implementation slice complete for `createPaymentRecord`, `upsertPaymentRecordBySource`, and `updatePaymentRecord`.
-- Phase 5, replace admin payments report reads: projection-backed admin route is implemented behind `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true` with URL-driven status/type filters and cursor pagination.
+- Phase 5, replace admin payments report reads: projection-backed admin route is implemented behind `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true` with URL-driven status/type filters, cursor pagination, and an aggregate `paymentSummary` read model for summary cards.
 - Phase 6, replace member billing reads: not started; must follow admin payments read-model verification.
 - Phase 7, reconciliation and repair: support-only projection parity diagnostics are in progress; repair mode is not started.
 
 Current migration rule:
 
-- Keep admin/member payment UI on the legacy report builder until all `paymentItems` indexes are enabled, the ledger sync has populated payment items, and support diagnostics show no unresolved projection parity issues.
-- Enable `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true` only after the above checks pass.
+- Keep member payment UI on the legacy report builder until the member billing read-model slice is implemented and verified.
+- Keep admin payment UI on the projection-backed read model only after all `paymentItems` indexes are enabled, ledger sync has populated payment items, payment summary diagnostics are present, and support diagnostics show no unresolved projection parity issues.
+- Enable `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true` only after the admin checks pass.
 
 ### Phase 1: Define Ledger Contract
 
@@ -268,11 +269,23 @@ Implementation note:
 - In read-model mode, pagination uses opaque cursor tokens and does not require loading the full report.
 - Pagination affects table rows only; financial/stat summary cards are calculated separately from the full relevant projection set for the selected server filter.
 - Summary duplicate suppression must run across the full relevant projection set, not just the current cursor page.
+- Summary cards now read `hubs/{hubId}/system/paymentSummary` instead of scanning all `paymentItems` on each admin payments load.
+- The `paymentSummary` aggregate stores buckets for:
+  - all reportable payment items
+  - admin payment type: `membership`, `event`, `course`
+  - payment status: `paid`, `unpaid`, `overdue`, `failed`, `refunded`, `partially_refunded`, `not_required`
+- Each bucket stores counts, overdue count, record status counts, collected revenue minor totals by currency, and refunded revenue minor totals by currency.
+- Currency totals are stored in minor units and formatted at read time with the hub locale/currency context.
+- Aggregate construction applies informational-only exclusion and paid membership upgrade versus membership-cycle duplicate suppression before bucket totals are calculated.
+- If the aggregate document is missing during rollout, the admin payments route temporarily falls back to rebuilding the summary shape from `paymentItems` in-memory for correctness. This fallback is a migration safety net only and should not be treated as the steady-state enterprise path.
 - The membership type filter queries both `membership` and `upgradeRequest` projection types so membership upgrades remain visible in the membership view.
 - To avoid unplanned composite indexes, the read-model UI allows one indexed server filter at a time: choosing a type clears payment status, and choosing payment status clears type.
 - Search and date inputs currently filter within the returned bounded page only. Global search/date filtering remains a follow-up because it needs a deliberate indexing/export strategy.
 - The projection-backed route maps a bounded projection page into the existing UI item shape.
 - The projection-backed report applies the same paid membership upgrade versus membership-cycle duplicate suppression used by the legacy report, so collected revenue does not double-count a paid upgrade and its matching generated membership payment row.
+- `createPaymentRecord`, `upsertPaymentRecordBySource`, and `updatePaymentRecord` rebuild the aggregate after updating the canonical record and projected payment item.
+- The support-only `Sync payment ledger` action rebuilds the aggregate once after payment records have been projected into `paymentItems`.
+- Support diagnostics display payment summary reportable/source counts and the last summary rebuild timestamp.
 - Remaining Phase 5 work is the export/global search/date strategy. Do not reintroduce broad report assembly for those paths; add explicit query/index support or a background export job.
 
 Rollout order:
@@ -280,9 +293,11 @@ Rollout order:
 1. Confirm Firebase `paymentItems` indexes are enabled.
 2. Run support-only payment ledger sync.
 3. Confirm `Payment items` sync counts are populated.
-4. Confirm support-only reconciliation has no unresolved projection parity issues.
-5. Set `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true` in the target environment.
-6. Verify `/admin/payments?view=payments` uses the projection-backed report and still opens existing detail routes via `ledger_{paymentRecordId}` links.
+4. Confirm `Payment summary` diagnostics show a rebuilt timestamp and expected reportable/source counts.
+5. Confirm support-only reconciliation has no unresolved projection parity issues.
+6. Set `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true` in the target environment.
+7. Verify `/admin/payments?view=payments` uses the projection-backed report and still opens existing detail routes via `ledger_{paymentRecordId}` links.
+8. Verify summary cards remain stable while moving between cursor pages, and change only when status/type filters change.
 
 ### Phase 6: Replace Member Billing Reads
 
