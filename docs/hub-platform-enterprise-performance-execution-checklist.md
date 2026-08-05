@@ -185,7 +185,8 @@ Verification notes:
   - the route uses the read model only when `HUB_PLATFORM_MEMBER_DIRECTORY_READ_MODEL_ENABLED=true`
   - support-only payment ledger sync now rebuilds member-directory rows once after payment ledger/payment summary sync
   - payment attention state is sourced from `paymentItems`, not legacy event/course payment scans
-  - expected steady-state Network/server result: `/admin/members` performs bounded `memberDirectory` page reads plus small count queries for summary cards
+  - summary cards read `hubs/{hubId}/system/memberDirectorySummary`; count queries are rollout fallback only when the summary has not been built
+  - expected steady-state Network/server result: `/admin/members` performs one bounded `memberDirectory` page query plus one small `memberDirectorySummary` document read
   - full CSV export remains a separate follow-up and must not make normal page load fetch all members
 
 ## Per-Slice Rollout Checklist

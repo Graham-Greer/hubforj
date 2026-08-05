@@ -257,6 +257,24 @@ Completed:
 - Added Firestore indexes for default, filter, combined-filter, and prefix-search query shapes.
 - Single-row projection maintenance is non-blocking for normal user/payment/membership writes, so a temporary read-model/index issue cannot break authoritative workflows. Support sync remains the strict verification path.
 
+### 2026-08-05 - Member Directory Summary And Navigation Refinement
+
+Status: implemented.
+
+Completed:
+
+- Fixed server-driven page-size navigation so changing `limit` does not briefly navigate back to the previous page size.
+- Added `hubs/{hubId}/system/memberDirectorySummary` as the small aggregate used by `/admin/members` summary cards.
+- Support-only member-directory sync rebuilds the summary from projected rows.
+- Single-row member-directory maintenance updates the summary by applying the previous-row versus next-row contribution.
+- Route summary reads now prefer the aggregate document, with count queries retained only as rollout fallback if the summary has not been built yet.
+- Filtered/search empty states now keep the workspace shell and summary cards instead of incorrectly showing the hub-level “No members yet” state.
+
+Expected Network/server result:
+
+- Normal `/admin/members` route navigation should perform one bounded `memberDirectory` page query and one small `memberDirectorySummary` document read.
+- Page-size changes should produce one RSC navigation for the selected limit, not a `limit=10 -> limit=20 -> limit=10` sequence.
+
 Rollout order:
 
 1. Deploy the new Firebase `memberDirectory` indexes.
