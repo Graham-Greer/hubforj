@@ -13,6 +13,7 @@ import { getCurrentHubOperatorAccess } from "@/lib/auth/hub-access";
 import { listCourseRegistrationPaymentAttentionUserIdsByHub } from "@/lib/data/course-registrations";
 import { listEventBookingPaymentAttentionUserIdsByHub } from "@/lib/data/event-bookings";
 import { requireHubCoreBySlug } from "@/lib/data/hubs";
+import { getHubAdminDashboardProjectionReconciliationReport } from "@/lib/data/hub-dashboard-stats";
 import {
   getHubMemberDirectoryReconciliationReport,
   getMemberDirectorySummaryByHubId,
@@ -69,7 +70,7 @@ function getMembersFeedback(searchParams = {}) {
   return null;
 }
 
-function MembersSupportDiagnostics({ hubSlug, report }) {
+function MembersSupportDiagnostics({ hubSlug, report, dashboardReport }) {
   return (
     <Surface tone="muted" padding="md" className={styles.supportPanel}>
       <div className={styles.supportContent}>
@@ -95,6 +96,39 @@ function MembersSupportDiagnostics({ hubSlug, report }) {
             </ul>
           ) : (
             <p className={styles.supportText}>No member directory reconciliation issues are currently flagged.</p>
+          )}
+          <h2 className={styles.supportTitle}>Dashboard projection diagnostics</h2>
+          <p className={styles.supportText}>
+            Dashboard diagnostics compare the summary counters and overview panel projection with the authoritative source
+            records used to rebuild them.
+          </p>
+          <div className={styles.supportGrid}>
+            <span>Generated: {dashboardReport?.generatedAt || "Not run"}</span>
+            <span>Open issues: {Number(dashboardReport?.totalIssues || 0)}</span>
+            <span>Stats document: {dashboardReport?.projected?.statsExists ? "Present" : "Missing"}</span>
+            <span>Overview document: {dashboardReport?.projected?.overviewExists ? "Present" : "Missing"}</span>
+            <span>Stats reconciled: {dashboardReport?.projected?.statsReconciledAt || "Never"}</span>
+            <span>Overview reconciled: {dashboardReport?.projected?.overviewReconciledAt || "Never"}</span>
+          </div>
+          {dashboardReport?.summary?.length ? (
+            <>
+              <ul className={styles.issueList}>
+                {dashboardReport.summary.map((item) => (
+                  <li key={item.code}>
+                    {item.title}: {item.count}
+                  </li>
+                ))}
+              </ul>
+              <ul className={styles.issueList}>
+                {dashboardReport.issues.map((item) => (
+                  <li key={`${item.code}-${item.detail}`}>
+                    {item.title}: {item.detail}
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <p className={styles.supportText}>No dashboard projection reconciliation issues are currently flagged.</p>
           )}
         </div>
         <div className={styles.supportActions}>
@@ -418,9 +452,10 @@ export default async function MembersPage({ params, searchParams }) {
   const hub = await requireHubCoreBySlug(hubSlug);
   const access = await getCurrentHubOperatorAccess(hub);
   const showSupportDiagnostics = access?.mode === "support";
-  const [feedback, reconciliationReport] = await Promise.all([
+  const [feedback, reconciliationReport, dashboardProjectionReport] = await Promise.all([
     Promise.resolve(getMembersFeedback(resolvedSearchParams || {})),
     showSupportDiagnostics ? getHubMemberDirectoryReconciliationReport(hub.id) : Promise.resolve(null),
+    showSupportDiagnostics ? getHubAdminDashboardProjectionReconciliationReport(hub) : Promise.resolve(null),
   ]);
 
   return (
@@ -435,7 +470,13 @@ export default async function MembersPage({ params, searchParams }) {
           {feedback.message}
         </Surface>
       ) : null}
-      {showSupportDiagnostics ? <MembersSupportDiagnostics hubSlug={hub.slug} report={reconciliationReport} /> : null}
+      {showSupportDiagnostics ? (
+        <MembersSupportDiagnostics
+          hubSlug={hub.slug}
+          report={reconciliationReport}
+          dashboardReport={dashboardProjectionReport}
+        />
+      ) : null}
       <Suspense fallback={<MembersWorkspaceFallback />}>
         {isMemberDirectoryReadModelEnabled() ? (
           <OptimizedMembersDirectoryLoader hub={hub} searchParams={resolvedSearchParams || {}} />

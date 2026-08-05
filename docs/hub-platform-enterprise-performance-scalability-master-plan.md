@@ -141,7 +141,8 @@ Progress:
 - Admin dashboard summary strip now prefers `hubs/{hubId}/stats/current` with explicit legacy fallback while hubs are being synced.
 - Dashboard stats rebuild is available through support maintenance and is also rebuilt after payment ledger sync.
 - Deferred admin dashboard panels now prefer `hubs/{hubId}/stats/dashboardOverview` for recent events, top courses, attention required, and newest members, with explicit fallback during rollout.
-- Remaining dashboard work is projection reconciliation reporting and incremental/scheduled maintenance once production parity is confirmed.
+- Dashboard projection reconciliation reporting is available in support diagnostics and can detect missing projection documents, schema drift, missing reconciliation metadata, and source-derived data drift.
+- Remaining dashboard work is incremental/scheduled maintenance once production parity is confirmed.
 
 Dependency note:
 
