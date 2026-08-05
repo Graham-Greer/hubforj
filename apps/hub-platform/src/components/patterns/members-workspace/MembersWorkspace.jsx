@@ -252,11 +252,6 @@ export default function MembersWorkspace({
             onPageSizeChange={(value) => {
               if (serverDriven) {
                 setPageSize(value);
-                const params = new URLSearchParams(searchParams.toString());
-                params.set("limit", String(value));
-                params.delete("cursor");
-                params.delete("cursorStack");
-                router.replace(`${pathname}?${params.toString()}`, { scroll: false });
                 return;
               }
 
