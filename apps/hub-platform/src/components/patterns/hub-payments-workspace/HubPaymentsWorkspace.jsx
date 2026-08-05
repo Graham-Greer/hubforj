@@ -104,6 +104,18 @@ export default function HubPaymentsWorkspace({
     hub?.locale || fallbackRegionalMarket.defaultLocale,
     hubFallbackCurrency,
   );
+  const statSummary = paymentReadModelEnabled
+    ? {
+        actionRequired: Number(summary?.actionRequired || 0),
+        collectedRevenueLabel:
+          summary?.collectedRevenue?.formatted ||
+          formatMoney(0, hubFallbackCurrency, hub?.locale || fallbackRegionalMarket.defaultLocale),
+        refundedRevenueLabel:
+          summary?.refundedRevenue?.formatted ||
+          formatMoney(0, hubFallbackCurrency, hub?.locale || fallbackRegionalMarket.defaultLocale),
+        overdueItems: Number(summary?.overdueItems || 0),
+      }
+    : reportingSummary;
   const exportParams = new URLSearchParams();
 
   if (workspace.searchTerm) {
@@ -253,11 +265,11 @@ export default function HubPaymentsWorkspace({
       ) : (
         <>
           <div className={styles.stats}>
-            <StatCard label="Action required" value={String(reportingSummary.actionRequired)} detail="Unpaid, overdue, or failed items needing follow-up." />
+            <StatCard label="Action required" value={String(statSummary.actionRequired)} detail="Unpaid, overdue, or failed items needing follow-up." />
             <StatCard
               label="Collected revenue"
               value={
-                reportingSummary.collectedRevenueLabel ||
+                statSummary.collectedRevenueLabel ||
                 summary?.collectedRevenue?.formatted ||
                 formatMoney(0, hubFallbackCurrency, hub?.locale || fallbackRegionalMarket.defaultLocale)
               }
@@ -266,7 +278,7 @@ export default function HubPaymentsWorkspace({
             <StatCard
               label="Refunded"
               value={
-                reportingSummary.refundedRevenueLabel ||
+                statSummary.refundedRevenueLabel ||
                 summary?.refundedRevenue?.formatted ||
                 formatMoney(0, hubFallbackCurrency, hub?.locale || fallbackRegionalMarket.defaultLocale)
               }
@@ -274,7 +286,7 @@ export default function HubPaymentsWorkspace({
             />
             <StatCard
               label="Overdue items"
-              value={String(reportingSummary.overdueItems)}
+              value={String(statSummary.overdueItems)}
               detail="Visible records currently overdue."
             />
           </div>
