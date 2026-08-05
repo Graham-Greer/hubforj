@@ -266,6 +266,8 @@ Implementation note:
 - With the flag unset or false, the route continues using the legacy `getHubPaymentReportByHub` report builder.
 - In read-model mode, payment status and payment type filters are URL-driven and executed on the server through indexed `paymentItems` queries.
 - In read-model mode, pagination uses opaque cursor tokens and does not require loading the full report.
+- Pagination affects table rows only; financial/stat summary cards are calculated separately from the full relevant projection set for the selected server filter.
+- Summary duplicate suppression must run across the full relevant projection set, not just the current cursor page.
 - The membership type filter queries both `membership` and `upgradeRequest` projection types so membership upgrades remain visible in the membership view.
 - To avoid unplanned composite indexes, the read-model UI allows one indexed server filter at a time: choosing a type clears payment status, and choosing payment status clears type.
 - Search and date inputs currently filter within the returned bounded page only. Global search/date filtering remains a follow-up because it needs a deliberate indexing/export strategy.

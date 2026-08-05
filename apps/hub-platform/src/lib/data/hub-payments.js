@@ -16,7 +16,7 @@ import {
   getPaymentRecordByNativeTransactionId,
   listPaymentRecordsByHub,
 } from "@/lib/data/payment-records";
-import { listPaymentItemPageByHubId } from "@/lib/data/payment-items";
+import { listPaymentItemPageByHubId, listPaymentItemsByHubId } from "@/lib/data/payment-items";
 import {
   getNativePaymentTransactionById,
   listNativePaymentTransactionsByHub,
@@ -253,6 +253,36 @@ function filterDuplicateProjectedMembershipCyclePaymentItems(items = []) {
   }
 
   return items.filter((item) => !duplicateItemIds.has(normalizeString(item.id)));
+}
+
+function filterProjectedPaymentItemsForAdminSummary(items = [], options = {}) {
+  const normalizedStatus = normalizeString(options.paymentStatus);
+  const normalizedType = normalizeString(options.type);
+  const typeQuery = mapAdminPaymentTypeFilterToPaymentItemQuery(normalizedType);
+  const typeValues = Array.isArray(typeQuery.typeValues)
+    ? new Set(typeQuery.typeValues.map(normalizeString))
+    : null;
+  const singleType = normalizeString(typeQuery.type);
+
+  return items.filter((item) => {
+    if (normalizeString(item.reportingEligibility) === "informational_only") {
+      return false;
+    }
+
+    if (normalizedStatus && normalizeString(item.paymentStatus) !== normalizedStatus) {
+      return false;
+    }
+
+    if (typeValues && !typeValues.has(normalizeString(item.type))) {
+      return false;
+    }
+
+    if (singleType && normalizeString(item.type) !== singleType) {
+      return false;
+    }
+
+    return true;
+  });
 }
 
 function isMembershipUpgradeRecord(record) {
@@ -891,7 +921,7 @@ export async function getHubPaymentProjectionReportByHub(hub, options = {}) {
   }
 
   const routeMode = normalizeHubRouteMode(options.routeMode);
-  const page = await listPaymentItemPageByHubId(hub.id, {
+  const queryOptions = {
     limit: options.limit || 100,
     cursor: options.cursor,
     status: options.status,
@@ -900,35 +930,46 @@ export async function getHubPaymentProjectionReportByHub(hub, options = {}) {
     ...mapAdminPaymentTypeFilterToPaymentItemQuery(options.type),
     userId: options.userId,
     memberId: options.memberId,
-  });
+  };
+  const [page, summaryProjectionItems] = await Promise.all([
+    listPaymentItemPageByHubId(hub.id, queryOptions),
+    listPaymentItemsByHubId(hub.id),
+  ]);
   const reportableProjectionItems = filterDuplicateProjectedMembershipCyclePaymentItems(page.items);
   const items = reportableProjectionItems
     .filter((item) => normalizeString(item.reportingEligibility) !== "informational_only")
     .map((item) => mapProjectedPaymentItemToPaymentItem(item, hub.slug, routeMode));
+  const summaryItems = filterDuplicateProjectedMembershipCyclePaymentItems(
+    filterProjectedPaymentItemsForAdminSummary(summaryProjectionItems, {
+      paymentStatus: options.paymentStatus,
+      type: options.type,
+    })
+  ).map((item) => mapProjectedPaymentItemToPaymentItem(item, hub.slug, routeMode));
   const locale = resolveLaunchFormattingLocale(hub.locale, hub.country);
 
   return {
     hub,
     items,
     summary: {
-      ...summarizeHubPaymentItems(items),
+      ...summarizeHubPaymentItems(summaryItems),
       collectedRevenue: summarizePaymentItemCollectedRevenue(
-        items,
+        summaryItems,
         (amount, currency) => formatMoney(amount, currency, locale),
         hub.defaultCurrency || "USD"
       ),
       refundedRevenue: summarizePaymentItemRefundedRevenue(
-        items,
+        summaryItems,
         (amount, currency) => formatMoney(amount, currency, locale),
         hub.defaultCurrency || "USD"
       ),
+      overdueItems: summaryItems.filter((item) => normalizeString(item.paymentStatus) === "overdue").length,
       recordCounts: {
-        paid: items.filter((item) => normalizeString(item.paymentStatus) === "paid").length,
-        refunded: items.filter((item) => {
+        paid: summaryItems.filter((item) => normalizeString(item.paymentStatus) === "paid").length,
+        refunded: summaryItems.filter((item) => {
           const paymentStatus = normalizeString(item.paymentStatus);
           return paymentStatus === "refunded" || paymentStatus === "partially_refunded";
         }).length,
-        failed: items.filter((item) => normalizeString(item.paymentStatus) === "failed").length,
+        failed: summaryItems.filter((item) => normalizeString(item.paymentStatus) === "failed").length,
       },
     },
     pageInfo: {
