@@ -3,7 +3,10 @@ import { listEventsByHub } from "@/lib/data/events";
 import { listEventSeriesByHub } from "@/lib/data/event-series";
 import { listInvitesByHub } from "@/lib/data/invites";
 import { getHubCoreBySlug } from "@/lib/data/hubs";
-import { getHubAdminDashboardStatsWithFallback } from "@/lib/data/hub-dashboard-stats";
+import {
+  getHubAdminDashboardOverviewWithFallback,
+  getHubAdminDashboardStatsWithFallback,
+} from "@/lib/data/hub-dashboard-stats";
 import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
 import { listMembershipsByHub } from "@/lib/data/memberships";
 import { listPendingMembershipUpgradeRequestsByHub } from "@/lib/data/memberships";
@@ -483,6 +486,25 @@ export async function getHubAdminDashboardDeferredOverviewBySlug(hubSlug, option
 
   const routeMode = normalizeHubRouteMode(options.routeMode);
   const entitlements = resolveHubPackageEntitlements(hub);
+  const overview = await getHubAdminDashboardOverviewWithFallback(hub, {
+    routeMode,
+    coursesEnabled: entitlements.capabilities?.coursesEnabled,
+  });
+
+  if (overview) {
+    return {
+      hub,
+      package: entitlements,
+      activeUpcomingPublishedCourseCount: 0,
+      totalRevenue: null,
+      recentEvents: overview.recentEvents || [],
+      topCourses: overview.topCourses || [],
+      attentionItems: overview.attentionItems || [],
+      newestMembers: overview.newestMembers || [],
+      overviewReadModelState: overview.readModelState,
+    };
+  }
+
   const [users, members, invites, paymentConfiguration, memberships, pendingUpgradeRequests, events, eventSeries, courses, eventPaymentItems, coursePaymentItems] = await Promise.all([
     listUsersByHub(hub.id),
     listUsersByHub(hub.id, { role: "member" }),

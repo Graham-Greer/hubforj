@@ -245,6 +245,10 @@ export default function PaymentSetupWorkspace({
                   label="Dashboard stats"
                   value={`${syncStatus?.dashboardStatsStatus || "Not run yet"} · ${formatSyncDate(syncStatus?.dashboardStatsRebuiltAt, hub?.locale || fallbackRegionalMarket.defaultLocale)}`}
                 />
+                <DetailRow
+                  label="Dashboard overview"
+                  value={`${syncStatus?.dashboardOverviewStatus || "Not run yet"} · ${formatSyncDate(syncStatus?.dashboardOverviewRebuiltAt, hub?.locale || fallbackRegionalMarket.defaultLocale)}`}
+                />
                 <DetailRow label="Last actor" value={syncStatus?.lastActorId || "Not recorded"} />
               </div>
               {syncStatus?.lastSince ? (

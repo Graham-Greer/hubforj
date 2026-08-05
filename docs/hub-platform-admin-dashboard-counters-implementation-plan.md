@@ -152,6 +152,7 @@ Implementation notes:
 - Existing support ledger sync now rebuilds dashboard stats after payment summary and member directory sync complete.
 - Added a support-only **Sync dashboard stats** action in payment setup diagnostics for targeted repair.
 - Added the same support-only **Sync dashboard stats** action in member directory diagnostics so non-Growth hubs have a universal dashboard stats maintenance path.
+- The support-only dashboard stats sync now rebuilds both `stats/current` and `stats/dashboardOverview`.
 - Sync records `schemaVersion`, `updatedAt`, `reconciledAt`, `reconciliationStatus`, `rebuiltBy`, and `counterSources`.
 - The current slice is per-hub by design. A multi-hub script/job remains future work if production operations require bulk migration.
 
@@ -188,7 +189,7 @@ Implementation rules:
 - Keep existing skeleton and Suspense behavior.
 - If payment ledger is not live yet, keep payment/revenue summaries on a transitional path rather than inventing a second payment projection.
 
-Status: partially implemented.
+Status: implemented for dashboard summary cards and deferred dashboard panels.
 
 Completed:
 
@@ -196,16 +197,21 @@ Completed:
 - Summary strip missing-stats fallback is explicit and shape-compatible.
 - Dashboard no longer needs full payment report assembly for summary-card revenue once stats are synced.
 - Existing Suspense and skeleton behavior is preserved.
-
-Remaining:
-
-- Deferred dashboard panels still rebuild recent events, top courses, attention required, and newest members from broad reads.
-- Add bounded companion projections for:
+- Added `hubs/{hubId}/stats/dashboardOverview` as the bounded companion projection for the deferred dashboard panels.
+- Deferred dashboard overview now prefers the single overview projection document for:
   - recent event cards
   - top course cards
   - attention required items
   - newest members
-- Replace `getHubAdminDashboardDeferredOverviewBySlug` broad reads after those projections exist.
+- Overview projection stores compact panel payloads and `adminPath` values. Runtime reads map those paths through the current hub route mode so custom-domain and Hubforj-hosted URLs stay correct.
+- Overview projection rebuild uses source scans only inside explicit support/sync maintenance, not during the normal projected `/admin` render.
+- If the overview projection is missing or old-schema during rollout, the helper performs an explicit logged fallback that returns the same shape.
+
+Remaining:
+
+- Add a formal reconciliation report for `stats/current` and `stats/dashboardOverview`.
+- Add incremental or scheduled maintenance after the projected source of truth has been verified in production.
+- Consider a multi-hub support job before operating large production fleets.
 
 Acceptance criteria:
 
