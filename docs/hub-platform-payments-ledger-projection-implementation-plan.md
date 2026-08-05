@@ -265,6 +265,7 @@ Implementation note:
 - The admin payments route now chooses the projection-backed report only when `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true`.
 - With the flag unset or false, the route continues using the legacy `getHubPaymentReportByHub` report builder.
 - The first projection-backed route slice intentionally keeps the current client-side table controls and maps a bounded projection page into the existing UI item shape.
+- The projection-backed report applies the same paid membership upgrade versus membership-cycle duplicate suppression used by the legacy report, so collected revenue does not double-count a paid upgrade and its matching generated membership payment row.
 - Follow-up Phase 5 work must move payment filters and pagination into URL/server query state before this becomes the permanent default for large hubs.
 
 Rollout order:
