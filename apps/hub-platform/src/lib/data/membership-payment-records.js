@@ -325,6 +325,7 @@ export async function backfillMembershipPaymentRecordsToLedger(hubId, actorId = 
       hubId: normalizedHubId,
       membershipPaymentRecord: record,
       actorId: normalizedActorId,
+      syncMemberDirectory: false,
     });
     synced += 1;
   }

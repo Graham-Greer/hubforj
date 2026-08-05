@@ -11,6 +11,12 @@ import { listCourseRegistrationPaymentAttentionUserIdsByHub } from "@/lib/data/c
 import { listEventBookingPaymentAttentionUserIdsByHub } from "@/lib/data/event-bookings";
 import { requireHubCoreBySlug } from "@/lib/data/hubs";
 import {
+  getMemberDirectorySummaryByHubId,
+  isMemberDirectoryReadModelEnabled,
+  listMemberDirectoryPageByHubId,
+  normalizeMemberDirectoryFilters,
+} from "@/lib/data/member-directory";
+import {
   listMembershipDirectorySummariesByHub,
   listPendingMembershipUpgradeRequestUserIdsByHub,
 } from "@/lib/data/memberships";
@@ -31,7 +37,191 @@ function MembersWorkspaceFallback() {
   );
 }
 
-async function MembersDirectoryLoader({ hubSlug }) {
+function buildFilterDefinitions({ includeLastSeen = true } = {}) {
+  return [
+    {
+      key: "status",
+      label: "Status",
+      icon: "toggle_on",
+      options: [
+        { value: "all", label: "All" },
+        { value: "active", label: "Active" },
+        { value: "suspended", label: "Suspended" },
+      ],
+    },
+    {
+      key: "membership",
+      label: "Membership",
+      icon: "credit_card_heart",
+      options: [
+        { value: "all", label: "All" },
+        { value: "default", label: "Default plan" },
+        { value: "upgrade", label: "Upgrade plan" },
+        { value: "none", label: "No membership" },
+      ],
+    },
+    {
+      key: "attention",
+      label: "Attention",
+      icon: "notification_important",
+      options: [
+        { value: "all", label: "All" },
+        { value: "upgrade_request", label: "Upgrade request" },
+        { value: "payment_attention", label: "Payment attention" },
+      ],
+    },
+  ].concat(
+    includeLastSeen
+      ? [
+          {
+            key: "lastSeen",
+            label: "Last seen",
+            icon: "schedule",
+            options: [
+              { value: "all", label: "All" },
+              { value: "last_7", label: "Seen in last 7 days" },
+              { value: "last_30", label: "Seen in last 30 days" },
+              { value: "over_30", label: "Seen over 30 days ago" },
+              { value: "never", label: "Never seen" },
+            ],
+          },
+        ]
+      : []
+  );
+}
+
+function buildMemberBadgesFromDirectoryItem(item) {
+  const badges = [
+    {
+      label: getUserStatusLabel(item.status),
+      tone: getUserStatusTone(item.status),
+    },
+  ];
+
+  if (item.membershipType !== "none") {
+    badges.push({
+      label: item.membershipType === "default" ? "Default plan" : "Upgrade plan",
+      tone: "neutral",
+    });
+  }
+
+  if (item.attentionStatus === "upgrade_request") {
+    badges.push({ label: "Upgrade request", tone: "accent" });
+  } else if (item.attentionStatus === "payment_attention") {
+    badges.push({ label: "Payment attention", tone: "warning" });
+  }
+
+  return badges;
+}
+
+function buildMemberItemFromDirectoryItem(item, hub, routeMode) {
+  return {
+    id: item.id,
+    href: buildHubRuntimeHref(hub.slug, `/admin/members/${item.id}`, routeMode),
+    name: item.displayName || item.email,
+    email: item.email || "",
+    lastSignedInAt: item.lastSignedInAt || "",
+    membershipSummary: item.membershipPlanName || "No membership assigned yet.",
+    badges: buildMemberBadgesFromDirectoryItem(item),
+    searchTerms: [item.email, item.membershipPlanName],
+    filterValues: {
+      status: item.status || "active",
+      membership: item.membershipType || "none",
+      attention: item.attentionStatus || "all_clear",
+    },
+  };
+}
+
+function buildCursorHref({ basePath, searchParams, cursor = "", cursorStack = [] }) {
+  const params = new URLSearchParams(searchParams);
+
+  if (cursor) {
+    params.set("cursor", cursor);
+  } else {
+    params.delete("cursor");
+  }
+
+  if (cursorStack.length) {
+    params.set("cursorStack", cursorStack.join(","));
+  } else {
+    params.delete("cursorStack");
+  }
+
+  const queryString = params.toString();
+  return `${basePath}${queryString ? `?${queryString}` : ""}`;
+}
+
+async function OptimizedMembersDirectoryLoader({ hubSlug, searchParams }) {
+  const headerStore = await headers();
+  const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
+  const hub = await requireHubCoreBySlug(hubSlug);
+  const filters = normalizeMemberDirectoryFilters(searchParams);
+  const [page, summary] = await Promise.all([
+    listMemberDirectoryPageByHubId(hub.id, filters),
+    getMemberDirectorySummaryByHubId(hub.id),
+  ]);
+  const filterDefinitions = buildFilterDefinitions({ includeLastSeen: false });
+  const memberItems = page.items.map((item) => buildMemberItemFromDirectoryItem(item, hub, routeMode));
+  const basePath = buildHubRuntimeHref(hub.slug, "/admin/members", routeMode);
+  const currentCursor = filters.cursor || "";
+  const cursorStack = String(searchParams?.cursorStack || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const nextHref = page.nextCursor
+    ? buildCursorHref({
+        basePath,
+        searchParams: {
+          ...searchParams,
+          limit: String(filters.limit),
+        },
+        cursor: page.nextCursor,
+        cursorStack: currentCursor ? [...cursorStack, currentCursor] : cursorStack,
+      })
+    : "";
+  const previousCursorStack = cursorStack.slice(0, -1);
+  const previousCursor = cursorStack[cursorStack.length - 1] || "";
+  const previousHref = currentCursor
+    ? buildCursorHref({
+        basePath,
+        searchParams: {
+          ...searchParams,
+          limit: String(filters.limit),
+        },
+        cursor: previousCursor,
+        cursorStack: previousCursorStack,
+      })
+    : "";
+
+  const hasActiveDirectoryView = Boolean(filters.q || filters.status !== "all" || filters.membership !== "all" || filters.attention !== "all");
+
+  return (
+    <>
+      {summary.total || hasActiveDirectoryView ? (
+        <MembersWorkspace
+          items={memberItems}
+          summary={summary}
+          filterDefinitions={filterDefinitions}
+          hubSlug={hub.slug}
+          serverDriven
+          pageSize={filters.limit}
+          nextHref={nextHref}
+          previousHref={previousHref}
+        />
+      ) : null}
+      {!summary.total ? (
+        <EmptyState
+          eyebrow="No members yet"
+          title="No members have joined yet"
+          description="Member records will appear here after people join through the public or booking flows."
+          primaryAction={{ href: buildHubRuntimeHref(hub.slug, "/admin", routeMode), label: "Back to overview" }}
+        />
+      ) : null}
+    </>
+  );
+}
+
+async function LegacyMembersDirectoryLoader({ hubSlug }) {
   const headerStore = await headers();
   const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
   const hub = await requireHubCoreBySlug(hubSlug);
@@ -113,51 +303,7 @@ async function MembersDirectoryLoader({ hubSlug }) {
     paymentAttention: paymentAttentionUserIds.size,
   };
 
-  const filterDefinitions = [
-    {
-      key: "status",
-      label: "Status",
-      icon: "toggle_on",
-      options: [
-        { value: "all", label: "All" },
-        { value: "active", label: "Active" },
-        { value: "suspended", label: "Suspended" },
-      ],
-    },
-    {
-      key: "membership",
-      label: "Membership",
-      icon: "credit_card_heart",
-      options: [
-        { value: "all", label: "All" },
-        { value: "default", label: "Default plan" },
-        { value: "upgrade", label: "Upgrade plan" },
-        { value: "none", label: "No membership" },
-      ],
-    },
-    {
-      key: "attention",
-      label: "Attention",
-      icon: "notification_important",
-      options: [
-        { value: "all", label: "All" },
-        { value: "upgrade_request", label: "Upgrade request" },
-        { value: "payment_attention", label: "Payment attention" },
-      ],
-    },
-    {
-      key: "lastSeen",
-      label: "Last seen",
-      icon: "schedule",
-      options: [
-        { value: "all", label: "All" },
-        { value: "last_7", label: "Seen in last 7 days" },
-        { value: "last_30", label: "Seen in last 30 days" },
-        { value: "over_30", label: "Seen over 30 days ago" },
-        { value: "never", label: "Never seen" },
-      ],
-    },
-  ];
+  const filterDefinitions = buildFilterDefinitions();
 
   return (
     <>
@@ -176,8 +322,9 @@ async function MembersDirectoryLoader({ hubSlug }) {
   );
 }
 
-export default async function MembersPage({ params }) {
+export default async function MembersPage({ params, searchParams }) {
   const { hubSlug } = await params;
+  const resolvedSearchParams = await searchParams;
 
   return (
     <div className={styles.layout}>
@@ -187,7 +334,11 @@ export default async function MembersPage({ params }) {
         description="Review members, check their status and payment context, and open the right record for follow-up."
       />
       <Suspense fallback={<MembersWorkspaceFallback />}>
-        <MembersDirectoryLoader hubSlug={hubSlug} />
+        {isMemberDirectoryReadModelEnabled() ? (
+          <OptimizedMembersDirectoryLoader hubSlug={hubSlug} searchParams={resolvedSearchParams || {}} />
+        ) : (
+          <LegacyMembersDirectoryLoader hubSlug={hubSlug} />
+        )}
       </Suspense>
     </div>
   );

@@ -7,6 +7,7 @@ try {
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
 import { normalizeMembershipAssignmentPayload, resolveMembershipPlanPricingMode } from "@/lib/domain/memberships";
 import { getUserById, listUsersByHub } from "@/lib/data/users";
+import { rebuildMemberDirectoryForUser } from "@/lib/data/member-directory";
 import { getDefaultMembershipPlanByHub, listMembershipPlansByHub } from "./membership-plans.js";
 import {
   getMembershipPlansByIds,
@@ -220,6 +221,7 @@ export async function upsertMembershipForUser(hubId, userId, payload, actorId = 
     syncToLedger: payload.syncPaymentRecordToLedger !== false,
     actorId,
   });
+  await rebuildMemberDirectoryForUser(normalizedHubId, normalizedUserId, actorId);
 
   return normalizeMembershipRecord(
     {

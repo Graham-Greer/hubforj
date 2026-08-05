@@ -6,6 +6,7 @@ try {
 
 import { getFirebaseAdminAuth, getFirebaseAdminDb } from "@/lib/firebase/admin";
 import { getHubBySlug } from "@/lib/data/hubs";
+import { rebuildMemberDirectoryForUser } from "@/lib/data/member-directory";
 import { getUserByAuthUid } from "@/lib/data/users";
 import { createSignedSessionValue, sessionDurationSeconds } from "@/lib/auth/session";
 import { getServerEnv } from "@/lib/config/env";
@@ -43,9 +44,15 @@ export async function createHubUserSessionFromIdToken(hubSlug, idToken) {
     throw new Error("This hub account is not currently active.");
   }
 
+  const now = new Date().toISOString();
+
   await getFirebaseAdminDb().collection("users").doc(user.id).update({
-    lastSignedInAt: new Date().toISOString(),
+    lastSignedInAt: now,
   });
+
+  if (user.role === "member") {
+    await rebuildMemberDirectoryForUser(hub.id, user.id, user.id);
+  }
 
   const expiresAt = Math.floor(Date.now() / 1000) + sessionDurationSeconds;
   const sessionValue = createSignedSessionValue(

@@ -78,37 +78,80 @@ function MemberRow({ item, membersQuery = "" }) {
   );
 }
 
-export default function MembersWorkspace({ items = [], summary, filterDefinitions = [], hubSlug = "" }) {
+export default function MembersWorkspace({
+  items = [],
+  summary,
+  filterDefinitions = [],
+  hubSlug = "",
+  serverDriven = false,
+  pageSize: serverPageSize = 10,
+  previousHref = "",
+  nextHref = "",
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState(() => searchParams.get("q") || "");
   const [activeFilters, setActiveFilters] = useState(() => buildFilterStateFromSearchParams(filterDefinitions, searchParams));
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(serverPageSize || 10);
   const [currentPage, setCurrentPage] = useState(1);
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
 
   useEffect(() => {
     const nextQuery = buildMembersQuery(debouncedSearchTerm, activeFilters, filterDefinitions);
-    const nextHref = `${pathname}${nextQuery}`;
+    const nextParams = new URLSearchParams(nextQuery.startsWith("?") ? nextQuery.slice(1) : nextQuery);
+
+    if (serverDriven) {
+      nextParams.set("limit", String(pageSize));
+
+      const searchMatchesCurrentParams = String(searchParams.get("q") || "") === String(debouncedSearchTerm || "");
+      const filtersMatchCurrentParams = filterDefinitions.every((filter) => {
+        const defaultValue = String(filter.options[0]?.value || "all");
+        const currentParamValue = String(searchParams.get(filter.key) || defaultValue);
+        const nextValue = String(activeFilters[filter.key] || defaultValue);
+
+        return currentParamValue === nextValue;
+      });
+      const pageSizeMatchesCurrentParams = String(searchParams.get("limit") || serverPageSize || 10) === String(pageSize);
+
+      if (searchMatchesCurrentParams && filtersMatchCurrentParams && pageSizeMatchesCurrentParams) {
+        const currentCursor = searchParams.get("cursor");
+        const currentCursorStack = searchParams.get("cursorStack");
+
+        if (currentCursor) {
+          nextParams.set("cursor", currentCursor);
+        }
+
+        if (currentCursorStack) {
+          nextParams.set("cursorStack", currentCursorStack);
+        }
+      }
+    }
+
+    const serializedNextParams = nextParams.toString();
+    const nextHref = `${pathname}${serializedNextParams ? `?${serializedNextParams}` : ""}`;
     const currentHref = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
 
     if (nextHref !== currentHref) {
       router.replace(nextHref, { scroll: false });
     }
-  }, [activeFilters, debouncedSearchTerm, filterDefinitions, pathname, router, searchParams]);
+  }, [activeFilters, debouncedSearchTerm, filterDefinitions, pageSize, pathname, router, searchParams, serverDriven, serverPageSize]);
 
   const filteredItems = useMemo(
-    () => filterMembers(items, deferredSearchTerm, activeFilters, filterDefinitions),
-    [activeFilters, deferredSearchTerm, filterDefinitions, items]
+    () => (serverDriven ? items : filterMembers(items, deferredSearchTerm, activeFilters, filterDefinitions)),
+    [activeFilters, deferredSearchTerm, filterDefinitions, items, serverDriven]
   );
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
   const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
   const paginatedItems = useMemo(() => {
+    if (serverDriven) {
+      return filteredItems;
+    }
+
     const startIndex = (safeCurrentPage - 1) * pageSize;
     return filteredItems.slice(startIndex, startIndex + pageSize);
-  }, [filteredItems, pageSize, safeCurrentPage]);
+  }, [filteredItems, pageSize, safeCurrentPage, serverDriven]);
   const membersQuery = buildMembersQuery(debouncedSearchTerm, activeFilters, filterDefinitions);
 
   const hasActiveFilters = filterDefinitions.some((filter) => (activeFilters[filter.key] || "all") !== "all");
@@ -196,8 +239,20 @@ export default function MembersWorkspace({ items = [], summary, filterDefinition
             pageSize={pageSize}
             pageSizeOptions={[5, 10, 20]}
             itemLabel="members"
-            onPageChange={setCurrentPage}
+            cursorMode={serverDriven}
+            previousHref={previousHref}
+            nextHref={nextHref}
+            onPageChange={serverDriven ? undefined : setCurrentPage}
             onPageSizeChange={(value) => {
+              if (serverDriven) {
+                const params = new URLSearchParams(searchParams.toString());
+                params.set("limit", String(value));
+                params.delete("cursor");
+                params.delete("cursorStack");
+                router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+                return;
+              }
+
               setPageSize(value);
               setCurrentPage(1);
             }}

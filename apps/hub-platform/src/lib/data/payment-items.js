@@ -7,6 +7,7 @@ try {
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
 import { getFallbackRegionalMarket } from "@/lib/domain/regional-markets";
 import { FieldPath } from "firebase-admin/firestore";
+import { syncMemberDirectoryPaymentAttentionForUser } from "./member-directory.js";
 
 export const PAYMENT_ITEM_SCHEMA_VERSION = 1;
 
@@ -237,6 +238,10 @@ export async function upsertPaymentItemFromPaymentRecord(hubId, paymentRecord, o
     await ref.set(writeModel, { merge: true });
   }
 
+  if (options.syncMemberDirectory !== false && item.userId) {
+    await syncMemberDirectoryPaymentAttentionForUser(normalizedHubId, item.userId, "payment-item-write");
+  }
+
   return normalizePaymentItemRecord({
     ...writeModel,
     createdAt: snapshot.exists ? existing.createdAt : item.createdAt || now,
@@ -272,7 +277,15 @@ export async function deletePaymentItemById(hubId, paymentItemId) {
     return false;
   }
 
-  await getPaymentItemsCollection(normalizedHubId).doc(normalizedPaymentItemId).delete();
+  const ref = getPaymentItemsCollection(normalizedHubId).doc(normalizedPaymentItemId);
+  const snapshot = await ref.get();
+  const userId = snapshot.exists ? normalizeString(snapshot.data()?.userId) : "";
+
+  await ref.delete();
+
+  if (userId) {
+    await syncMemberDirectoryPaymentAttentionForUser(normalizedHubId, userId, "payment-item-delete");
+  }
 
   return true;
 }

@@ -131,6 +131,15 @@ Acceptance criteria:
 - Hub-level payment report assembly is not used for member account billing.
 - Refunds, failed payments, and cancelled items display correctly.
 
+Implementation progress:
+
+- Completed via the payments ledger projection workstream.
+- `/account/billing` uses the user-scoped `paymentItems` read model when `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true`.
+- `/account` overview uses the same projection helper with a smaller bounded limit for recent billing/attention state.
+- Historical free/not-required event bookings and course registrations are normalized into canonical `paymentRecords`/`paymentItems` by the support-only ledger sync.
+- Runtime legacy event/course fallback merging has been removed from the read-model path so production billing does not quietly return to broad reads.
+- Production verification after ledger sync confirmed member billing records, including free/not-required activity, are present through the projection-backed path.
+
 ### Phase 5: Add Optional Member Activity Projection
 
 Introduce only if collection-group queries still require too much hydration:

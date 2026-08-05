@@ -11,6 +11,7 @@ import { backfillPaymentRecordsToPaymentItems } from "@/lib/data/payment-records
 import { rebuildPaymentSummaryFromPaymentItems } from "@/lib/data/payment-summary";
 import { backfillEventBookingPaymentRecordsToLedger } from "@/lib/data/event-booking-mutations";
 import { backfillCourseRegistrationPaymentRecordsToLedger } from "@/lib/data/course-registration-mutations";
+import { syncHubMemberDirectory } from "@/lib/data/member-directory";
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -70,6 +71,9 @@ export async function getHubPaymentLedgerSyncStatus(hubId) {
     paymentSummaryReportableItems: Number.parseInt(String(data.paymentSummaryReportableItems || ""), 10) || 0,
     paymentSummaryTotalSourceItems: Number.parseInt(String(data.paymentSummaryTotalSourceItems || ""), 10) || 0,
     paymentSummaryRebuiltAt: normalizeString(data.paymentSummaryRebuiltAt),
+    memberDirectorySynced: Number.parseInt(String(data.memberDirectorySynced || ""), 10) || 0,
+    memberDirectoryScanned: Number.parseInt(String(data.memberDirectoryScanned || ""), 10) || 0,
+    memberDirectoryRebuiltAt: normalizeString(data.memberDirectoryRebuiltAt),
     lastError: normalizeString(data.lastError),
   };
 }
@@ -117,6 +121,7 @@ export async function syncHubPaymentLedger(hubId, actorId = "ledger-sync") {
       actorId: normalizedActorId,
       updatedAt: completedAt,
     });
+    const memberDirectory = await syncHubMemberDirectory(normalizedHubId, normalizedActorId);
 
     await getPaymentLedgerSyncStatusRef(normalizedHubId).set(
       {
@@ -154,6 +159,9 @@ export async function syncHubPaymentLedger(hubId, actorId = "ledger-sync") {
         paymentSummaryReportableItems: paymentSummary?.reportableItems || 0,
         paymentSummaryTotalSourceItems: paymentSummary?.totalSourceItems || 0,
         paymentSummaryRebuiltAt: paymentSummary?.rebuiltAt || completedAt,
+        memberDirectorySynced: memberDirectory?.synced || 0,
+        memberDirectoryScanned: memberDirectory?.scanned || 0,
+        memberDirectoryRebuiltAt: memberDirectory?.generatedAt || completedAt,
         lastError: "",
       },
       { merge: true }
@@ -165,6 +173,7 @@ export async function syncHubPaymentLedger(hubId, actorId = "ledger-sync") {
       eventBookingPayments,
       courseRegistrationPayments,
       paymentItems,
+      memberDirectory,
       status: {
         lastStartedAt: startedAt,
         lastCompletedAt: completedAt,
