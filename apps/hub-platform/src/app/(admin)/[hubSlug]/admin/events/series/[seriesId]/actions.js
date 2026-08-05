@@ -8,6 +8,7 @@ import { assertHubRegionalSetupComplete } from "@/lib/domain/hub-regional-setup"
 import { getPackageUpgradeNotice } from "@/lib/domain/package-upgrade";
 
 function revalidateEventSeriesPaths(hubSlug, seriesId, occurrences = []) {
+  revalidatePath(`/${hubSlug}/admin`);
   revalidatePath(`/${hubSlug}/admin/events`);
   revalidatePath(`/${hubSlug}/admin/events/series/${seriesId}`);
   revalidatePath(`/${hubSlug}/events`);

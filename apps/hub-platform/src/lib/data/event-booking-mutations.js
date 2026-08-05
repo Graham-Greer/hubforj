@@ -60,6 +60,25 @@ function parsePriceToMinor(price) {
   return Math.round(numeric * 100);
 }
 
+async function maintainDashboardProjectionsForEventBookingChange(
+  hubId,
+  actorId,
+  reason = "event-booking-change"
+) {
+  try {
+    const { maintainHubAdminDashboardProjectionsByHubId } = await import("./hub-dashboard-stats.js");
+    return maintainHubAdminDashboardProjectionsByHubId(hubId, actorId, { reason });
+  } catch (error) {
+    console.warn("Unable to start dashboard projection maintenance after event booking change", {
+      hubId: normalizeString(hubId),
+      actorId: normalizeString(actorId) || "system",
+      reason,
+      error: String(error?.message || "Unable to maintain dashboard projections."),
+    });
+    return null;
+  }
+}
+
 function resolvePaymentRecordReportingEligibility(amountMinor, paymentStatus) {
   if (Number.parseInt(String(amountMinor || ""), 10) <= 0) {
     return "informational_only";
@@ -630,6 +649,7 @@ export async function createEventBookingForMember(
       updatedAt: now,
     });
   });
+  await maintainDashboardProjectionsForEventBookingChange(normalizedHubId, actorId, "event-booking-create");
 
   return normalizeEventBookingRecord({
     id: bookingId,
@@ -914,6 +934,12 @@ export async function updateEventBookingStatus(
     });
   });
 
+  await maintainDashboardProjectionsForEventBookingChange(
+    normalizedHubId,
+    actorId,
+    "event-booking-status-update"
+  );
+
   return result;
 }
 
@@ -1100,6 +1126,12 @@ export async function updateEventBookingAttendeeStatus(
       attendee: normalizeEventBookingAttendeeRecord(updatedAttendee),
     };
   });
+
+  await maintainDashboardProjectionsForEventBookingChange(
+    normalizedHubId,
+    actorId,
+    "event-booking-attendee-status-update"
+  );
 
   return result;
 }
@@ -1410,6 +1442,11 @@ export async function promoteWaitlistedEventBookings(hubId, eventId, actorId = "
 
   const refreshedEventDoc = await eventRef.get();
   const refreshedEvent = refreshedEventDoc.exists ? refreshedEventDoc.data() : {};
+  await maintainDashboardProjectionsForEventBookingChange(
+    normalizedHubId,
+    actorId,
+    "event-booking-waitlist-promotion"
+  );
 
   return {
     promotedBookingIds,

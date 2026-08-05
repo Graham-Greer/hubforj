@@ -325,6 +325,22 @@ export async function rebuildPaymentSummaryFromPaymentItems(hubId, options = {})
 
   await getPaymentSummaryRef(normalizedHubId).set(writeModel, { merge: true });
 
+  if (options.maintainDashboardProjections !== false) {
+    try {
+      const { maintainHubAdminDashboardProjectionsByHubId } = await import("./hub-dashboard-stats.js");
+      await maintainHubAdminDashboardProjectionsByHubId(normalizedHubId, options.actorId, {
+        reason: "payment-summary-rebuild",
+        updatedAt: now,
+      });
+    } catch (error) {
+      console.warn("Unable to start dashboard projection maintenance after payment summary rebuild", {
+        hubId: normalizedHubId,
+        actorId: normalizeString(options.actorId) || "payment-summary-rebuild",
+        error: String(error?.message || "Unable to maintain dashboard projections."),
+      });
+    }
+  }
+
   return normalizePaymentSummary(writeModel);
 }
 

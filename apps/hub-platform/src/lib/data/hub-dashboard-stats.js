@@ -5,13 +5,12 @@ try {
 }
 
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
-import { listCoursesByHub } from "@/lib/data/courses";
+import { listCoursesByHub } from "@/lib/data/course-queries";
 import { listCoursePaymentItemsByHub } from "@/lib/data/course-registrations";
-import { listEventSeriesByHub } from "@/lib/data/event-series";
-import { listEventsByHub } from "@/lib/data/events";
+import { listEventSeriesByHub } from "@/lib/data/event-series-queries";
+import { listEventsByHub } from "@/lib/data/event-queries";
 import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
-import { countPendingInvitesByHub } from "@/lib/data/invites";
-import { getHubCoreBySlug } from "@/lib/data/hubs";
+import { getHubCoreById, getHubCoreBySlug } from "@/lib/data/hubs";
 import { getMemberDirectorySummaryByHubId } from "@/lib/data/member-directory";
 import { getPaymentSummaryByHubId, selectPaymentSummaryBucket } from "@/lib/data/payment-summary";
 import { summarizeMembersByHub } from "@/lib/data/users";
@@ -54,6 +53,23 @@ function getDashboardOverviewRef(hubId) {
 
 function buildAdminHref(hubSlug, pathname, routeMode = "path") {
   return buildHubRuntimeHref(hubSlug, pathname, normalizeHubRouteMode(routeMode));
+}
+
+async function revalidateHubAdminDashboardPath(hub, options = {}) {
+  if (options.revalidateDashboardPath === false || !normalizeString(hub?.slug)) {
+    return;
+  }
+
+  try {
+    const { revalidatePath } = await import("next/cache");
+    revalidatePath(`/${hub.slug}/admin`);
+  } catch (error) {
+    console.warn("Unable to revalidate hub admin dashboard after projection maintenance", {
+      hubId: normalizeString(hub?.id),
+      hubSlug: normalizeString(hub?.slug),
+      error: String(error?.message || "Unable to revalidate admin dashboard."),
+    });
+  }
 }
 
 function normalizeDateForFirestoreBoundary(value = new Date()) {
@@ -147,6 +163,24 @@ async function countActiveUpcomingPublishedCoursesForStats(hubId, now = new Date
       ...doc.data(),
     })
   ).length;
+}
+
+async function countPendingInvitesForStats(hubId) {
+  const normalizedHubId = normalizeString(hubId);
+
+  if (!normalizedHubId) {
+    return 0;
+  }
+
+  const snapshot = await getFirebaseAdminDb()
+    .collection("hubs")
+    .doc(normalizedHubId)
+    .collection("invites")
+    .where("status", "==", "pending")
+    .count()
+    .get();
+
+  return parseInteger(snapshot.data().count);
 }
 
 function buildEmptyRevenue(hub = {}) {
@@ -617,7 +651,7 @@ async function buildDashboardStatsFromSources(hub, options = {}) {
   ] = await Promise.all([
     summarizeMembersByHub(normalizedHubId),
     getMemberDirectorySummaryByHubId(normalizedHubId),
-    countPendingInvitesByHub(normalizedHubId),
+    countPendingInvitesForStats(normalizedHubId),
     countActiveUpcomingPublishedEventsForStats(normalizedHubId),
     entitlementsCoursesEnabled ? countActiveUpcomingPublishedCoursesForStats(normalizedHubId) : Promise.resolve(0),
     getPaymentSummaryByHubId(normalizedHubId),
@@ -769,6 +803,75 @@ export async function rebuildHubAdminDashboardOverview(hubOrSlug, actorId = "das
   await getDashboardOverviewRef(hub.id).set(writeModel, { merge: true });
 
   return normalizeDashboardOverviewRecord(writeModel, hub, options.routeMode);
+}
+
+export async function rebuildHubAdminDashboardProjections(hubOrSlug, actorId = "dashboard-projection-maintenance", options = {}) {
+  const hub = typeof hubOrSlug === "string" ? await getHubCoreBySlug(hubOrSlug) : hubOrSlug;
+
+  if (!hub?.id) {
+    throw new Error("Hub is required to rebuild dashboard projections.");
+  }
+
+  const updatedAt = normalizeString(options.updatedAt) || new Date().toISOString();
+  const stats = await rebuildHubAdminDashboardStats(hub, actorId, {
+    ...options,
+    updatedAt,
+  });
+  const overview = await rebuildHubAdminDashboardOverview(hub, actorId, {
+    ...options,
+    updatedAt,
+    stats,
+  });
+  await revalidateHubAdminDashboardPath(hub, options);
+
+  return {
+    stats,
+    overview,
+  };
+}
+
+export async function rebuildHubAdminDashboardProjectionsByHubId(
+  hubId,
+  actorId = "dashboard-projection-maintenance",
+  options = {}
+) {
+  const normalizedHubId = normalizeString(hubId);
+
+  if (!normalizedHubId) {
+    return null;
+  }
+
+  const hub = await getHubCoreById(normalizedHubId);
+
+  if (!hub?.id) {
+    throw new Error("Hub is required to rebuild dashboard projections.");
+  }
+
+  return rebuildHubAdminDashboardProjections(hub, actorId, options);
+}
+
+export async function maintainHubAdminDashboardProjectionsByHubId(
+  hubId,
+  actorId = "dashboard-projection-maintenance",
+  options = {}
+) {
+  const normalizedHubId = normalizeString(hubId);
+
+  if (!normalizedHubId) {
+    return null;
+  }
+
+  try {
+    return await rebuildHubAdminDashboardProjectionsByHubId(normalizedHubId, actorId, options);
+  } catch (error) {
+    console.warn("Hub admin dashboard projection maintenance failed", {
+      hubId: normalizedHubId,
+      actorId: normalizeString(actorId) || "dashboard-projection-maintenance",
+      reason: normalizeString(options.reason),
+      error: String(error?.message || "Unable to maintain dashboard projections."),
+    });
+    return null;
+  }
 }
 
 export async function getHubAdminDashboardOverviewWithFallback(hub, options = {}) {

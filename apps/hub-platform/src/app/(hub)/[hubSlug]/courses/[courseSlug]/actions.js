@@ -81,6 +81,7 @@ export async function enrolPublicCourseAction(formData) {
     });
 
     revalidatePath(`/${hub.slug}/courses`);
+    revalidatePath(`/${hub.slug}/admin`);
     revalidatePath(revalidateDetailPath);
     revalidatePath(`/${hub.slug}/account/bookings`);
     revalidatePath(revalidateNextStepsPath);
@@ -96,6 +97,7 @@ export async function enrolPublicCourseAction(formData) {
   }
 
   revalidatePath(`/${hub.slug}/courses`);
+  revalidatePath(`/${hub.slug}/admin`);
   revalidatePath(revalidateDetailPath);
   revalidatePath(`/${hub.slug}/account/bookings`);
   revalidatePath(revalidateNextStepsPath);

@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requirePlatformOperatorActionAccess } from "@/lib/auth/action-access";
 import { createAdminInvite, markAdminInviteDelivery } from "@/lib/data/invites";
@@ -50,6 +51,8 @@ export async function createAdminInviteAction(_previousState, formData) {
         "Invite created, but the email could not be sent. Copy the acceptance link or try resending from the hub admin route."
       )}`;
     }
+    revalidatePath(`/${hub.slug}/admin`);
+    revalidatePath(`/${hub.slug}/admin/admins`);
   } catch (error) {
     return {
       error: String(error?.message || "Unable to create invite."),

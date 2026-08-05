@@ -35,6 +35,7 @@ async function queueEventBookingCancellationNotificationSafely(args) {
 }
 
 function revalidateEventPaths(hubSlug, eventId) {
+  revalidatePath(`/${hubSlug}/admin`);
   revalidatePath(`/${hubSlug}/admin/events/${eventId}`);
   revalidatePath(`/${hubSlug}/admin/events/${eventId}/registrations`);
   revalidatePath(`/${hubSlug}/admin/events/${eventId}/attendance`);

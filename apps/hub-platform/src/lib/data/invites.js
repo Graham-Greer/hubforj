@@ -21,6 +21,21 @@ function normalizeString(value) {
   return String(value || "").trim();
 }
 
+async function maintainDashboardProjectionsForInviteChange(hubId, actorId, reason = "invite-change") {
+  try {
+    const { maintainHubAdminDashboardProjectionsByHubId } = await import("./hub-dashboard-stats.js");
+    return maintainHubAdminDashboardProjectionsByHubId(hubId, actorId, { reason });
+  } catch (error) {
+    console.warn("Unable to start dashboard projection maintenance after invite change", {
+      hubId: normalizeString(hubId),
+      actorId: normalizeString(actorId) || "system",
+      reason,
+      error: String(error?.message || "Unable to maintain dashboard projections."),
+    });
+    return null;
+  }
+}
+
 function normalizeInviteRecord(invite) {
   if (!invite) {
     return null;
@@ -165,6 +180,7 @@ export async function createAdminInvite(hubId, payload, actorId = "system") {
   }
 
   await ref.set(writeModel);
+  await maintainDashboardProjectionsForInviteChange(normalizedHubId, actorId, "invite-create");
 
   return normalizeInviteRecord({ id: ref.id, ...writeModel });
 }
@@ -204,6 +220,7 @@ export async function revokeAdminInvite(hubId, inviteId, actorId = "system") {
     },
     { merge: true }
   );
+  await maintainDashboardProjectionsForInviteChange(normalizedHubId, actorId, "invite-revoke");
 
   return normalizeInviteRecord({
     ...invite,
@@ -259,6 +276,7 @@ export async function resendAdminInvite(hubId, inviteId, actorId = "system") {
     },
     { merge: true }
   );
+  await maintainDashboardProjectionsForInviteChange(normalizedHubId, actorId, "invite-resend");
 
   return normalizeInviteRecord({
     ...invite,
@@ -356,6 +374,7 @@ export async function acceptAdminInvite(hubId, inviteId, payload) {
   if (userRecord.role === "member") {
     await rebuildMemberDirectoryForUser(normalizedHubId, userRef.id, authUid);
   }
+  await maintainDashboardProjectionsForInviteChange(normalizedHubId, authUid, "invite-accept");
 
   return {
     invite: normalizeInviteRecord({

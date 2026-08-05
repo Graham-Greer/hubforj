@@ -49,6 +49,7 @@ export async function syncHubMemberDirectoryAction(formData) {
   try {
     const { hub, actorId } = await requireSupportMemberDirectoryAccess(hubSlug);
     await syncHubMemberDirectory(hub.id, actorId);
+    revalidatePath(`/${hubSlug}/admin`);
     revalidatePath(`/${hubSlug}/admin/members`);
   } catch (error) {
     redirect(buildMembersRedirect(hubSlug, `error=${encodeURIComponent(String(error?.message || "Unable to sync member directory."))}`));
@@ -67,6 +68,7 @@ export async function repairHubMemberDirectoryReconciliationAction(formData) {
   try {
     const { hub, actorId } = await requireSupportMemberDirectoryAccess(hubSlug);
     await repairHubMemberDirectoryReconciliation(hub.id, actorId);
+    revalidatePath(`/${hubSlug}/admin`);
     revalidatePath(`/${hubSlug}/admin/members`);
   } catch (error) {
     redirect(buildMembersRedirect(hubSlug, `error=${encodeURIComponent(String(error?.message || "Unable to repair member directory."))}`));

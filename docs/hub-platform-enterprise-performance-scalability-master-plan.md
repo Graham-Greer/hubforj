@@ -142,7 +142,8 @@ Progress:
 - Dashboard stats rebuild is available through support maintenance and is also rebuilt after payment ledger sync.
 - Deferred admin dashboard panels now prefer `hubs/{hubId}/stats/dashboardOverview` for recent events, top courses, attention required, and newest members, with explicit fallback during rollout.
 - Dashboard projection reconciliation reporting is available in support diagnostics and can detect missing projection documents, schema drift, missing reconciliation metadata, and source-derived data drift.
-- Remaining dashboard work is incremental/scheduled maintenance once production parity is confirmed.
+- Dashboard projections are now maintained after key member, payment, invite, event, course, booking, registration, event-series, and payment-configuration mutations using safe exact projection rebuilds.
+- Remaining dashboard work is scheduled/multi-hub maintenance and, if production write volume requires it, queued/debounced or granular incremental updates.
 
 Dependency note:
 

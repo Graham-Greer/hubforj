@@ -47,6 +47,26 @@ function getHubCollection(hubId, collectionName) {
   return getFirebaseAdminDb().collection("hubs").doc(hubId).collection(collectionName);
 }
 
+async function maintainDashboardProjectionsForMemberDirectoryChange(hubId, actorId, options = {}) {
+  if (options.maintainDashboardProjections === false) {
+    return null;
+  }
+
+  try {
+    const { maintainHubAdminDashboardProjectionsByHubId } = await import("./hub-dashboard-stats.js");
+    return maintainHubAdminDashboardProjectionsByHubId(hubId, actorId, {
+      reason: options.reason || "member-directory-change",
+    });
+  } catch (error) {
+    console.warn("Unable to start dashboard projection maintenance after member directory change", {
+      hubId: normalizeString(hubId),
+      actorId: normalizeString(actorId) || "member-directory-sync",
+      error: String(error?.message || "Unable to maintain dashboard projections."),
+    });
+    return null;
+  }
+}
+
 function encodeMemberDirectoryCursor(item) {
   const displayNameLower = normalizeLower(item?.displayNameLower || item?.displayName || item?.email);
   const id = normalizeString(item?.id);
@@ -509,7 +529,7 @@ async function buildExpectedMemberDirectoryRows(hubId, now = new Date().toISOStr
   );
 }
 
-async function rebuildMemberDirectoryForUserStrict(hubId, userId, actorId = "member-directory-sync") {
+async function rebuildMemberDirectoryForUserStrict(hubId, userId, actorId = "member-directory-sync", options = {}) {
   const normalizedHubId = normalizeString(hubId);
   const normalizedUserId = normalizeString(userId);
 
@@ -530,6 +550,10 @@ async function rebuildMemberDirectoryForUserStrict(hubId, userId, actorId = "mem
   if (!userSnapshot.exists) {
     await directoryRef.delete();
     await updateMemberDirectorySummaryForRowChange(normalizedHubId, previousRow, null, actorId);
+    await maintainDashboardProjectionsForMemberDirectoryChange(normalizedHubId, actorId, {
+      ...options,
+      reason: "member-directory-row-delete",
+    });
     return null;
   }
 
@@ -541,6 +565,10 @@ async function rebuildMemberDirectoryForUserStrict(hubId, userId, actorId = "mem
   if (normalizeString(user.hubId) !== normalizedHubId || normalizeString(user.role) !== "member") {
     await directoryRef.delete();
     await updateMemberDirectorySummaryForRowChange(normalizedHubId, previousRow, null, actorId);
+    await maintainDashboardProjectionsForMemberDirectoryChange(normalizedHubId, actorId, {
+      ...options,
+      reason: "member-directory-row-remove",
+    });
     return null;
   }
 
@@ -576,13 +604,17 @@ async function rebuildMemberDirectoryForUserStrict(hubId, userId, actorId = "mem
     { merge: true }
   );
   await updateMemberDirectorySummaryForRowChange(normalizedHubId, previousRow, writeModel, actorId);
+  await maintainDashboardProjectionsForMemberDirectoryChange(normalizedHubId, actorId, {
+    ...options,
+    reason: "member-directory-row-upsert",
+  });
 
   return writeModel;
 }
 
-export async function rebuildMemberDirectoryForUser(hubId, userId, actorId = "member-directory-sync") {
+export async function rebuildMemberDirectoryForUser(hubId, userId, actorId = "member-directory-sync", options = {}) {
   try {
-    return await rebuildMemberDirectoryForUserStrict(hubId, userId, actorId);
+    return await rebuildMemberDirectoryForUserStrict(hubId, userId, actorId, options);
   } catch (error) {
     console.warn("Member directory row maintenance failed", {
       hubId: normalizeString(hubId),
@@ -594,7 +626,7 @@ export async function rebuildMemberDirectoryForUser(hubId, userId, actorId = "me
   }
 }
 
-export async function syncHubMemberDirectory(hubId, actorId = "member-directory-sync") {
+export async function syncHubMemberDirectory(hubId, actorId = "member-directory-sync", options = {}) {
   const normalizedHubId = normalizeString(hubId);
 
   if (!normalizedHubId) {
@@ -658,6 +690,10 @@ export async function syncHubMemberDirectory(hubId, actorId = "member-directory-
       updatedAt: now,
     }
   );
+  await maintainDashboardProjectionsForMemberDirectoryChange(normalizedHubId, actorId, {
+    ...options,
+    reason: "member-directory-sync",
+  });
 
   return {
     hubId: normalizedHubId,
@@ -669,8 +705,8 @@ export async function syncHubMemberDirectory(hubId, actorId = "member-directory-
   };
 }
 
-export async function syncMemberDirectoryPaymentAttentionForUser(hubId, userId, actorId = "payment-item-write") {
-  return rebuildMemberDirectoryForUser(hubId, userId, actorId);
+export async function syncMemberDirectoryPaymentAttentionForUser(hubId, userId, actorId = "payment-item-write", options = {}) {
+  return rebuildMemberDirectoryForUser(hubId, userId, actorId, options);
 }
 
 async function countQuery(query) {

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getFirebaseAdminAuth } from "@/lib/firebase/admin";
 import { buildSessionCookieOptions, createSignedSessionValue, sessionCookieName, sessionDurationSeconds } from "@/lib/auth/session";
 import { verifyAdminInviteToken } from "@/lib/auth/admin-invite-token";
@@ -74,6 +75,8 @@ export async function POST(request) {
       email,
       name,
     });
+    revalidatePath(`/${hub.slug}/admin`);
+    revalidatePath(`/${hub.slug}/admin/admins`);
 
     const expiresAt = Math.floor(Date.now() / 1000) + sessionDurationSeconds;
     const sessionValue = createSignedSessionValue(
