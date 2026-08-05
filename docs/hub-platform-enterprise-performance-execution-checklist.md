@@ -168,7 +168,10 @@ Verification notes:
   - `/account` overview requests a smaller bounded member payment slice for recent billing/attention state
   - event/course payment record writes now include `sourceSlug` for future precise member-facing billing actions
   - older projected rows without `sourceSlug` intentionally fall back to `/events` or `/courses` rather than adding per-row public content reads
-  - expected Network/server result: member billing no longer reads all memberships, all user bookings, all user course registrations, and all user payment records just to render billing history when the read-model flag is enabled
+  - member billing includes informational-only/free rows because it is a member activity/payment-history surface, not an admin revenue report
+  - temporary correctness fallback: missing historical rows are merged from user-scoped legacy sources until historical free/not-required records are fully backfilled into the read model
+  - member account nav and billing item action links disable prefetch so sibling account routes and event/course pages are not fetched before navigation
+  - expected Network/server result: member billing primarily reads user-scoped `paymentItems`; any legacy fallback reads must remain user-scoped and should be removed after historical read-model coverage is complete
 
 ## Per-Slice Rollout Checklist
 

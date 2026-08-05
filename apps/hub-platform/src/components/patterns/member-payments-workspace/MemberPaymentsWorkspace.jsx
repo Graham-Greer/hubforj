@@ -144,7 +144,7 @@ export default function MemberPaymentsWorkspace({ hub, items, showHeader = true 
               {item.detail ? <p className={styles.itemMeta}>{item.detail}</p> : null}
 
               <div className={styles.itemActions}>
-                <Button href={item.primaryAction.href} variant="secondary">
+                <Button href={item.primaryAction.href} variant="secondary" prefetch={false}>
                   {item.primaryAction.label}
                 </Button>
               </div>

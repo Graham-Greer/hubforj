@@ -334,13 +334,17 @@ Implementation note:
 - New event/course checkout and payment-sync writes populate `sourceSlug`.
 - Existing projected records created before this slice may not have `sourceSlug`; those member billing actions safely fall back to `/events` or `/courses` instead of performing extra per-row lookup reads.
 - Duplicate paid membership upgrade versus membership-cycle suppression is applied to the user-scoped projection list before rendering.
-- Informational-only payment items remain excluded from member billing.
+- Informational-only payment items are included in member billing because member billing is an account activity/payment-history view, not an admin revenue report.
+- Admin revenue/reporting paths continue to exclude informational-only rows where appropriate.
+- While historical `paymentItems` coverage matures, the projection-backed member helper merges in missing legacy user-scoped billing rows from membership, event bookings, course registrations, and payment records.
+- The legacy merge is deduped by stable payment/source/transaction identifiers and exists to preserve member-facing correctness for historical free/not-required records that may not yet have complete `paymentItems` projections.
 - If the read-model flag is false, the legacy composer remains available as rollback and still reads membership, event bookings, course registrations, and payment records.
 
 Remaining Phase 6 follow-up:
 
 - Add cursor pagination to the member billing UI before the route needs to show more than the bounded first-page result set.
 - Backfill `sourceSlug` for existing event/course payment records if precise historical “View event/course” links become important enough to justify the migration.
+- Backfill historical free/not-required member activity into `paymentRecords`/`paymentItems`; once verified, remove the member billing legacy-source merge fallback.
 - Consider a small member billing summary aggregate only if individual members regularly exceed the bounded result size.
 
 ### Phase 7: Reconciliation And Repair
