@@ -400,7 +400,7 @@ export async function upsertPaymentRecordBySource(hubId, payload, actorId = "sys
   });
 }
 
-export async function updatePaymentRecord(hubId, paymentRecordId, payload, actorId = "system") {
+export async function updatePaymentRecord(hubId, paymentRecordId, payload, actorId = "system", options = {}) {
   const normalizedHubId = normalizeString(hubId);
   const normalizedPaymentRecordId = normalizeString(paymentRecordId);
 
@@ -431,12 +431,17 @@ export async function updatePaymentRecord(hubId, paymentRecordId, payload, actor
       ...existing.data(),
       ...writeModel,
     },
-    { updatedAt: now }
+    {
+      updatedAt: now,
+      syncMemberDirectory: options.syncMemberDirectory !== false,
+    }
   );
-  await rebuildPaymentSummaryFromPaymentItems(normalizedHubId, {
-    actorId,
-    updatedAt: now,
-  });
+  if (options.rebuildPaymentSummary !== false) {
+    await rebuildPaymentSummaryFromPaymentItems(normalizedHubId, {
+      actorId,
+      updatedAt: now,
+    });
+  }
 
   return normalizePaymentRecord({
     id: normalizedPaymentRecordId,

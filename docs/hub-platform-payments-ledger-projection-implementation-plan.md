@@ -82,7 +82,7 @@ Privacy rule:
 - Phase 4, maintain on writes: implemented for `createPaymentRecord`, `upsertPaymentRecordBySource`, and `updatePaymentRecord`.
 - Phase 5, replace admin payments report reads: implemented behind `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true` with URL-driven status/type filters, cursor pagination, and an aggregate `paymentSummary` read model for summary cards. Production has been synced and verified by route testing.
 - Phase 6, replace member billing reads: implemented behind `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true`; production has been synced and verified after historical free/not-required member activity backfill.
-- Phase 7, reconciliation and repair: support-only diagnostics and safe repair mode are implemented for projection drift, orphan projection cleanup, and missing native transaction back-links. Current production diagnostics show no reconciliation issues flagged.
+- Phase 7, reconciliation and repair: support-only diagnostics and safe repair mode are implemented for projection drift, orphan projection cleanup, missing native transaction back-links, missing projected member identity, and paid records/items missing actual `paidAt` timestamps. Current production diagnostics should be rerun after deploying this paid-date/member-identity hardening pass.
 
 Current migration rule:
 
@@ -90,6 +90,14 @@ Current migration rule:
 - With `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true`, member billing reads use the user-scoped `paymentItems` read model.
 - Keep admin payment UI on the projection-backed read model after all `paymentItems` indexes are enabled, ledger sync has populated payment items, payment summary diagnostics are present, and support diagnostics show no unresolved projection parity issues.
 - `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true` is the intended production mode after those checks pass.
+
+Payment ledger hardening rule:
+
+- The admin payments table remains an actual payment ledger and the date column must represent a real paid date for paid rows.
+- `sortAt` is an ordering cursor only. It must not be used as the primary display date for paid rows because it can legally fall back to future `dueAt` values such as event dates or membership renewal dates.
+- `paymentItems` must carry `displayName` and `email` whenever `userId` points to an existing hub user. Live payment-record writes should hydrate those values centrally rather than relying on a later manual sync.
+- Historical paid rows that predate the read-model rollout may be missing `paidAt`; reconciliation must flag them and safe repair may infer `paidAt` only from unambiguous source fields such as native transaction `paymentReceivedAt`, event/course workflow `paymentCompletedAt`, or membership payment `occurredAt`.
+- Safe repair must not invent paid dates from event start dates, course dates, or membership renewal dates.
 
 ### Phase 1: Define Ledger Contract
 

@@ -373,6 +373,13 @@ function resolveLifecycleDateInfo({
     return { lifecycleDate: normalizeString(paidAt), lifecycleLabel: "Paid" };
   }
 
+  if (normalizedStatus === "paid") {
+    return {
+      lifecycleDate: normalizeString(occurredAt) || normalizeString(updatedAt) || normalizeString(createdAt),
+      lifecycleLabel: "Paid",
+    };
+  }
+
   if (normalizedStatus === "failed") {
     return {
       lifecycleDate: normalizeString(updatedAt) || normalizeString(dueAt) || normalizeString(createdAt),
@@ -475,6 +482,16 @@ function mapProjectedPaymentItemToPaymentItem(item, hubSlug, routeMode = "path")
   const detailItemId = paymentRecordId ? `ledger_${paymentRecordId}` : item.id;
   const userName = normalizeString(item.displayName);
   const userEmail = normalizeString(item.email).toLowerCase();
+  const lifecycle = resolveLifecycleDateInfo({
+    paymentStatus: item.paymentStatus,
+    paidAt: item.paidAt,
+    refundedAt: item.refundedAt,
+    dueAt: item.dueAt,
+    occurredAt: item.occurredAt,
+    updatedAt: item.updatedAt,
+    createdAt: item.createdAt,
+    fallbackLabel: "Recorded",
+  });
 
   return {
     id: item.id,
@@ -488,18 +505,9 @@ function mapProjectedPaymentItemToPaymentItem(item, hubSlug, routeMode = "path")
     amount: item.amountDisplay,
     currency: item.currency || getFallbackRegionalMarket().defaultCurrency,
     refundAmountMinor: item.refundAmountMinor,
-    lifecycleDate: item.sortAt || item.paidAt || item.dueAt || item.updatedAt || item.createdAt,
-    lifecycleLabel:
-      item.paymentStatus === "paid"
-        ? "Paid"
-        : item.paymentStatus === "refunded"
-          ? "Refunded"
-          : item.paymentStatus === "failed"
-            ? "Failed"
-            : item.paymentStatus === "overdue"
-              ? "Overdue"
-              : "Due",
-    dueDate: item.dueAt || item.sortAt || item.updatedAt || item.createdAt,
+    lifecycleDate: lifecycle.lifecycleDate,
+    lifecycleLabel: lifecycle.lifecycleLabel,
+    dueDate: item.dueAt || item.occurredAt || item.updatedAt || item.createdAt,
     detail:
       kind === "course"
         ? "Course enrolment payment state."
