@@ -94,7 +94,8 @@ Current migration rule:
 Payment ledger hardening rule:
 
 - The admin payments table remains an actual payment ledger and the date column must represent a real paid date for paid rows.
-- `sortAt` is an ordering cursor only. It must not be used as the primary display date for paid rows because it can legally fall back to future `dueAt` values such as event dates or membership renewal dates.
+- `sortAt` is an ordering cursor only. It must not be used as the primary display date for paid rows.
+- `sortAt` precedence is `paidAt`, `refundedAt`, `occurredAt`, `updatedAt`, `createdAt`, then `dueAt`. Future due values such as event dates or membership renewal dates must not outrank actual paid/recorded activity in the admin payments route.
 - `paymentItems` must carry `displayName` and `email` whenever `userId` points to an existing hub user. Live payment-record writes should hydrate those values centrally rather than relying on a later manual sync.
 - Historical paid rows that predate the read-model rollout may be missing `paidAt`; reconciliation must flag them and safe repair may infer `paidAt` only from unambiguous source fields such as native transaction `paymentReceivedAt`, event/course workflow `paymentCompletedAt`, or membership payment `occurredAt`.
 - Safe repair must not invent paid dates from event start dates, course dates, or membership renewal dates.
@@ -160,10 +161,10 @@ Current projection contract:
 - `sortAt` precedence:
   - paid date
   - refunded date
-  - due date
   - occurrence date
   - updated date
   - created date
+  - due date
 - PII copied into the projection is limited to `displayName` and `email`.
 - Ledger sync/backfill hydrates `displayName` and `email` from existing hub users where available.
 - Later payment status updates preserve existing projected `displayName` and `email` unless the caller explicitly supplies a replacement user.

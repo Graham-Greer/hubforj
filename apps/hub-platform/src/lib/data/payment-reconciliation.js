@@ -79,10 +79,10 @@ function resolvePaymentItemSortAt(record = {}) {
   return (
     normalizeString(record.paidAt) ||
     normalizeString(record.refundedAt) ||
-    normalizeString(record.dueAt) ||
     normalizeString(record.occurredAt) ||
     normalizeString(record.updatedAt) ||
-    normalizeString(record.createdAt)
+    normalizeString(record.createdAt) ||
+    normalizeString(record.dueAt)
   );
 }
 
