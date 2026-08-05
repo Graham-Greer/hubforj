@@ -112,7 +112,70 @@ function buildAdminHref(hubSlug, pathname, routeMode) {
   return buildHubRuntimeHref(hubSlug, pathname, routeMode);
 }
 
-async function PaymentsWorkspaceLoader({ hubSlug, selectedView, success, error }) {
+function normalizeString(value) {
+  return String(value || "").trim();
+}
+
+function normalizePaymentStatusFilter(value) {
+  const normalizedValue = normalizeString(value);
+  const allowedValues = new Set(["paid", "unpaid", "overdue", "failed", "refunded", "partially_refunded"]);
+
+  return allowedValues.has(normalizedValue) ? normalizedValue : "all";
+}
+
+function normalizePaymentTypeFilter(value) {
+  const normalizedValue = normalizeString(value);
+  const allowedValues = new Set(["membership", "event", "course"]);
+
+  return allowedValues.has(normalizedValue) ? normalizedValue : "all";
+}
+
+function normalizePaymentPageSize(value) {
+  const parsed = Number.parseInt(String(value || ""), 10);
+  const allowedValues = new Set([10, 20, 50]);
+
+  return allowedValues.has(parsed) ? parsed : 20;
+}
+
+function decodeCursorStack(value) {
+  const normalizedValue = normalizeString(value);
+
+  if (!normalizedValue) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(normalizedValue);
+    return Array.isArray(parsed) ? parsed.map(normalizeString) : [];
+  } catch {
+    try {
+      const parsed = JSON.parse(decodeURIComponent(normalizedValue));
+      return Array.isArray(parsed) ? parsed.map(normalizeString) : [];
+    } catch {
+      return [];
+    }
+  }
+}
+
+function buildPaymentCursorPageInfo({ pageInfo, currentCursor, cursorStack }) {
+  const normalizedCurrentCursor = normalizeString(currentCursor);
+  const normalizedStack = Array.isArray(cursorStack) ? cursorStack.map(normalizeString) : [];
+  const previousCursor = normalizedStack.length ? normalizedStack[normalizedStack.length - 1] : "";
+  const previousCursorStack = normalizedStack.slice(0, -1);
+  const nextCursor = normalizeString(pageInfo?.nextCursor);
+
+  return {
+    currentCursor: normalizedCurrentCursor,
+    nextCursor,
+    hasNextPage: Boolean(pageInfo?.hasMore && nextCursor),
+    previousCursor,
+    previousCursorStack,
+    hasPreviousPage: Boolean(normalizedStack.length),
+    nextCursorStack: normalizedStack.concat(normalizedCurrentCursor),
+  };
+}
+
+async function PaymentsWorkspaceLoader({ hubSlug, selectedView, success, error, paymentFilters }) {
   const headerStore = await headers();
   const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
   const hub = await requireHubCoreBySlug(hubSlug);
@@ -160,7 +223,13 @@ async function PaymentsWorkspaceLoader({ hubSlug, selectedView, success, error }
   ] = await Promise.all([
     shouldLoadPaymentReport
       ? shouldUsePaymentItemsReadModel
-        ? getHubPaymentProjectionReportByHub(hub, { routeMode })
+        ? getHubPaymentProjectionReportByHub(hub, {
+            routeMode,
+            cursor: paymentFilters.cursor,
+            limit: paymentFilters.pageSize,
+            paymentStatus: paymentFilters.status === "all" ? "" : paymentFilters.status,
+            type: paymentFilters.type === "all" ? "" : paymentFilters.type,
+          })
         : getHubPaymentReportByHub(hub, { routeMode })
       : Promise.resolve({
           items: [],
@@ -174,6 +243,13 @@ async function PaymentsWorkspaceLoader({ hubSlug, selectedView, success, error }
   ]);
   const paymentSetupState = paymentConfiguration ? getHubPaymentSetupState(hub, paymentConfiguration) : null;
   const stripeConnectEnvironment = selectedView === "setup" ? getStripeConnectEnvironmentState() : null;
+  const paymentCursorPageInfo = shouldUsePaymentItemsReadModel
+    ? buildPaymentCursorPageInfo({
+        pageInfo: paymentReport.pageInfo,
+        currentCursor: paymentFilters.cursor,
+        cursorStack: paymentFilters.cursorStack,
+      })
+    : null;
 
   return (
     <HubPaymentsWorkspace
@@ -182,6 +258,9 @@ async function PaymentsWorkspaceLoader({ hubSlug, selectedView, success, error }
       adminBasePath={buildAdminHref(hub.slug, "/admin/payments", routeMode)}
       items={paymentReport.items}
       summary={paymentReport.summary}
+      paymentReadModelEnabled={shouldUsePaymentItemsReadModel}
+      paymentFilters={paymentFilters}
+      paymentPageInfo={paymentCursorPageInfo}
       view={selectedView}
       paymentSetupState={paymentSetupState}
       stripeConnectEnvironment={stripeConnectEnvironment}
@@ -205,8 +284,27 @@ async function PaymentsWorkspaceLoader({ hubSlug, selectedView, success, error }
 
 export default async function PaymentsPage({ params, searchParams }) {
   const { hubSlug } = await params;
-  const { success = "", error = "", view = "setup" } = await searchParams;
+  const resolvedSearchParams = await searchParams;
+  const {
+    success = "",
+    error = "",
+    view = "setup",
+    status = "all",
+    type = "all",
+    pageSize = "20",
+    cursor = "",
+    cursorStack = "",
+  } = resolvedSearchParams;
   const selectedView = view === "plans" ? "plans" : view === "payments" ? "payments" : "setup";
+  const normalizedStatus = normalizePaymentStatusFilter(status);
+  const normalizedType = normalizedStatus === "all" ? normalizePaymentTypeFilter(type) : "all";
+  const paymentFilters = {
+    status: normalizedStatus,
+    type: normalizedType,
+    pageSize: normalizePaymentPageSize(pageSize),
+    cursor: normalizeString(cursor),
+    cursorStack: decodeCursorStack(cursorStack),
+  };
 
   return (
     <div className={styles.layout}>
@@ -218,6 +316,7 @@ export default async function PaymentsPage({ params, searchParams }) {
           selectedView={selectedView}
           success={success}
           error={error}
+          paymentFilters={paymentFilters}
         />
       </Suspense>
     </div>

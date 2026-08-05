@@ -80,7 +80,7 @@ Privacy rule:
 - Phase 2, indexes: committed in `firestore.indexes.json`; Firebase index build is currently in progress and UI read paths must not depend on these indexes until they are enabled.
 - Phase 3, backfill: first implementation slice complete through the existing support-only payment ledger sync action.
 - Phase 4, maintain on writes: first implementation slice complete for `createPaymentRecord`, `upsertPaymentRecordBySource`, and `updatePaymentRecord`.
-- Phase 5, replace admin payments report reads: first opt-in read-model slice implemented behind `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true`; keep disabled until ledger sync and projection parity are clean.
+- Phase 5, replace admin payments report reads: projection-backed admin route is implemented behind `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true` with URL-driven status/type filters and cursor pagination.
 - Phase 6, replace member billing reads: not started; must follow admin payments read-model verification.
 - Phase 7, reconciliation and repair: support-only projection parity diagnostics are in progress; repair mode is not started.
 
@@ -264,9 +264,14 @@ Implementation note:
 - The first admin payments read-model slice adds `getHubPaymentProjectionReportByHub`.
 - The admin payments route now chooses the projection-backed report only when `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true`.
 - With the flag unset or false, the route continues using the legacy `getHubPaymentReportByHub` report builder.
-- The first projection-backed route slice intentionally keeps the current client-side table controls and maps a bounded projection page into the existing UI item shape.
+- In read-model mode, payment status and payment type filters are URL-driven and executed on the server through indexed `paymentItems` queries.
+- In read-model mode, pagination uses opaque cursor tokens and does not require loading the full report.
+- The membership type filter queries both `membership` and `upgradeRequest` projection types so membership upgrades remain visible in the membership view.
+- To avoid unplanned composite indexes, the read-model UI allows one indexed server filter at a time: choosing a type clears payment status, and choosing payment status clears type.
+- Search and date inputs currently filter within the returned bounded page only. Global search/date filtering remains a follow-up because it needs a deliberate indexing/export strategy.
+- The projection-backed route maps a bounded projection page into the existing UI item shape.
 - The projection-backed report applies the same paid membership upgrade versus membership-cycle duplicate suppression used by the legacy report, so collected revenue does not double-count a paid upgrade and its matching generated membership payment row.
-- Follow-up Phase 5 work must move payment filters and pagination into URL/server query state before this becomes the permanent default for large hubs.
+- Remaining Phase 5 work is the export/global search/date strategy. Do not reintroduce broad report assembly for those paths; add explicit query/index support or a background export job.
 
 Rollout order:
 
