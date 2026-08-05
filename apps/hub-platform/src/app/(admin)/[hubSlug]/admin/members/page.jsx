@@ -31,6 +31,7 @@ import { getUserStatusLabel, getUserStatusTone } from "@/lib/domain/users";
 import { headers } from "next/headers";
 import {
   repairHubMemberDirectoryReconciliationAction,
+  syncHubDashboardStatsFromMembersAction,
   syncHubMemberDirectoryAction,
 } from "./actions";
 import styles from "./page.module.css";
@@ -59,6 +60,10 @@ function getMembersFeedback(searchParams = {}) {
 
   if (success === "memberDirectoryRepaired") {
     return { tone: "success", message: "Member directory reconciliation repair completed." };
+  }
+
+  if (success === "dashboardStatsSynced") {
+    return { tone: "success", message: "Dashboard stats sync completed." };
   }
 
   return null;
@@ -100,6 +105,10 @@ function MembersSupportDiagnostics({ hubSlug, report }) {
           <form action={repairHubMemberDirectoryReconciliationAction}>
             <input type="hidden" name="hubSlug" value={hubSlug} />
             <SubmitButton idleLabel="Repair safe issues" pendingLabel="Repairing issues" variant="secondary" size="sm" />
+          </form>
+          <form action={syncHubDashboardStatsFromMembersAction}>
+            <input type="hidden" name="hubSlug" value={hubSlug} />
+            <SubmitButton idleLabel="Sync dashboard stats" pendingLabel="Syncing dashboard stats" variant="secondary" size="sm" />
           </form>
         </div>
       </div>

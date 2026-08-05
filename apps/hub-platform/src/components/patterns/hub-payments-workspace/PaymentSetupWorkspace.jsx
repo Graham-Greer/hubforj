@@ -92,6 +92,7 @@ export default function PaymentSetupWorkspace({
   beginHubPaymentSetupAction,
   refreshHubPaymentSetupAction,
   syncHubPaymentLedgerAction,
+  syncHubDashboardStatsAction,
   repairHubPaymentReconciliationAction,
 }) {
   const configuration = setupState?.configuration || {};
@@ -240,6 +241,10 @@ export default function PaymentSetupWorkspace({
                   label="Member directory"
                   value={`${Number(syncStatus?.memberDirectorySynced || 0)} synced · ${Number(syncStatus?.memberDirectoryScanned || 0)} scanned · ${Number(syncStatus?.memberDirectoryOrphaned || 0)} orphaned · ${formatSyncDate(syncStatus?.memberDirectoryRebuiltAt, hub?.locale || fallbackRegionalMarket.defaultLocale)}`}
                 />
+                <DetailRow
+                  label="Dashboard stats"
+                  value={`${syncStatus?.dashboardStatsStatus || "Not run yet"} · ${formatSyncDate(syncStatus?.dashboardStatsRebuiltAt, hub?.locale || fallbackRegionalMarket.defaultLocale)}`}
+                />
                 <DetailRow label="Last actor" value={syncStatus?.lastActorId || "Not recorded"} />
               </div>
               {syncStatus?.lastSince ? (
@@ -253,6 +258,12 @@ export default function PaymentSetupWorkspace({
                 <input type="hidden" name="hubSlug" value={hub.slug} />
                 <SubmitButton idleLabel="Sync payment ledger" pendingLabel="Syncing payment ledger" variant="secondary" />
               </form>
+              {syncHubDashboardStatsAction ? (
+                <form action={syncHubDashboardStatsAction} className={styles.setupActionForm}>
+                  <input type="hidden" name="hubSlug" value={hub.slug} />
+                  <SubmitButton idleLabel="Sync dashboard stats" pendingLabel="Syncing dashboard stats" variant="secondary" />
+                </form>
+              ) : null}
             </div>
           </Surface>
 

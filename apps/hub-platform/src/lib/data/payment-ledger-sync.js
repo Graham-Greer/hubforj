@@ -12,6 +12,8 @@ import { rebuildPaymentSummaryFromPaymentItems } from "@/lib/data/payment-summar
 import { backfillEventBookingPaymentRecordsToLedger } from "@/lib/data/event-booking-mutations";
 import { backfillCourseRegistrationPaymentRecordsToLedger } from "@/lib/data/course-registration-mutations";
 import { syncHubMemberDirectory } from "@/lib/data/member-directory";
+import { rebuildHubAdminDashboardStats } from "@/lib/data/hub-dashboard-stats";
+import { getHubCoreById } from "@/lib/data/hubs";
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -75,6 +77,8 @@ export async function getHubPaymentLedgerSyncStatus(hubId) {
     memberDirectoryScanned: Number.parseInt(String(data.memberDirectoryScanned || ""), 10) || 0,
     memberDirectoryOrphaned: Number.parseInt(String(data.memberDirectoryOrphaned || ""), 10) || 0,
     memberDirectoryRebuiltAt: normalizeString(data.memberDirectoryRebuiltAt),
+    dashboardStatsRebuiltAt: normalizeString(data.dashboardStatsRebuiltAt),
+    dashboardStatsStatus: normalizeString(data.dashboardStatsStatus),
     lastError: normalizeString(data.lastError),
   };
 }
@@ -123,6 +127,10 @@ export async function syncHubPaymentLedger(hubId, actorId = "ledger-sync") {
       updatedAt: completedAt,
     });
     const memberDirectory = await syncHubMemberDirectory(normalizedHubId, normalizedActorId);
+    const hub = await getHubCoreById(normalizedHubId);
+    const dashboardStats = hub
+      ? await rebuildHubAdminDashboardStats(hub, normalizedActorId, { updatedAt: completedAt })
+      : null;
 
     await getPaymentLedgerSyncStatusRef(normalizedHubId).set(
       {
@@ -164,6 +172,8 @@ export async function syncHubPaymentLedger(hubId, actorId = "ledger-sync") {
         memberDirectoryScanned: memberDirectory?.scanned || 0,
         memberDirectoryOrphaned: memberDirectory?.orphaned || 0,
         memberDirectoryRebuiltAt: memberDirectory?.generatedAt || completedAt,
+        dashboardStatsRebuiltAt: dashboardStats?.reconciledAt || "",
+        dashboardStatsStatus: dashboardStats ? "reconciled" : "hub_missing",
         lastError: "",
       },
       { merge: true }
@@ -176,6 +186,7 @@ export async function syncHubPaymentLedger(hubId, actorId = "ledger-sync") {
       courseRegistrationPayments,
       paymentItems,
       memberDirectory,
+      dashboardStats,
       status: {
         lastStartedAt: startedAt,
         lastCompletedAt: completedAt,

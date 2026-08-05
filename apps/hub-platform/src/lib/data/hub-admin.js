@@ -1,9 +1,9 @@
 import { countActiveUpcomingPublishedEventsByHub } from "@/lib/data/events";
 import { listEventsByHub } from "@/lib/data/events";
 import { listEventSeriesByHub } from "@/lib/data/event-series";
-import { countPendingInvitesByHub } from "@/lib/data/invites";
 import { listInvitesByHub } from "@/lib/data/invites";
 import { getHubCoreBySlug } from "@/lib/data/hubs";
+import { getHubAdminDashboardStatsWithFallback } from "@/lib/data/hub-dashboard-stats";
 import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
 import { listMembershipsByHub } from "@/lib/data/memberships";
 import { listPendingMembershipUpgradeRequestsByHub } from "@/lib/data/memberships";
@@ -11,7 +11,7 @@ import { getHubPaymentReportByHub } from "@/lib/data/hub-payments";
 import { listEventBookingPaymentItemsByHub } from "@/lib/data/event-bookings";
 import { listCoursePaymentItemsByHub } from "@/lib/data/course-registrations";
 import { listCoursesByHub } from "@/lib/data/courses";
-import { countActiveMembersByHub, listUsersByHub, summarizeMembersByHub } from "@/lib/data/users";
+import { countActiveMembersByHub, listUsersByHub } from "@/lib/data/users";
 import {
   isActiveUpcomingPublishedEvent,
 } from "@/lib/domain/events";
@@ -449,26 +449,13 @@ export async function getHubAdminDashboardSummaryStripBySlug(hubSlug) {
   }
 
   const entitlements = resolveHubPackageEntitlements(hub);
-  const [
-    memberSummary,
-    pendingInviteCount,
-    activeUpcomingPublishedEventCount,
-    courses,
-    paymentReport,
-  ] = await Promise.all([
-    summarizeMembersByHub(hub.id),
-    countPendingInvitesByHub(hub.id),
-    countActiveUpcomingPublishedEventsByHub(hub.id),
-    entitlements.capabilities?.coursesEnabled ? listCoursesByHub(hub) : Promise.resolve([]),
-    getHubPaymentReportByHub(hub, {
-      courseItems: entitlements.capabilities?.coursesEnabled ? undefined : [],
-    }),
-  ]);
-  const activeUpcomingCourses = courses.filter((course) => isActiveUpcomingPublishedCourse(course));
+  const stats = await getHubAdminDashboardStatsWithFallback(hub, {
+    coursesEnabled: entitlements.capabilities?.coursesEnabled,
+  });
   const locale = resolveLaunchFormattingLocale(hub.locale, hub.country);
   const defaultCurrency = hub.defaultCurrency || "USD";
   const totalRevenue =
-    paymentReport.summary?.collectedRevenue || {
+    stats?.totalRevenue || {
       amount: 0,
       currency: defaultCurrency,
       formatted: formatMoney(0, defaultCurrency, locale),
@@ -478,12 +465,13 @@ export async function getHubAdminDashboardSummaryStripBySlug(hubSlug) {
   return {
     hub,
     package: entitlements,
-    memberCount: memberSummary.memberCount,
-    activeMemberCount: memberSummary.activeMemberCount,
-    pendingInviteCount,
-    activeUpcomingPublishedEventCount,
-    activeUpcomingPublishedCourseCount: activeUpcomingCourses.length,
+    memberCount: stats?.memberCount || 0,
+    activeMemberCount: stats?.activeMemberCount || 0,
+    pendingInviteCount: stats?.pendingInviteCount || 0,
+    activeUpcomingPublishedEventCount: stats?.activeUpcomingPublishedEventCount || 0,
+    activeUpcomingPublishedCourseCount: stats?.activeUpcomingPublishedCourseCount || 0,
     totalRevenue,
+    statsReadModelState: stats?.readModelState || "missing",
   };
 }
 

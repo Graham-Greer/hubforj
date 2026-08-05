@@ -82,6 +82,7 @@ export default function HubPaymentsWorkspace({
   beginHubPaymentSetupAction = null,
   refreshHubPaymentSetupAction = null,
   syncHubPaymentLedgerAction = null,
+  syncHubDashboardStatsAction = null,
   repairHubPaymentReconciliationAction = null,
   createMembershipPlanAction = null,
   updateMembershipPlanAction = null,
@@ -243,6 +244,7 @@ export default function HubPaymentsWorkspace({
           beginHubPaymentSetupAction={beginHubPaymentSetupAction}
           refreshHubPaymentSetupAction={refreshHubPaymentSetupAction}
           syncHubPaymentLedgerAction={syncHubPaymentLedgerAction}
+          syncHubDashboardStatsAction={syncHubDashboardStatsAction}
           repairHubPaymentReconciliationAction={repairHubPaymentReconciliationAction}
         />
       ) : view === "plans" ? (

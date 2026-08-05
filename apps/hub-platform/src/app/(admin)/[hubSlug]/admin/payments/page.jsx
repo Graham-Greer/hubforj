@@ -33,6 +33,7 @@ import {
   deleteMembershipPlanAction,
   refreshHubPaymentSetupAction,
   repairHubPaymentReconciliationAction,
+  syncHubDashboardStatsAction,
   syncHubPaymentLedgerAction,
   updateMembershipPlanAction,
 } from "./actions";
@@ -54,25 +55,20 @@ function buildEmptyPaymentSummary(hub) {
 }
 
 function buildPaymentSuccessMessage(success) {
-  return success === "stripeSetupStarted"
-    ? "Stripe account created. Continue the embedded onboarding below."
-    : success === "stripeStatusRefreshed"
-      ? "Stripe setup status refreshed."
-      : success === "paymentLedgerSynced"
-        ? "Payment ledger sync completed."
-        : success === "paymentReconciliationRepaired"
-          ? "Safe payment reconciliation repairs completed."
-          : success === "planCreated"
-            ? "Membership plan created."
-            : success === "planUpdated"
-              ? "Membership plan updated."
-              : success === "planDeleted"
-                ? "Membership plan deleted."
-                : success === "upgradeRequestApproved"
-                  ? "Membership upgrade request approved."
-                  : success === "paymentUpdated"
-                    ? "Payment status updated."
-                    : "";
+  const messages = {
+    stripeSetupStarted: "Stripe account created. Continue the embedded onboarding below.",
+    stripeStatusRefreshed: "Stripe setup status refreshed.",
+    paymentLedgerSynced: "Payment ledger sync completed.",
+    paymentReconciliationRepaired: "Safe payment reconciliation repairs completed.",
+    dashboardStatsSynced: "Dashboard stats synced.",
+    planCreated: "Membership plan created.",
+    planUpdated: "Membership plan updated.",
+    planDeleted: "Membership plan deleted.",
+    upgradeRequestApproved: "Membership upgrade request approved.",
+    paymentUpdated: "Payment status updated.",
+  };
+
+  return messages[success] || "";
 }
 
 function PaymentsWorkspaceFallback({ selectedView }) {
@@ -275,6 +271,7 @@ async function PaymentsWorkspaceLoader({ hubSlug, selectedView, success, error, 
       beginHubPaymentSetupAction={beginHubPaymentSetupAction}
       refreshHubPaymentSetupAction={refreshHubPaymentSetupAction}
       syncHubPaymentLedgerAction={syncHubPaymentLedgerAction}
+      syncHubDashboardStatsAction={syncHubDashboardStatsAction}
       repairHubPaymentReconciliationAction={repairHubPaymentReconciliationAction}
       createMembershipPlanAction={createMembershipPlanAction}
       updateMembershipPlanAction={updateMembershipPlanAction}
