@@ -99,6 +99,12 @@ export default function MembersWorkspace({
   const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
 
   useEffect(() => {
+    if (serverDriven) {
+      setPageSize(serverPageSize || 10);
+    }
+  }, [serverDriven, serverPageSize]);
+
+  useEffect(() => {
     const nextQuery = buildMembersQuery(debouncedSearchTerm, activeFilters, filterDefinitions);
     const nextParams = new URLSearchParams(nextQuery.startsWith("?") ? nextQuery.slice(1) : nextQuery);
 
@@ -245,6 +251,7 @@ export default function MembersWorkspace({
             onPageChange={serverDriven ? undefined : setCurrentPage}
             onPageSizeChange={(value) => {
               if (serverDriven) {
+                setPageSize(value);
                 const params = new URLSearchParams(searchParams.toString());
                 params.set("limit", String(value));
                 params.delete("cursor");

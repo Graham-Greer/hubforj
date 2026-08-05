@@ -209,7 +209,7 @@ async function OptimizedMembersDirectoryLoader({ hubSlug, searchParams }) {
           previousHref={previousHref}
         />
       ) : null}
-      {!summary.total ? (
+      {!summary.total && !hasActiveDirectoryView ? (
         <EmptyState
           eyebrow="No members yet"
           title="No members have joined yet"

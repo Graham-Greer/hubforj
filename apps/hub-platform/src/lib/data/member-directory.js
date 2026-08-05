@@ -8,6 +8,7 @@ import { FieldPath } from "firebase-admin/firestore";
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
 
 export const MEMBER_DIRECTORY_SCHEMA_VERSION = 1;
+export const MEMBER_DIRECTORY_SUMMARY_SCHEMA_VERSION = 1;
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -32,6 +33,10 @@ function isReadModelEnabled() {
 
 function getMemberDirectoryCollection(hubId) {
   return getFirebaseAdminDb().collection("hubs").doc(hubId).collection("memberDirectory");
+}
+
+function getMemberDirectorySummaryRef(hubId) {
+  return getFirebaseAdminDb().collection("hubs").doc(hubId).collection("system").doc("memberDirectorySummary");
 }
 
 function getUsersCollection() {
@@ -128,6 +133,121 @@ function normalizeMemberDirectoryRecord(record = {}) {
     schemaVersion: parseInteger(record.schemaVersion),
     searchPrefixes: Array.isArray(record.searchPrefixes) ? record.searchPrefixes.map(normalizeLower).filter(Boolean).slice(0, 120) : [],
   };
+}
+
+function createEmptyMemberDirectorySummary() {
+  return {
+    total: 0,
+    suspended: 0,
+    upgradeRequests: 0,
+    paymentAttention: 0,
+  };
+}
+
+function getMemberDirectorySummaryContribution(row = {}) {
+  const normalizedRow = normalizeMemberDirectoryRecord(row);
+
+  if (!normalizedRow.id || normalizedRow.role !== "member") {
+    return createEmptyMemberDirectorySummary();
+  }
+
+  return {
+    total: 1,
+    suspended: normalizedRow.status === "suspended" ? 1 : 0,
+    upgradeRequests: normalizedRow.attentionStatus === "upgrade_request" ? 1 : 0,
+    paymentAttention: normalizedRow.attentionStatus === "payment_attention" ? 1 : 0,
+  };
+}
+
+function addSummaryContribution(summary, contribution, multiplier = 1) {
+  return {
+    total: Math.max(0, parseInteger(summary.total) + contribution.total * multiplier),
+    suspended: Math.max(0, parseInteger(summary.suspended) + contribution.suspended * multiplier),
+    upgradeRequests: Math.max(0, parseInteger(summary.upgradeRequests) + contribution.upgradeRequests * multiplier),
+    paymentAttention: Math.max(0, parseInteger(summary.paymentAttention) + contribution.paymentAttention * multiplier),
+  };
+}
+
+function buildMemberDirectorySummaryFromRows(rows = []) {
+  return rows.reduce(
+    (summary, row) => addSummaryContribution(summary, getMemberDirectorySummaryContribution(row), 1),
+    createEmptyMemberDirectorySummary()
+  );
+}
+
+function normalizeMemberDirectorySummaryRecord(record = {}) {
+  return {
+    total: parseInteger(record.total),
+    suspended: parseInteger(record.suspended),
+    upgradeRequests: parseInteger(record.upgradeRequests),
+    paymentAttention: parseInteger(record.paymentAttention),
+    rebuiltAt: normalizeString(record.rebuiltAt),
+    updatedAt: normalizeString(record.updatedAt),
+    updatedBy: normalizeString(record.updatedBy),
+    schemaVersion: parseInteger(record.schemaVersion),
+  };
+}
+
+async function writeMemberDirectorySummary(hubId, summary, options = {}) {
+  const normalizedHubId = normalizeString(hubId);
+
+  if (!normalizedHubId) {
+    return null;
+  }
+
+  const now = normalizeString(options.updatedAt) || new Date().toISOString();
+  const writeModel = {
+    ...createEmptyMemberDirectorySummary(),
+    ...summary,
+    rebuiltAt: normalizeString(options.rebuiltAt) || now,
+    updatedAt: now,
+    updatedBy: normalizeString(options.actorId) || "member-directory-summary",
+    schemaVersion: MEMBER_DIRECTORY_SUMMARY_SCHEMA_VERSION,
+  };
+
+  await getMemberDirectorySummaryRef(normalizedHubId).set(writeModel, { merge: true });
+
+  return normalizeMemberDirectorySummaryRecord(writeModel);
+}
+
+async function updateMemberDirectorySummaryForRowChange(hubId, previousRow, nextRow, actorId = "member-directory-row-maintenance") {
+  const normalizedHubId = normalizeString(hubId);
+
+  if (!normalizedHubId) {
+    return null;
+  }
+
+  const db = getFirebaseAdminDb();
+  const summaryRef = getMemberDirectorySummaryRef(normalizedHubId);
+  const previousContribution = previousRow ? getMemberDirectorySummaryContribution(previousRow) : createEmptyMemberDirectorySummary();
+  const nextContribution = nextRow ? getMemberDirectorySummaryContribution(nextRow) : createEmptyMemberDirectorySummary();
+  const now = new Date().toISOString();
+
+  return db.runTransaction(async (transaction) => {
+    const summarySnapshot = await transaction.get(summaryRef);
+
+    if (!summarySnapshot.exists) {
+      return null;
+    }
+
+    const current = normalizeMemberDirectorySummaryRecord(summarySnapshot.data());
+    const nextSummary = addSummaryContribution(
+      addSummaryContribution(current, previousContribution, -1),
+      nextContribution,
+      1
+    );
+    const writeModel = {
+      ...nextSummary,
+      rebuiltAt: current.rebuiltAt,
+      updatedAt: now,
+      updatedBy: normalizeString(actorId) || "member-directory-row-maintenance",
+      schemaVersion: MEMBER_DIRECTORY_SUMMARY_SCHEMA_VERSION,
+    };
+
+    transaction.set(summaryRef, writeModel, { merge: true });
+
+    return normalizeMemberDirectorySummaryRecord(writeModel);
+  });
 }
 
 async function listMembershipRowsByHub(hubId) {
@@ -363,9 +483,18 @@ async function rebuildMemberDirectoryForUserStrict(hubId, userId, actorId = "mem
   }
 
   const userSnapshot = await getUsersCollection().doc(normalizedUserId).get();
+  const directoryRef = getMemberDirectoryCollection(normalizedHubId).doc(normalizedUserId);
+  const previousSnapshot = await directoryRef.get();
+  const previousRow = previousSnapshot.exists
+    ? normalizeMemberDirectoryRecord({
+        id: previousSnapshot.id,
+        ...previousSnapshot.data(),
+      })
+    : null;
 
   if (!userSnapshot.exists) {
-    await getMemberDirectoryCollection(normalizedHubId).doc(normalizedUserId).delete();
+    await directoryRef.delete();
+    await updateMemberDirectorySummaryForRowChange(normalizedHubId, previousRow, null, actorId);
     return null;
   }
 
@@ -375,7 +504,8 @@ async function rebuildMemberDirectoryForUserStrict(hubId, userId, actorId = "mem
   };
 
   if (normalizeString(user.hubId) !== normalizedHubId || normalizeString(user.role) !== "member") {
-    await getMemberDirectoryCollection(normalizedHubId).doc(normalizedUserId).delete();
+    await directoryRef.delete();
+    await updateMemberDirectorySummaryForRowChange(normalizedHubId, previousRow, null, actorId);
     return null;
   }
 
@@ -403,14 +533,14 @@ async function rebuildMemberDirectoryForUserStrict(hubId, userId, actorId = "mem
     paymentAttentionCount,
     now,
   });
-
-  await getMemberDirectoryCollection(normalizedHubId).doc(normalizedUserId).set(
+  await directoryRef.set(
     {
       ...writeModel,
       updatedBy: normalizeString(actorId) || "member-directory-sync",
     },
     { merge: true }
   );
+  await updateMemberDirectorySummaryForRowChange(normalizedHubId, previousRow, writeModel, actorId);
 
   return writeModel;
 }
@@ -489,11 +619,21 @@ export async function syncHubMemberDirectory(hubId, actorId = "member-directory-
   if (batchCount) {
     await batch.commit();
   }
+  const summary = await writeMemberDirectorySummary(
+    normalizedHubId,
+    buildMemberDirectorySummaryFromRows(rows),
+    {
+      actorId,
+      rebuiltAt: now,
+      updatedAt: now,
+    }
+  );
 
   return {
     hubId: normalizedHubId,
     synced,
     scanned: usersSnapshot.size,
+    summary,
     generatedAt: now,
   };
 }
@@ -517,6 +657,12 @@ export async function getMemberDirectorySummaryByHubId(hubId) {
       upgradeRequests: 0,
       paymentAttention: 0,
     };
+  }
+
+  const summarySnapshot = await getMemberDirectorySummaryRef(normalizedHubId).get();
+
+  if (summarySnapshot.exists) {
+    return normalizeMemberDirectorySummaryRecord(summarySnapshot.data());
   }
 
   const baseQuery = getMemberDirectoryCollection(normalizedHubId).where("hubId", "==", normalizedHubId);
