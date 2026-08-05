@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireHubOperatorActionAccess } from "@/lib/auth/action-access";
-import { rebuildHubAdminDashboardStats } from "@/lib/data/hub-dashboard-stats";
+import {
+  rebuildHubAdminDashboardOverview,
+  rebuildHubAdminDashboardStats,
+} from "@/lib/data/hub-dashboard-stats";
 import { syncHubPaymentLedger } from "@/lib/data/payment-ledger-sync";
 import { repairHubPaymentReconciliation } from "@/lib/data/payment-reconciliation";
 import { assertHubRegionalSetupComplete } from "@/lib/domain/hub-regional-setup";
@@ -225,7 +228,8 @@ export async function syncHubDashboardStatsAction(formData) {
 
   try {
     const { hub, access } = await requireSupportHubPaymentsAccess(hubSlug);
-    await rebuildHubAdminDashboardStats(hub, access.actorId);
+    const stats = await rebuildHubAdminDashboardStats(hub, access.actorId);
+    await rebuildHubAdminDashboardOverview(hub, access.actorId, { stats });
     revalidatePaymentsPaths(hub.slug);
     revalidatePath(`/${hub.slug}/admin`);
   } catch (error) {

@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireHubOperatorActionAccess } from "@/lib/auth/action-access";
-import { rebuildHubAdminDashboardStats } from "@/lib/data/hub-dashboard-stats";
+import {
+  rebuildHubAdminDashboardOverview,
+  rebuildHubAdminDashboardStats,
+} from "@/lib/data/hub-dashboard-stats";
 import { repairHubMemberDirectoryReconciliation, syncHubMemberDirectory } from "@/lib/data/member-directory";
 
 function normalizeString(value) {
@@ -81,7 +84,8 @@ export async function syncHubDashboardStatsFromMembersAction(formData) {
 
   try {
     const { hub, actorId } = await requireSupportMemberDirectoryAccess(hubSlug);
-    await rebuildHubAdminDashboardStats(hub, actorId);
+    const stats = await rebuildHubAdminDashboardStats(hub, actorId);
+    await rebuildHubAdminDashboardOverview(hub, actorId, { stats });
     revalidatePath(`/${hubSlug}/admin`);
     revalidatePath(`/${hubSlug}/admin/members`);
   } catch (error) {
