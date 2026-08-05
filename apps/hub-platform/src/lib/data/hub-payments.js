@@ -16,6 +16,7 @@ import {
   getPaymentRecordByNativeTransactionId,
   listPaymentRecordsByHub,
 } from "@/lib/data/payment-records";
+import { listPaymentItemPageByHubId } from "@/lib/data/payment-items";
 import {
   getNativePaymentTransactionById,
   listNativePaymentTransactionsByHub,
@@ -40,6 +41,10 @@ import { buildHubRuntimeHref, normalizeHubRouteMode } from "@/lib/domain/hub-run
 
 function normalizeString(value) {
   return String(value || "").trim();
+}
+
+export function isPaymentItemsReadModelEnabled() {
+  return normalizeString(process.env.HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED).toLowerCase() === "true";
 }
 
 function parseDisplayAmountToMinor(amount, currency = getFallbackRegionalMarket().defaultCurrency) {
@@ -123,6 +128,20 @@ function mapPaymentRecordKindToItemKind(kind) {
 
   if (normalizedKind === "event_registration" || normalizedKind === "event_booking") {
     return "event";
+  }
+
+  return "membership";
+}
+
+function mapProjectedPaymentItemTypeToItemKind(type) {
+  const normalizedType = normalizeString(type);
+
+  if (normalizedType === "eventBooking") {
+    return "event";
+  }
+
+  if (normalizedType === "courseRegistration") {
+    return "course";
   }
 
   return "membership";
@@ -376,6 +395,56 @@ function mapLedgerRecordToPaymentItem(record, hubSlug, user = null, fallback = n
     nativePaymentTransactionId: record.nativeTransactionId || fallback?.nativePaymentTransactionId || "",
     operationalLabel: "",
     detailHref: buildPaymentDetailHref(hubSlug, `ledger_${record.id}`, routeMode),
+  };
+}
+
+function mapProjectedPaymentItemToPaymentItem(item, hubSlug, routeMode = "path") {
+  const kind = mapProjectedPaymentItemTypeToItemKind(item.type);
+  const paymentRecordId = normalizeString(item.paymentRecordId);
+  const detailItemId = paymentRecordId ? `ledger_${paymentRecordId}` : item.id;
+  const userName = normalizeString(item.displayName);
+  const userEmail = normalizeString(item.email).toLowerCase();
+
+  return {
+    id: item.id,
+    ledgerRecordId: paymentRecordId,
+    recordId: paymentRecordId || item.sourceId,
+    kind,
+    title: item.title || (kind === "course" ? "Course enrolment" : kind === "event" ? "Event booking" : "Membership"),
+    status: item.status,
+    paymentStatus: item.paymentStatus || "unpaid",
+    amountMinor: item.amountMinor,
+    amount: item.amountDisplay,
+    currency: item.currency || getFallbackRegionalMarket().defaultCurrency,
+    refundAmountMinor: item.refundAmountMinor,
+    lifecycleDate: item.sortAt || item.paidAt || item.dueAt || item.updatedAt || item.createdAt,
+    lifecycleLabel:
+      item.paymentStatus === "paid"
+        ? "Paid"
+        : item.paymentStatus === "refunded"
+          ? "Refunded"
+          : item.paymentStatus === "failed"
+            ? "Failed"
+            : item.paymentStatus === "overdue"
+              ? "Overdue"
+              : "Due",
+    dueDate: item.dueAt || item.sortAt || item.updatedAt || item.createdAt,
+    detail:
+      kind === "course"
+        ? "Course enrolment payment state."
+        : kind === "event"
+          ? "Event booking payment state."
+          : "Membership payment record.",
+    userId: item.userId,
+    userName,
+    userEmail,
+    eventId: kind === "event" ? item.sourceParentId : "",
+    courseId: kind === "course" ? item.sourceParentId : "",
+    nativePaymentTransactionId: item.nativeTransactionId,
+    operationalLabel: "",
+    detailHref: buildPaymentDetailHref(hubSlug, detailItemId, routeMode),
+    memberRecordAvailable: Boolean(item.userId),
+    memberHref: buildMemberHref(hubSlug, item.userId, routeMode),
   };
 }
 
@@ -696,6 +765,66 @@ export async function getHubPaymentReportByHub(hub, preloaded = {}) {
         paymentRecords: reportablePaymentRecords,
         nativeTransactions,
       }),
+    },
+  };
+}
+
+export async function getHubPaymentProjectionReportByHub(hub, options = {}) {
+  if (!hub?.id) {
+    return {
+      hub: null,
+      items: [],
+      summary: summarizeHubPaymentItems([]),
+      pageInfo: {
+        nextCursor: "",
+        hasMore: false,
+      },
+    };
+  }
+
+  const routeMode = normalizeHubRouteMode(options.routeMode);
+  const page = await listPaymentItemPageByHubId(hub.id, {
+    limit: options.limit || 100,
+    cursor: options.cursor,
+    status: options.status,
+    paymentStatus: options.paymentStatus,
+    attentionStatus: options.attentionStatus,
+    type: options.type,
+    userId: options.userId,
+    memberId: options.memberId,
+  });
+  const items = page.items
+    .filter((item) => normalizeString(item.reportingEligibility) !== "informational_only")
+    .map((item) => mapProjectedPaymentItemToPaymentItem(item, hub.slug, routeMode));
+  const locale = resolveLaunchFormattingLocale(hub.locale, hub.country);
+
+  return {
+    hub,
+    items,
+    summary: {
+      ...summarizeHubPaymentItems(items),
+      collectedRevenue: summarizePaymentItemCollectedRevenue(
+        items,
+        (amount, currency) => formatMoney(amount, currency, locale),
+        hub.defaultCurrency || "USD"
+      ),
+      refundedRevenue: summarizePaymentItemRefundedRevenue(
+        items,
+        (amount, currency) => formatMoney(amount, currency, locale),
+        hub.defaultCurrency || "USD"
+      ),
+      recordCounts: {
+        paid: items.filter((item) => normalizeString(item.paymentStatus) === "paid").length,
+        refunded: items.filter((item) => {
+          const paymentStatus = normalizeString(item.paymentStatus);
+          return paymentStatus === "refunded" || paymentStatus === "partially_refunded";
+        }).length,
+        failed: items.filter((item) => normalizeString(item.paymentStatus) === "failed").length,
+      },
+    },
+    pageInfo: {
+      nextCursor: page.nextCursor,
+      hasMore: page.hasMore,
     },
   };
 }

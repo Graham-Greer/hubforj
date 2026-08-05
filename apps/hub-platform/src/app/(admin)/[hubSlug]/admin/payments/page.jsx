@@ -12,7 +12,11 @@ import { requireHubCoreBySlug } from "@/lib/data/hubs";
 import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
 import { getHubPaymentLedgerSyncStatus } from "@/lib/data/payment-ledger-sync";
 import { getHubPaymentReconciliationReport } from "@/lib/data/payment-reconciliation";
-import { getHubPaymentReportByHub } from "@/lib/data/hub-payments";
+import {
+  getHubPaymentProjectionReportByHub,
+  getHubPaymentReportByHub,
+  isPaymentItemsReadModelEnabled,
+} from "@/lib/data/hub-payments";
 import { listMembershipPlansByHub, listPendingMembershipUpgradeRequestsByHub } from "@/lib/data/memberships";
 import { getHubPaymentSetupState } from "@/lib/domain/hub-payment-configuration";
 import { hasHubCapability } from "@/lib/domain/package-guards";
@@ -142,6 +146,7 @@ async function PaymentsWorkspaceLoader({ hubSlug, selectedView, success, error }
   const access = shouldCheckSupportDiagnostics ? await getCurrentHubOperatorAccess(hub) : null;
   const showSupportDiagnostics = access?.mode === "support";
   const shouldLoadPaymentReport = paymentsEnabled && selectedView === "payments";
+  const shouldUsePaymentItemsReadModel = shouldLoadPaymentReport && isPaymentItemsReadModelEnabled();
   const shouldLoadMembershipPlans = selectedView === "plans";
   const shouldLoadPaymentConfiguration = selectedView !== "payments";
 
@@ -154,7 +159,9 @@ async function PaymentsWorkspaceLoader({ hubSlug, selectedView, success, error }
     paymentReconciliationReport,
   ] = await Promise.all([
     shouldLoadPaymentReport
-      ? getHubPaymentReportByHub(hub, { routeMode })
+      ? shouldUsePaymentItemsReadModel
+        ? getHubPaymentProjectionReportByHub(hub, { routeMode })
+        : getHubPaymentReportByHub(hub, { routeMode })
       : Promise.resolve({
           items: [],
           summary: buildEmptyPaymentSummary(hub),

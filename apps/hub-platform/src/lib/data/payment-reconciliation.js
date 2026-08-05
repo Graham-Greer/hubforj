@@ -6,12 +6,22 @@ try {
 
 import { listPendingMembershipUpgradeRequestsByHub } from "@/lib/data/memberships";
 import { listPaymentRecordsByHub } from "@/lib/data/payment-records";
+import {
+  buildPaymentItemDocumentIdFromPaymentRecord,
+  listPaymentItemsByHubId,
+  PAYMENT_ITEM_SCHEMA_VERSION,
+} from "@/lib/data/payment-items";
 import { listNativePaymentTransactionsByHub } from "@/lib/data/native-payment-transactions";
 import { listEventBookingPaymentItemsByHub } from "@/lib/data/event-bookings";
 import { listCoursePaymentItemsByHub } from "@/lib/data/course-registrations";
 
 function normalizeString(value) {
   return String(value || "").trim();
+}
+
+function parseInteger(value) {
+  const numeric = Number.parseInt(String(value || ""), 10);
+  return Number.isFinite(numeric) ? numeric : 0;
 }
 
 function pushIssue(issues, code, severity, title, detail, refs = {}) {
@@ -40,6 +50,53 @@ function mapTransactionStatusToExpectedPaymentStatus(status) {
   }
 
   return "";
+}
+
+function mapPaymentRecordKindToPaymentItemType(record = {}) {
+  const kind = normalizeString(record.kind);
+  const sourceType = normalizeString(record.sourceType);
+
+  if (kind === "event_booking" || kind === "event_registration" || sourceType === "eventBooking") {
+    return "eventBooking";
+  }
+
+  if (kind === "course_registration" || sourceType === "courseRegistration") {
+    return "courseRegistration";
+  }
+
+  if (kind === "membership_upgrade" || sourceType === "membershipUpgradeRequest") {
+    return "upgradeRequest";
+  }
+
+  return "membership";
+}
+
+function resolvePaymentItemSortAt(record = {}) {
+  return (
+    normalizeString(record.paidAt) ||
+    normalizeString(record.refundedAt) ||
+    normalizeString(record.dueAt) ||
+    normalizeString(record.occurredAt) ||
+    normalizeString(record.updatedAt) ||
+    normalizeString(record.createdAt)
+  );
+}
+
+function pushProjectionMismatch(issues, field, paymentRecord, paymentItem, expected, actual) {
+  pushIssue(
+    issues,
+    "payment_item_projection_mismatch",
+    "danger",
+    "Payment item projection does not match its payment record",
+    `The projected payment item has a stale or incorrect ${field} value.`,
+    {
+      paymentRecordId: paymentRecord.id,
+      paymentItemId: paymentItem.id,
+      field,
+      expected,
+      actual,
+    }
+  );
 }
 
 function buildIssueSummary(issues = []) {
@@ -78,8 +135,9 @@ export async function getHubPaymentReconciliationReport(hubId) {
     };
   }
 
-  const [paymentRecords, nativeTransactions, eventItems, courseItems, pendingUpgradeRequests] = await Promise.all([
+  const [paymentRecords, paymentItems, nativeTransactions, eventItems, courseItems, pendingUpgradeRequests] = await Promise.all([
     listPaymentRecordsByHub(normalizedHubId),
+    listPaymentItemsByHubId(normalizedHubId),
     listNativePaymentTransactionsByHub(normalizedHubId),
     listEventBookingPaymentItemsByHub(normalizedHubId),
     listCoursePaymentItemsByHub(normalizedHubId),
@@ -88,12 +146,102 @@ export async function getHubPaymentReconciliationReport(hubId) {
 
   const issues = [];
   const paymentRecordsById = new Map(paymentRecords.map((record) => [normalizeString(record.id), record]));
+  const paymentItemsById = new Map(paymentItems.map((item) => [normalizeString(item.id), item]));
   const paymentRecordsByNativeTransactionId = new Map(
     paymentRecords
       .filter((record) => normalizeString(record.nativeTransactionId))
       .map((record) => [normalizeString(record.nativeTransactionId), record])
   );
   const nativeTransactionsById = new Map(nativeTransactions.map((transaction) => [normalizeString(transaction.id), transaction]));
+
+  for (const record of paymentRecords) {
+    const paymentRecordId = normalizeString(record.id);
+    const expectedPaymentItemId = buildPaymentItemDocumentIdFromPaymentRecord(paymentRecordId);
+    const paymentItem = paymentItemsById.get(expectedPaymentItemId);
+
+    if (!paymentItem) {
+      pushIssue(
+        issues,
+        "payment_item_missing_projection",
+        "danger",
+        "Payment record is missing its projected payment item",
+        "This canonical payment record does not have a matching read-model payment item.",
+        {
+          paymentRecordId,
+          expectedPaymentItemId,
+          kind: record.kind,
+          sourceType: record.sourceType,
+          sourceId: record.sourceId,
+        }
+      );
+      continue;
+    }
+
+    const expectedValues = {
+      paymentRecordId,
+      sourceCollection: "paymentRecords",
+      hubId: normalizedHubId,
+      userId: normalizeString(record.userId),
+      memberId: normalizeString(record.userId),
+      type: mapPaymentRecordKindToPaymentItemType(record),
+      status: normalizeString(record.operationalStatus),
+      paymentStatus: normalizeString(record.financialStatus),
+      amountMinor: parseInteger(record.amountMinor),
+      currency: normalizeString(record.currency).toUpperCase(),
+      reportingEligibility: normalizeString(record.reportingEligibility),
+      sourceConfidence: normalizeString(record.sourceConfidence),
+      sortAt: resolvePaymentItemSortAt(record),
+      schemaVersion: PAYMENT_ITEM_SCHEMA_VERSION,
+    };
+    const actualValues = {
+      paymentRecordId: normalizeString(paymentItem.paymentRecordId),
+      sourceCollection: normalizeString(paymentItem.sourceCollection),
+      hubId: normalizeString(paymentItem.hubId),
+      userId: normalizeString(paymentItem.userId),
+      memberId: normalizeString(paymentItem.memberId),
+      type: normalizeString(paymentItem.type),
+      status: normalizeString(paymentItem.status),
+      paymentStatus: normalizeString(paymentItem.paymentStatus),
+      amountMinor: parseInteger(paymentItem.amountMinor),
+      currency: normalizeString(paymentItem.currency).toUpperCase(),
+      reportingEligibility: normalizeString(paymentItem.reportingEligibility),
+      sourceConfidence: normalizeString(paymentItem.sourceConfidence),
+      sortAt: normalizeString(paymentItem.sortAt),
+      schemaVersion: parseInteger(paymentItem.schemaVersion),
+    };
+
+    for (const [field, expected] of Object.entries(expectedValues)) {
+      const actual = actualValues[field];
+
+      if (normalizeString(expected) !== normalizeString(actual)) {
+        pushProjectionMismatch(issues, field, record, paymentItem, expected, actual);
+      }
+    }
+  }
+
+  for (const item of paymentItems) {
+    const paymentRecordId = normalizeString(item.paymentRecordId);
+
+    if (normalizeString(item.sourceCollection) !== "paymentRecords") {
+      continue;
+    }
+
+    if (!paymentRecordId || !paymentRecordsById.has(paymentRecordId)) {
+      pushIssue(
+        issues,
+        "payment_item_orphan_projection",
+        "warning",
+        "Payment item points to a missing payment record",
+        "This projected payment item references a canonical payment record that was not found.",
+        {
+          paymentItemId: item.id,
+          paymentRecordId,
+          sourceId: item.sourceId,
+          type: item.type,
+        }
+      );
+    }
+  }
 
   for (const transaction of nativeTransactions) {
     const transactionId = normalizeString(transaction.id);

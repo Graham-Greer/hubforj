@@ -198,8 +198,9 @@ export default function PaymentSetupWorkspace({
             <div className={styles.setupGuidanceStack}>
               <h3 className={styles.planAccordionTitle}>Ledger sync</h3>
               <p className={styles.detail}>
-                Historical membership payment records are synced into the canonical payment ledger only when an operator
-                runs this maintenance action. Payment and admin read routes no longer perform hidden backfill writes.
+                Historical payment records are synced into the canonical payment ledger and projected payment read model
+                only when an operator runs this maintenance action. Payment and admin read routes no longer perform hidden
+                backfill writes.
               </p>
               <p className={styles.detail}>
                 Normal hub admins should not see finance-maintenance internals. This diagnostics section is reserved for
@@ -217,6 +218,10 @@ export default function PaymentSetupWorkspace({
                 <DetailRow
                   label="Native upgrades"
                   value={`${Number(syncStatus?.nativeMembershipUpgradesSynced || 0)} synced · ${Number(syncStatus?.nativeMembershipUpgradesSkipped || 0)} skipped · ${Number(syncStatus?.nativeMembershipUpgradesScanned || 0)} scanned`}
+                />
+                <DetailRow
+                  label="Payment items"
+                  value={`${Number(syncStatus?.paymentItemsSynced || 0)} synced · ${Number(syncStatus?.paymentItemsSkipped || 0)} skipped · ${Number(syncStatus?.paymentItemsScanned || 0)} scanned`}
                 />
                 <DetailRow label="Last actor" value={syncStatus?.lastActorId || "Not recorded"} />
               </div>

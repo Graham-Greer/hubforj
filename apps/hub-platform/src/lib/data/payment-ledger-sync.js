@@ -7,6 +7,7 @@ try {
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
 import { backfillMembershipPaymentRecordsToLedger } from "@/lib/data/memberships";
 import { backfillNativeMembershipUpgradeTransactionsToLedger } from "@/lib/data/native-payment-transactions";
+import { backfillPaymentRecordsToPaymentItems } from "@/lib/data/payment-records";
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -48,6 +49,11 @@ export async function getHubPaymentLedgerSyncStatus(hubId) {
     nativeMembershipUpgradesSynced: Number.parseInt(String(data.nativeMembershipUpgradesSynced || ""), 10) || 0,
     nativeMembershipUpgradesSkipped: Number.parseInt(String(data.nativeMembershipUpgradesSkipped || ""), 10) || 0,
     nativeMembershipUpgradesLatestSourceTimestamp: normalizeString(data.nativeMembershipUpgradesLatestSourceTimestamp),
+    paymentItemsTotal: Number.parseInt(String(data.paymentItemsTotal || ""), 10) || 0,
+    paymentItemsScanned: Number.parseInt(String(data.paymentItemsScanned || ""), 10) || 0,
+    paymentItemsSynced: Number.parseInt(String(data.paymentItemsSynced || ""), 10) || 0,
+    paymentItemsSkipped: Number.parseInt(String(data.paymentItemsSkipped || ""), 10) || 0,
+    paymentItemsLatestSourceTimestamp: normalizeString(data.paymentItemsLatestSourceTimestamp),
     lastError: normalizeString(data.lastError),
   };
 }
@@ -85,6 +91,7 @@ export async function syncHubPaymentLedger(hubId, actorId = "ledger-sync") {
       backfillMembershipPaymentRecordsToLedger(normalizedHubId, normalizedActorId, { since }),
       backfillNativeMembershipUpgradeTransactionsToLedger(normalizedHubId, normalizedActorId, { since }),
     ]);
+    const paymentItems = await backfillPaymentRecordsToPaymentItems(normalizedHubId, normalizedActorId, { since });
     const completedAt = new Date().toISOString();
 
     await getPaymentLedgerSyncStatusRef(normalizedHubId).set(
@@ -105,6 +112,11 @@ export async function syncHubPaymentLedger(hubId, actorId = "ledger-sync") {
         nativeMembershipUpgradesSynced: nativeMembershipUpgrades.synced,
         nativeMembershipUpgradesSkipped: nativeMembershipUpgrades.skipped,
         nativeMembershipUpgradesLatestSourceTimestamp: nativeMembershipUpgrades.latestSourceTimestamp,
+        paymentItemsTotal: paymentItems.total,
+        paymentItemsScanned: paymentItems.scanned,
+        paymentItemsSynced: paymentItems.synced,
+        paymentItemsSkipped: paymentItems.skipped,
+        paymentItemsLatestSourceTimestamp: paymentItems.latestSourceTimestamp,
         lastError: "",
       },
       { merge: true }
@@ -113,6 +125,7 @@ export async function syncHubPaymentLedger(hubId, actorId = "ledger-sync") {
     return {
       membershipPayments,
       nativeMembershipUpgrades,
+      paymentItems,
       status: {
         lastStartedAt: startedAt,
         lastCompletedAt: completedAt,

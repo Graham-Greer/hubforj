@@ -115,6 +115,156 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "paymentItems",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "hubId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "sortAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "paymentItems",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "hubId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "sortAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "paymentItems",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "hubId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "paymentStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "sortAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "paymentItems",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "hubId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "attentionStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "sortAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "paymentItems",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "hubId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "sortAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "paymentItems",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "hubId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "memberId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "sortAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "paymentItems",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "hubId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "sortAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "paymentItems",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "hubId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "stripeCheckoutSessionId",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "paymentItems",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "hubId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "stripePaymentIntentId",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": [

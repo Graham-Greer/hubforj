@@ -74,6 +74,21 @@ Privacy rule:
 
 ## Implementation Phases
 
+### Current Phase Status
+
+- Phase 1, ledger contract: first implementation slice complete for canonical `paymentRecords` projected into `paymentItems`.
+- Phase 2, indexes: committed in `firestore.indexes.json`; Firebase index build is currently in progress and UI read paths must not depend on these indexes until they are enabled.
+- Phase 3, backfill: first implementation slice complete through the existing support-only payment ledger sync action.
+- Phase 4, maintain on writes: first implementation slice complete for `createPaymentRecord`, `upsertPaymentRecordBySource`, and `updatePaymentRecord`.
+- Phase 5, replace admin payments report reads: first opt-in read-model slice implemented behind `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true`; keep disabled until ledger sync and projection parity are clean.
+- Phase 6, replace member billing reads: not started; must follow admin payments read-model verification.
+- Phase 7, reconciliation and repair: support-only projection parity diagnostics are in progress; repair mode is not started.
+
+Current migration rule:
+
+- Keep admin/member payment UI on the legacy report builder until all `paymentItems` indexes are enabled, the ledger sync has populated payment items, and support diagnostics show no unresolved projection parity issues.
+- Enable `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true` only after the above checks pass.
+
 ### Phase 1: Define Ledger Contract
 
 - Map every current payment source into one normalized ledger item.
@@ -102,6 +117,47 @@ Acceptance criteria:
 - Duplicate webhook retries cannot create duplicate ledger entries.
 - Every status shown in the current UI has a ledger equivalent.
 
+Implementation note:
+
+- The repo already has `hubs/{hubId}/paymentRecords`, which is the canonical payment record layer used by Stripe/native payment flows and existing reporting. The new `hubs/{hubId}/paymentItems` collection is the query-optimized read model from this plan.
+- `paymentRecords` remain the source of truth during migration.
+- `paymentItems` use deterministic ids derived from the source payment record: `payment_record_{paymentRecordId}`.
+- A `paymentRecord` can represent membership cycles, membership upgrades, event bookings/registrations, course registrations, and native Stripe-backed outcomes.
+- Native transaction-only records are first normalized into `paymentRecords` by the existing sync/backfill process, then projected into `paymentItems`.
+- The first implementation slice intentionally does not cut admin/member UI over to `paymentItems`; it creates and maintains the read model for later dual-read verification.
+
+Current projection contract:
+
+- Collection: `hubs/{hubId}/paymentItems/{paymentItemId}`.
+- `schemaVersion`: `1`.
+- `type` values:
+  - `membership`
+  - `eventBooking`
+  - `courseRegistration`
+  - `upgradeRequest`
+- `sourceCollection`: currently `paymentRecords`.
+- `sourceId`: the canonical payment record source id where available, otherwise the payment record id.
+- `paymentRecordId`: the canonical `paymentRecords` document id.
+- `sourceParentId`:
+  - event id for event bookings
+  - course id for course registrations
+  - membership id or upgrade request id for memberships/upgrades
+- `status`: canonical operational status from the payment record.
+- `paymentStatus`: canonical financial status from the payment record.
+- `attentionStatus`:
+  - `action_required` for unpaid, overdue, or failed reportable items that are not cancelled
+  - `none` for settled, cancelled, or informational-only items
+- `sortAt` precedence:
+  - paid date
+  - refunded date
+  - due date
+  - occurrence date
+  - updated date
+  - created date
+- PII copied into the projection is limited to `displayName` and `email`.
+- Ledger sync/backfill hydrates `displayName` and `email` from existing hub users where available.
+- Later payment status updates preserve existing projected `displayName` and `email` unless the caller explicitly supplies a replacement user.
+
 ### Phase 2: Add Indexes
 
 Likely indexes:
@@ -122,6 +178,14 @@ Acceptance criteria:
 - Query shapes are documented in code comments or helper names where useful.
 - New query paths are not enabled before indexes are deployed.
 
+Implementation note:
+
+- Phase 2 index definitions have been added for `paymentItems`.
+- UI reads remain on the legacy report path until these indexes are deployed and a dual-read comparison slice verifies parity.
+- The first `listPaymentItemPageByHubId` helper uses stable cursor pagination with `sortAt` plus document id ordering.
+- The helper intentionally supports only one secondary indexed filter at a time in this slice: `status`, `paymentStatus`, `attentionStatus`, `type`, `userId`, or `memberId`.
+- Do not add combined filter UI until the corresponding composite index and helper contract have been added deliberately.
+
 ### Phase 3: Backfill Ledger
 
 - Build a controlled backfill from existing memberships, payment records, native transactions, event bookings, course registrations, and upgrade requests.
@@ -136,6 +200,14 @@ Acceptance criteria:
 - Backfill can run repeatedly without duplicates.
 - Backfilled counts reconcile against existing report output.
 - Backfill does not overwrite newer live ledger updates with stale source data.
+
+Implementation note:
+
+- The first backfill slice projects existing `paymentRecords` into `paymentItems`.
+- Existing `syncHubPaymentLedger` now runs the previous membership/native normalization first, then projects all eligible `paymentRecords` into `paymentItems`.
+- Sync status now records `paymentItemsTotal`, `paymentItemsScanned`, `paymentItemsSynced`, `paymentItemsSkipped`, and `paymentItemsLatestSourceTimestamp`.
+- Support diagnostics on the payments setup screen now display the payment item sync counters alongside the existing membership/native sync counters.
+- Event/course fallback payment items that do not yet have canonical `paymentRecords` remain on the legacy report path until their write paths are fully normalized into payment records or a later compatibility mapper is added.
 
 ### Phase 4: Maintain Ledger On Writes
 
@@ -155,6 +227,12 @@ Acceptance criteria:
 - Ledger remains correct after manual admin actions.
 - Out-of-order webhooks do not regress ledger state.
 
+Implementation note:
+
+- `createPaymentRecord`, `upsertPaymentRecordBySource`, and `updatePaymentRecord` now project to `paymentItems` after the canonical `paymentRecords` write.
+- Projection document ids are deterministic, so webhook retries and repeated admin actions overwrite the same read-model document.
+- This first slice does not yet move all source writes into a single Firestore transaction with the projection write. Because `paymentRecords` remain canonical and projection writes are idempotent/rebuildable, temporary projection lag is acceptable during the migration window.
+
 Implementation rules:
 
 - Use deterministic ledger ids such as `{sourceType}:{sourceId}` or a documented equivalent.
@@ -171,6 +249,8 @@ Implementation rules:
 - Move CSV/export to dedicated export path or background job.
 - Add dual-read comparison mode before full cutover.
 - Keep existing report builder behind a fallback flag during rollout.
+- Use the projection helper rather than composing Firestore queries inside the route/page component.
+- First cutover should support one indexed filter at a time. Combined filters must either be applied client-side within a bounded result set for a clearly documented temporary slice, or added with explicit composite indexes before production use.
 
 Acceptance criteria:
 
@@ -178,6 +258,23 @@ Acceptance criteria:
 - Filtering by status/type/attention uses indexed queries.
 - First page loads from a bounded query.
 - Legacy and ledger totals match within explicitly documented rules.
+
+Implementation note:
+
+- The first admin payments read-model slice adds `getHubPaymentProjectionReportByHub`.
+- The admin payments route now chooses the projection-backed report only when `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true`.
+- With the flag unset or false, the route continues using the legacy `getHubPaymentReportByHub` report builder.
+- The first projection-backed route slice intentionally keeps the current client-side table controls and maps a bounded projection page into the existing UI item shape.
+- Follow-up Phase 5 work must move payment filters and pagination into URL/server query state before this becomes the permanent default for large hubs.
+
+Rollout order:
+
+1. Confirm Firebase `paymentItems` indexes are enabled.
+2. Run support-only payment ledger sync.
+3. Confirm `Payment items` sync counts are populated.
+4. Confirm support-only reconciliation has no unresolved projection parity issues.
+5. Set `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true` in the target environment.
+6. Verify `/admin/payments?view=payments` uses the projection-backed report and still opens existing detail routes via `ledger_{paymentRecordId}` links.
 
 ### Phase 6: Replace Member Billing Reads
 
@@ -201,6 +298,16 @@ Acceptance criteria:
 
 - Finance/admin reporting can be trusted after drift checks.
 - Support can repair ledger drift without hand-editing Firestore records.
+
+Implementation note:
+
+- The support-only payment reconciliation report now compares canonical `paymentRecords` with projected `paymentItems`.
+- It flags:
+  - missing projected payment items for canonical payment records
+  - stale or mismatched projection fields
+  - orphaned payment items whose canonical payment record no longer exists
+- This diagnostic intentionally runs only in the support diagnostics path, not on normal admin/member payment routes.
+- Repair mode has not been implemented yet; the current safe repair path is rerunning the idempotent payment ledger sync after indexes and deployment are healthy.
 
 ## Edge Cases
 
