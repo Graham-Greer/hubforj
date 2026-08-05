@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { requireHubOperatorActionAccess } from "@/lib/auth/action-access";
@@ -93,6 +94,8 @@ export async function createEventAction(_previousState, formData) {
   }
 
   revalidatePublicEventsCache(hubId);
+  revalidatePath(`/${hubSlug}/admin`);
+  revalidatePath(`/${hubSlug}/admin/events`);
 
   if (series?.id) {
     redirect(await buildAdminActionHref(hubSlug, `/admin/events/series/${series.id}`));

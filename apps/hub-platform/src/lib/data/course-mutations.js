@@ -18,6 +18,21 @@ import {
 import { normalizeCourseRecord, normalizeString } from "./course-shared.js";
 import { createMediaUsageReference, removeMediaUsageReference, syncMediaUsageReferenceForAssetChange } from "./media-usage-projection.js";
 
+async function maintainDashboardProjectionsForCourseChange(hubId, actorId, reason = "course-change") {
+  try {
+    const { maintainHubAdminDashboardProjectionsByHubId } = await import("./hub-dashboard-stats.js");
+    return maintainHubAdminDashboardProjectionsByHubId(hubId, actorId, { reason });
+  } catch (error) {
+    console.warn("Unable to start dashboard projection maintenance after course change", {
+      hubId: normalizeString(hubId),
+      actorId: normalizeString(actorId) || "system",
+      reason,
+      error: String(error?.message || "Unable to maintain dashboard projections."),
+    });
+    return null;
+  }
+}
+
 async function assertUniqueCourseSlug(hubId, slug, excludeCourseId = "") {
   const snapshot = await getFirebaseAdminDb()
     .collection("hubs")
@@ -127,6 +142,7 @@ export async function createCourseByHubSlug(hubSlug, payload, actorId = "system"
     }),
     updatedAt: now,
   });
+  await maintainDashboardProjectionsForCourseChange(hub.id, actorId, "course-create");
 
   return normalizeCourseRecord({ id: ref.id, ...writeModel });
 }
@@ -220,6 +236,7 @@ export async function updateCourseById(hubId, courseId, payload, actorId = "syst
     }),
     updatedAt: update.updatedAt,
   });
+  await maintainDashboardProjectionsForCourseChange(normalizedHubId, actorId, "course-update");
   return normalizeCourseRecord({ id: normalizedCourseId, hubId: normalizedHubId, ...existing.data(), ...update });
 }
 
@@ -258,4 +275,5 @@ export async function deleteCourseById(hubId, courseId) {
       href: "",
     }),
   });
+  await maintainDashboardProjectionsForCourseChange(normalizedHubId, "course-delete", "course-delete");
 }

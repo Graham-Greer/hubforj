@@ -19,6 +19,22 @@ function getHubPaymentConfigurationRef(hubId) {
     .doc("current");
 }
 
+async function maintainDashboardProjectionsForPaymentConfigurationChange(hubId, actorId) {
+  try {
+    const { maintainHubAdminDashboardProjectionsByHubId } = await import("./hub-dashboard-stats.js");
+    return maintainHubAdminDashboardProjectionsByHubId(hubId, actorId, {
+      reason: "payment-configuration-change",
+    });
+  } catch (error) {
+    console.warn("Unable to start dashboard projection maintenance after payment configuration change", {
+      hubId: normalizeString(hubId),
+      actorId: normalizeString(actorId) || "system",
+      error: String(error?.message || "Unable to maintain dashboard projections."),
+    });
+    return null;
+  }
+}
+
 export async function getHubPaymentConfigurationByHubId(hubId) {
   const normalizedHubId = normalizeString(hubId);
 
@@ -100,6 +116,7 @@ export async function upsertHubPaymentConfiguration(hubId, payload = {}, actorId
   }
 
   await ref.set(writeModel, { merge: true });
+  await maintainDashboardProjectionsForPaymentConfigurationChange(normalizedHubId, actorId);
 
   return normalizeHubPaymentConfiguration(writeModel);
 }

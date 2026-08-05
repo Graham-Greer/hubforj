@@ -22,6 +22,21 @@ import { assertHubNativePaymentsReady } from "@/lib/domain/hub-payment-configura
 import { normalizeEventRecord, normalizeString } from "./event-shared.js";
 import { createMediaUsageReference, removeMediaUsageReference, syncMediaUsageReferenceForAssetChange } from "./media-usage-projection.js";
 
+async function maintainDashboardProjectionsForEventChange(hubId, actorId, reason = "event-change") {
+  try {
+    const { maintainHubAdminDashboardProjectionsByHubId } = await import("./hub-dashboard-stats.js");
+    return maintainHubAdminDashboardProjectionsByHubId(hubId, actorId, { reason });
+  } catch (error) {
+    console.warn("Unable to start dashboard projection maintenance after event change", {
+      hubId: normalizeString(hubId),
+      actorId: normalizeString(actorId) || "system",
+      reason,
+      error: String(error?.message || "Unable to maintain dashboard projections."),
+    });
+    return null;
+  }
+}
+
 async function assertUniqueEventSlug(hubId, slug, excludeEventId = "") {
   const snapshot = await getFirebaseAdminDb()
     .collection("hubs")
@@ -192,6 +207,7 @@ export async function createEventByHubSlug(hubSlug, payload, actorId = "system")
     }),
     updatedAt: now,
   });
+  await maintainDashboardProjectionsForEventChange(hub.id, actorId, "event-create");
 
   return normalizeEventRecord({ id: ref.id, ...writeModel });
 }
@@ -277,6 +293,7 @@ export async function updateEventById(hubId, eventId, payload, actorId = "system
     }),
     updatedAt: update.updatedAt,
   });
+  await maintainDashboardProjectionsForEventChange(normalizedHubId, actorId, "event-update");
   return normalizeEventRecord({ id: normalizedEventId, hubId: normalizedHubId, ...existing.data(), ...update });
 }
 
@@ -320,4 +337,5 @@ export async function deleteEventById(hubId, eventId) {
       href: "",
     }),
   });
+  await maintainDashboardProjectionsForEventChange(normalizedHubId, "event-delete", "event-delete");
 }

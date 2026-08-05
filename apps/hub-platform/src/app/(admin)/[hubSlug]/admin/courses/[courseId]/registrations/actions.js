@@ -31,6 +31,7 @@ async function queueCourseRegistrationCancellationNotificationSafely(args) {
 }
 
 function revalidateCoursePaths(hubSlug, courseId) {
+  revalidatePath(`/${hubSlug}/admin`);
   revalidatePath(`/${hubSlug}/admin/courses/${courseId}`);
   revalidatePath(`/${hubSlug}/admin/courses/${courseId}/registrations`);
   revalidatePath(`/${hubSlug}/admin/courses/${courseId}/attendance`);

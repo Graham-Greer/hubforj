@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireHubAdminManagerActionAccess } from "@/lib/auth/action-access";
 import { canTransferHubOwnership } from "@/lib/domain/users";
@@ -20,6 +21,8 @@ export async function revokeHubAdminInviteAction(formData) {
   try {
     const { hub, access } = await requireAdminAccessManager({ slug: hubSlug });
     await revokeAdminInvite(hub.id, inviteId, access.actorId);
+    revalidatePath(`/${hubSlug}/admin`);
+    revalidatePath(`/${hubSlug}/admin/admins`);
   } catch (error) {
     redirect(`/${hubSlug}/admin/admins?error=${encodeURIComponent(String(error?.message || "Unable to revoke invite."))}`);
   }
@@ -58,6 +61,8 @@ export async function resendHubAdminInviteAction(formData) {
         "Invite expiry was refreshed, but the email could not be sent. Copy the acceptance link or try resending."
       )}`;
     }
+    revalidatePath(`/${hubSlug}/admin`);
+    revalidatePath(`/${hubSlug}/admin/admins`);
   } catch (error) {
     redirect(`/${hubSlug}/admin/admins?error=${encodeURIComponent(String(error?.message || "Unable to resend invite."))}`);
   }

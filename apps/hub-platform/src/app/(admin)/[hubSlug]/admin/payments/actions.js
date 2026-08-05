@@ -37,6 +37,7 @@ async function requireHubPaymentsAccess(hubSlug) {
 }
 
 function revalidatePaymentsPaths(hubSlug) {
+  revalidatePath(`/${hubSlug}/admin`);
   revalidatePath(`/${hubSlug}/admin/payments`);
   revalidatePath(`/${hubSlug}/admin/settings/account`);
 }
@@ -139,6 +140,7 @@ export async function updatePaymentItemStatusAction(formData) {
     return { error: String(error?.message || "Unable to update payment status.") };
   }
 
+  revalidatePaymentsPaths(hubSlug);
   redirect(`/${hubSlug}/admin/payments?success=paymentUpdated`);
 }
 
@@ -192,7 +194,6 @@ export async function syncHubPaymentLedgerAction(formData) {
     const { hub, access } = await requireHubPaymentsAccess(hubSlug);
     await syncHubPaymentLedger(hub.id, access.actorId);
     revalidatePaymentsPaths(hub.slug);
-    revalidatePath(`/${hub.slug}/admin`);
   } catch (error) {
     redirect(`/${hubSlug}/admin/payments?view=setup&error=${encodeURIComponent(String(error?.message || "Unable to sync the payment ledger."))}`);
   }
@@ -211,7 +212,6 @@ export async function repairHubPaymentReconciliationAction(formData) {
     const { hub, access } = await requireHubPaymentsAccess(hubSlug);
     await repairHubPaymentReconciliation(hub.id, access.actorId);
     revalidatePaymentsPaths(hub.slug);
-    revalidatePath(`/${hub.slug}/admin`);
   } catch (error) {
     redirect(`/${hubSlug}/admin/payments?view=setup&error=${encodeURIComponent(String(error?.message || "Unable to repair payment reconciliation issues."))}`);
   }
@@ -231,7 +231,6 @@ export async function syncHubDashboardStatsAction(formData) {
     const stats = await rebuildHubAdminDashboardStats(hub, access.actorId);
     await rebuildHubAdminDashboardOverview(hub, access.actorId, { stats });
     revalidatePaymentsPaths(hub.slug);
-    revalidatePath(`/${hub.slug}/admin`);
   } catch (error) {
     redirect(`/${hubSlug}/admin/payments?view=setup&error=${encodeURIComponent(String(error?.message || "Unable to sync dashboard stats."))}`);
   }

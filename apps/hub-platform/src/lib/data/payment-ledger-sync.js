@@ -130,8 +130,11 @@ export async function syncHubPaymentLedger(hubId, actorId = "ledger-sync") {
     const paymentSummary = await rebuildPaymentSummaryFromPaymentItems(normalizedHubId, {
       actorId: normalizedActorId,
       updatedAt: completedAt,
+      maintainDashboardProjections: false,
     });
-    const memberDirectory = await syncHubMemberDirectory(normalizedHubId, normalizedActorId);
+    const memberDirectory = await syncHubMemberDirectory(normalizedHubId, normalizedActorId, {
+      maintainDashboardProjections: false,
+    });
     const hub = await getHubCoreById(normalizedHubId);
     const dashboardStats = hub
       ? await rebuildHubAdminDashboardStats(hub, normalizedActorId, { updatedAt: completedAt })

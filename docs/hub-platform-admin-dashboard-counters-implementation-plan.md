@@ -168,6 +168,52 @@ Update mutation paths:
 - Course publish/unpublish changes.
 - Payment item create/update/status changes.
 
+Status: implemented as safe live projection maintenance using deterministic projection rebuilds after relevant source mutations.
+
+Completed:
+
+- Added central dashboard projection maintenance helpers:
+  - `rebuildHubAdminDashboardProjections`
+  - `rebuildHubAdminDashboardProjectionsByHubId`
+  - `maintainHubAdminDashboardProjectionsByHubId`
+- The safe maintenance helper logs failures and returns `null` instead of failing the business mutation. Source-of-truth writes remain authoritative and support reconciliation remains the repair path.
+- Member/user-facing projection changes now maintain dashboard projections:
+  - individual member directory row rebuilds
+  - member directory row deletion/removal
+  - full member directory sync, unless explicitly suppressed by a higher-level sync
+  - member sign-in touches intentionally suppress dashboard refresh because `lastSignedInAt` does not affect current dashboard counters or panels
+- Payment projection changes now maintain dashboard projections:
+  - `paymentSummary` rebuilds after normal payment record writes
+  - payment item writes still update member-directory payment attention, but suppress their own dashboard refresh so the later payment summary refresh can rebuild the dashboard once from settled payment/member projection state
+  - payment ledger sync suppresses intermediate dashboard refreshes and performs one explicit dashboard stats/overview rebuild after ledger, summary, and member directory sync complete
+- Event and course content changes now maintain dashboard projections:
+  - event create/update/delete
+  - recurring event series create/update
+  - course create/update/delete
+- Event booking changes that affect dashboard counts now maintain dashboard projections:
+  - booking create
+  - booking status update
+  - attendee status update
+  - waitlist promotion
+- Course registration changes that affect dashboard counts now maintain dashboard projections:
+  - registration create
+  - registration status update
+- Admin invite status changes now maintain dashboard projections:
+  - invite create
+  - invite revoke
+  - invite resend
+  - invite accept
+- Payment configuration changes now maintain dashboard projections so setup/attention state updates without support sync.
+- Dashboard projection maintenance centrally revalidates `/{hubSlug}/admin`, including webhook/API-driven updates that do not pass through UI server actions.
+- Server actions and invite-accept API routes that mutate dashboard-visible data also revalidate `/admin` alongside their local detail/list routes where appropriate. This keeps the projection document and the rendered admin dashboard route aligned.
+
+Deliberate tradeoffs:
+
+- This phase uses exact projection rebuilds instead of many granular counter increments. This is safer for launch because it avoids double-counting on webhook retries and keeps each dashboard document rebuildable from source.
+- Projection refresh is awaited after the source mutation, so admins see fresh dashboard data as soon as the action completes. If projection maintenance fails, the user action still succeeds and the support reconciliation report flags/repairs drift.
+- High-volume hubs may eventually need queued/debounced maintenance or granular increments for write-heavy paths such as bookings. That is a future optimization after production behavior is verified.
+- Pure attendance changes are not hooked because current dashboard panels do not consume attendance counts.
+
 Acceptance criteria:
 
 - Counters update as admin actions occur.

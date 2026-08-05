@@ -51,7 +51,9 @@ export async function createHubUserSessionFromIdToken(hubSlug, idToken) {
   });
 
   if (user.role === "member") {
-    await rebuildMemberDirectoryForUser(hub.id, user.id, user.id);
+    await rebuildMemberDirectoryForUser(hub.id, user.id, user.id, {
+      maintainDashboardProjections: false,
+    });
   }
 
   const expiresAt = Math.floor(Date.now() / 1000) + sessionDurationSeconds;

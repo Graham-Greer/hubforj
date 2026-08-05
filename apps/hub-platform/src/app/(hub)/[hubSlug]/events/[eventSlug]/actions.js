@@ -148,6 +148,7 @@ async function submitPublicEventBooking(formData) {
       });
 
       revalidatePath(revalidateDetailPath);
+      revalidatePath(`/${hub.slug}/admin`);
       revalidatePath(`/${hub.slug}/account/bookings`);
       revalidatePath(revalidateNextStepsPath);
       await queueInitialEventBookingNotificationSafely({
@@ -163,6 +164,7 @@ async function submitPublicEventBooking(formData) {
   }
 
   revalidatePath(revalidateDetailPath);
+  revalidatePath(`/${hub.slug}/admin`);
   revalidatePath(`/${hub.slug}/account/bookings`);
   revalidatePath(revalidateNextStepsPath);
   await queueInitialEventBookingNotificationSafely({

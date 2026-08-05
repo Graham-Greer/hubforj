@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { requireHubOperatorActionAccess } from "@/lib/auth/action-access";
@@ -73,6 +74,8 @@ export async function createCourseAction(_previousState, formData) {
   }
 
   revalidatePublicCoursesCache(hubId);
+  revalidatePath(`/${hubSlug}/admin`);
+  revalidatePath(`/${hubSlug}/admin/courses`);
 
   redirect(await buildAdminActionHref(hubSlug, `/admin/courses/${course.id}`));
 }

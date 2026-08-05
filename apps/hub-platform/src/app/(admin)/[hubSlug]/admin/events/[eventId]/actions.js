@@ -19,6 +19,7 @@ async function buildAdminActionHref(hubSlug, pathname) {
 }
 
 function revalidateEventPaths(hubSlug, eventId, hubId) {
+  revalidatePath(`/${hubSlug}/admin`);
   revalidatePath(`/${hubSlug}/admin/events`);
   revalidatePath(`/${hubSlug}/admin/events/${eventId}`);
   revalidatePath(`/${hubSlug}/events`);

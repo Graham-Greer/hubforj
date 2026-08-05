@@ -36,6 +36,25 @@ function revalidateCourseListingCapacity(hubId) {
   revalidatePublicCoursesCache(hubId);
 }
 
+async function maintainDashboardProjectionsForCourseRegistrationChange(
+  hubId,
+  actorId,
+  reason = "course-registration-change"
+) {
+  try {
+    const { maintainHubAdminDashboardProjectionsByHubId } = await import("./hub-dashboard-stats.js");
+    return maintainHubAdminDashboardProjectionsByHubId(hubId, actorId, { reason });
+  } catch (error) {
+    console.warn("Unable to start dashboard projection maintenance after course registration change", {
+      hubId: normalizeString(hubId),
+      actorId: normalizeString(actorId) || "system",
+      reason,
+      error: String(error?.message || "Unable to maintain dashboard projections."),
+    });
+    return null;
+  }
+}
+
 function parsePriceToMinor(price) {
   const numeric = Number.parseFloat(String(price || ""));
 
@@ -345,6 +364,11 @@ export async function createCourseRegistrationForMember(hubId, courseId, userId,
     updatedAt: now,
   });
   revalidateCourseListingCapacity(normalizedHubId);
+  await maintainDashboardProjectionsForCourseRegistrationChange(
+    normalizedHubId,
+    actorId,
+    "course-registration-create"
+  );
 
   return normalizeCourseRegistrationRecord({ id: ref.id, ...writeModel });
 }
@@ -398,6 +422,11 @@ export async function updateCourseRegistrationStatus(hubId, courseId, registrati
     updatedAt: now,
   });
   revalidateCourseListingCapacity(normalizedHubId);
+  await maintainDashboardProjectionsForCourseRegistrationChange(
+    normalizedHubId,
+    actorId,
+    "course-registration-status-update"
+  );
 
   return normalizeCourseRegistrationRecord({ ...current, ...update });
 }

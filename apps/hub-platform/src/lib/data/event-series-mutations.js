@@ -19,6 +19,21 @@ function normalizeString(value) {
   return String(value || "").trim();
 }
 
+async function maintainDashboardProjectionsForEventSeriesChange(hubId, actorId, reason = "event-series-change") {
+  try {
+    const { maintainHubAdminDashboardProjectionsByHubId } = await import("./hub-dashboard-stats.js");
+    return maintainHubAdminDashboardProjectionsByHubId(hubId, actorId, { reason });
+  } catch (error) {
+    console.warn("Unable to start dashboard projection maintenance after event series change", {
+      hubId: normalizeString(hubId),
+      actorId: normalizeString(actorId) || "system",
+      reason,
+      error: String(error?.message || "Unable to maintain dashboard projections."),
+    });
+    return null;
+  }
+}
+
 async function assertUniqueEventSeriesSlugBase(hubId, slugBase, excludeSeriesId = "") {
   const normalizedHubId = normalizeString(hubId);
   const normalizedSlugBase = normalizeString(slugBase);
@@ -132,6 +147,7 @@ export async function createEventSeriesByHubSlug(hubSlug, payload, actorId = "sy
   });
   const sync = await syncEventSeriesOccurrences(record, actorId, { now });
   const occurrences = await listEventSeriesOccurrences(hub.id, ref.id);
+  await maintainDashboardProjectionsForEventSeriesChange(hub.id, actorId, "event-series-create");
 
   return {
     ...record,
@@ -196,6 +212,7 @@ export async function updateEventSeriesById(hubId, seriesId, payload, actorId = 
   });
   const sync = await syncEventSeriesOccurrences(record, actorId, { now });
   const occurrences = await listEventSeriesOccurrences(normalizedHubId, normalizedSeriesId);
+  await maintainDashboardProjectionsForEventSeriesChange(normalizedHubId, actorId, "event-series-update");
 
   return {
     ...record,

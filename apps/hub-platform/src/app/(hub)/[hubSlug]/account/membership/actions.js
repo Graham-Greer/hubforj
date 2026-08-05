@@ -26,6 +26,7 @@ function normalizeString(value) {
 }
 
 function revalidateMembershipPaths(hubSlug) {
+  revalidatePath(`/${hubSlug}/admin`);
   revalidatePath(`/${hubSlug}/account`);
   revalidatePath(`/${hubSlug}/account/membership`);
 }

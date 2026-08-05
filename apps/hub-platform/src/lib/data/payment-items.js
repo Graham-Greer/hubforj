@@ -239,7 +239,9 @@ export async function upsertPaymentItemFromPaymentRecord(hubId, paymentRecord, o
   }
 
   if (options.syncMemberDirectory !== false && item.userId) {
-    await syncMemberDirectoryPaymentAttentionForUser(normalizedHubId, item.userId, "payment-item-write");
+    await syncMemberDirectoryPaymentAttentionForUser(normalizedHubId, item.userId, "payment-item-write", {
+      maintainDashboardProjections: false,
+    });
   }
 
   return normalizePaymentItemRecord({
@@ -284,7 +286,9 @@ export async function deletePaymentItemById(hubId, paymentItemId) {
   await ref.delete();
 
   if (userId) {
-    await syncMemberDirectoryPaymentAttentionForUser(normalizedHubId, userId, "payment-item-delete");
+    await syncMemberDirectoryPaymentAttentionForUser(normalizedHubId, userId, "payment-item-delete", {
+      maintainDashboardProjections: false,
+    });
   }
 
   return true;
