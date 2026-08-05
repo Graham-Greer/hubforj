@@ -155,6 +155,11 @@ Verification notes:
   - Firebase `paymentItems` indexes must finish building before admin/member payment UI read paths are cut over
   - admin payments has an opt-in projection-backed report path behind `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true`
   - in read-model mode, admin payments status/type filters are URL-driven server queries and pagination uses opaque cursor tokens
+  - admin payments summary cards now read `hubs/{hubId}/system/paymentSummary` instead of scanning all `paymentItems` during each page load
+  - payment summary buckets are rebuilt after canonical payment record writes and once at the end of the support-only ledger sync
+  - support diagnostics now expose payment summary reportable/source counts and the summary rebuild timestamp
+  - expected steady-state Network/server result: `/admin/payments?view=payments` performs a bounded `paymentItems` page query plus one small `paymentSummary` document read for stat cards
+  - migration safety net: if `paymentSummary` is absent, the route can temporarily fall back to deriving the summary from `paymentItems`, but production rollout should run ledger sync so this fallback is not used
   - global search/date filtering and CSV export remain separate Phase 5 follow-up work and must not fall back to broad reads as the permanent enterprise path
   - payment UI still uses the legacy report builder by default until sync and dual-read parity are verified
 

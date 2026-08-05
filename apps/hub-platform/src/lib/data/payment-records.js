@@ -8,6 +8,7 @@ import { getFirebaseAdminDb } from "@/lib/firebase/admin";
 import { getFallbackRegionalMarket } from "@/lib/domain/regional-markets";
 import { listUsersByHub } from "./users.js";
 import { upsertPaymentItemFromPaymentRecord } from "./payment-items.js";
+import { rebuildPaymentSummaryFromPaymentItems } from "./payment-summary.js";
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -139,6 +140,10 @@ export async function createPaymentRecord(hubId, payload, actorId = "system") {
 
   await ref.set(writeModel);
   await upsertPaymentItemFromPaymentRecord(normalizedHubId, { id: ref.id, ...writeModel }, { updatedAt: now });
+  await rebuildPaymentSummaryFromPaymentItems(normalizedHubId, {
+    actorId,
+    updatedAt: now,
+  });
 
   return normalizePaymentRecord({
     id: ref.id,
@@ -345,6 +350,10 @@ export async function upsertPaymentRecordBySource(hubId, payload, actorId = "sys
       },
       { updatedAt: now }
     );
+    await rebuildPaymentSummaryFromPaymentItems(normalizedHubId, {
+      actorId: normalizedActorId,
+      updatedAt: now,
+    });
 
     return normalizePaymentRecord({
       id: documentId,
@@ -365,6 +374,10 @@ export async function upsertPaymentRecordBySource(hubId, payload, actorId = "sys
     },
     { updatedAt: now }
   );
+  await rebuildPaymentSummaryFromPaymentItems(normalizedHubId, {
+    actorId: normalizedActorId,
+    updatedAt: now,
+  });
 
   return normalizePaymentRecord({
     id: documentId,
@@ -407,6 +420,10 @@ export async function updatePaymentRecord(hubId, paymentRecordId, payload, actor
     },
     { updatedAt: now }
   );
+  await rebuildPaymentSummaryFromPaymentItems(normalizedHubId, {
+    actorId,
+    updatedAt: now,
+  });
 
   return normalizePaymentRecord({
     id: normalizedPaymentRecordId,

@@ -8,6 +8,7 @@ import { getFirebaseAdminDb } from "@/lib/firebase/admin";
 import { backfillMembershipPaymentRecordsToLedger } from "@/lib/data/memberships";
 import { backfillNativeMembershipUpgradeTransactionsToLedger } from "@/lib/data/native-payment-transactions";
 import { backfillPaymentRecordsToPaymentItems } from "@/lib/data/payment-records";
+import { rebuildPaymentSummaryFromPaymentItems } from "@/lib/data/payment-summary";
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -54,6 +55,9 @@ export async function getHubPaymentLedgerSyncStatus(hubId) {
     paymentItemsSynced: Number.parseInt(String(data.paymentItemsSynced || ""), 10) || 0,
     paymentItemsSkipped: Number.parseInt(String(data.paymentItemsSkipped || ""), 10) || 0,
     paymentItemsLatestSourceTimestamp: normalizeString(data.paymentItemsLatestSourceTimestamp),
+    paymentSummaryReportableItems: Number.parseInt(String(data.paymentSummaryReportableItems || ""), 10) || 0,
+    paymentSummaryTotalSourceItems: Number.parseInt(String(data.paymentSummaryTotalSourceItems || ""), 10) || 0,
+    paymentSummaryRebuiltAt: normalizeString(data.paymentSummaryRebuiltAt),
     lastError: normalizeString(data.lastError),
   };
 }
@@ -93,6 +97,10 @@ export async function syncHubPaymentLedger(hubId, actorId = "ledger-sync") {
     ]);
     const paymentItems = await backfillPaymentRecordsToPaymentItems(normalizedHubId, normalizedActorId, { since });
     const completedAt = new Date().toISOString();
+    const paymentSummary = await rebuildPaymentSummaryFromPaymentItems(normalizedHubId, {
+      actorId: normalizedActorId,
+      updatedAt: completedAt,
+    });
 
     await getPaymentLedgerSyncStatusRef(normalizedHubId).set(
       {
@@ -117,6 +125,9 @@ export async function syncHubPaymentLedger(hubId, actorId = "ledger-sync") {
         paymentItemsSynced: paymentItems.synced,
         paymentItemsSkipped: paymentItems.skipped,
         paymentItemsLatestSourceTimestamp: paymentItems.latestSourceTimestamp,
+        paymentSummaryReportableItems: paymentSummary?.reportableItems || 0,
+        paymentSummaryTotalSourceItems: paymentSummary?.totalSourceItems || 0,
+        paymentSummaryRebuiltAt: paymentSummary?.rebuiltAt || completedAt,
         lastError: "",
       },
       { merge: true }

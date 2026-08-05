@@ -18,6 +18,11 @@ import {
 } from "@/lib/data/payment-records";
 import { listPaymentItemPageByHubId, listPaymentItemsByHubId } from "@/lib/data/payment-items";
 import {
+  buildPaymentSummaryFromPaymentItems,
+  getPaymentSummaryByHubId,
+  selectPaymentSummaryBucket,
+} from "@/lib/data/payment-summary";
+import {
   getNativePaymentTransactionById,
   listNativePaymentTransactionsByHub,
 } from "@/lib/data/native-payment-transactions";
@@ -255,34 +260,52 @@ function filterDuplicateProjectedMembershipCyclePaymentItems(items = []) {
   return items.filter((item) => !duplicateItemIds.has(normalizeString(item.id)));
 }
 
-function filterProjectedPaymentItemsForAdminSummary(items = [], options = {}) {
-  const normalizedStatus = normalizeString(options.paymentStatus);
-  const normalizedType = normalizeString(options.type);
-  const typeQuery = mapAdminPaymentTypeFilterToPaymentItemQuery(normalizedType);
-  const typeValues = Array.isArray(typeQuery.typeValues)
-    ? new Set(typeQuery.typeValues.map(normalizeString))
-    : null;
-  const singleType = normalizeString(typeQuery.type);
+function buildSyntheticRevenueItemsFromMinorTotals(totals = {}, paymentStatus = "paid") {
+  return Object.entries(totals || {})
+    .map(([currency, amountMinor]) => ({
+      paymentStatus,
+      amountMinor: Number.parseInt(String(amountMinor || ""), 10) || 0,
+      refundAmountMinor: paymentStatus === "refunded" ? Number.parseInt(String(amountMinor || ""), 10) || 0 : 0,
+      currency,
+    }))
+    .filter((item) => item.amountMinor !== 0 || item.refundAmountMinor !== 0);
+}
 
-  return items.filter((item) => {
-    if (normalizeString(item.reportingEligibility) === "informational_only") {
-      return false;
-    }
+function mapPaymentSummaryBucketToAdminSummary(bucket = {}, hub = {}) {
+  const locale = resolveLaunchFormattingLocale(hub.locale, hub.country);
+  const fallbackCurrency = hub.defaultCurrency || "USD";
+  const collectedRevenueItems = buildSyntheticRevenueItemsFromMinorTotals(
+    bucket.collectedRevenueMinorByCurrency,
+    "paid"
+  );
+  const refundedRevenueItems = buildSyntheticRevenueItemsFromMinorTotals(
+    bucket.refundedRevenueMinorByCurrency,
+    "refunded"
+  );
 
-    if (normalizedStatus && normalizeString(item.paymentStatus) !== normalizedStatus) {
-      return false;
-    }
-
-    if (typeValues && !typeValues.has(normalizeString(item.type))) {
-      return false;
-    }
-
-    if (singleType && normalizeString(item.type) !== singleType) {
-      return false;
-    }
-
-    return true;
-  });
+  return {
+    total: Number.parseInt(String(bucket.total || ""), 10) || 0,
+    actionRequired: Number.parseInt(String(bucket.actionRequired || ""), 10) || 0,
+    settled: Number.parseInt(String(bucket.settled || ""), 10) || 0,
+    membership: Number.parseInt(String(bucket.membership || ""), 10) || 0,
+    bookings: Number.parseInt(String(bucket.bookings || ""), 10) || 0,
+    collectedRevenue: summarizePaymentItemCollectedRevenue(
+      collectedRevenueItems,
+      (amount, currency) => formatMoney(amount, currency, locale),
+      fallbackCurrency
+    ),
+    refundedRevenue: summarizePaymentItemRefundedRevenue(
+      refundedRevenueItems,
+      (amount, currency) => formatMoney(amount, currency, locale),
+      fallbackCurrency
+    ),
+    overdueItems: Number.parseInt(String(bucket.overdueItems || ""), 10) || 0,
+    recordCounts: {
+      paid: Number.parseInt(String(bucket.recordCounts?.paid || ""), 10) || 0,
+      refunded: Number.parseInt(String(bucket.recordCounts?.refunded || ""), 10) || 0,
+      failed: Number.parseInt(String(bucket.recordCounts?.failed || ""), 10) || 0,
+    },
+  };
 }
 
 function isMembershipUpgradeRecord(record) {
@@ -931,47 +954,40 @@ export async function getHubPaymentProjectionReportByHub(hub, options = {}) {
     userId: options.userId,
     memberId: options.memberId,
   };
-  const [page, summaryProjectionItems] = await Promise.all([
+  const [page, paymentSummary] = await Promise.all([
     listPaymentItemPageByHubId(hub.id, queryOptions),
-    listPaymentItemsByHubId(hub.id),
+    getPaymentSummaryByHubId(hub.id),
   ]);
   const reportableProjectionItems = filterDuplicateProjectedMembershipCyclePaymentItems(page.items);
   const items = reportableProjectionItems
     .filter((item) => normalizeString(item.reportingEligibility) !== "informational_only")
     .map((item) => mapProjectedPaymentItemToPaymentItem(item, hub.slug, routeMode));
-  const summaryItems = filterDuplicateProjectedMembershipCyclePaymentItems(
-    filterProjectedPaymentItemsForAdminSummary(summaryProjectionItems, {
-      paymentStatus: options.paymentStatus,
-      type: options.type,
-    })
-  ).map((item) => mapProjectedPaymentItemToPaymentItem(item, hub.slug, routeMode));
-  const locale = resolveLaunchFormattingLocale(hub.locale, hub.country);
+  let summary = null;
+
+  if (paymentSummary?.schemaVersion) {
+    summary = mapPaymentSummaryBucketToAdminSummary(
+      selectPaymentSummaryBucket(paymentSummary, {
+        paymentStatus: options.paymentStatus,
+        type: options.type,
+      }),
+      hub
+    );
+  } else {
+    const summaryProjectionItems = await listPaymentItemsByHubId(hub.id);
+    const fallbackPaymentSummary = buildPaymentSummaryFromPaymentItems(summaryProjectionItems);
+    summary = mapPaymentSummaryBucketToAdminSummary(
+      selectPaymentSummaryBucket(fallbackPaymentSummary, {
+        paymentStatus: options.paymentStatus,
+        type: options.type,
+      }),
+      hub
+    );
+  }
 
   return {
     hub,
     items,
-    summary: {
-      ...summarizeHubPaymentItems(summaryItems),
-      collectedRevenue: summarizePaymentItemCollectedRevenue(
-        summaryItems,
-        (amount, currency) => formatMoney(amount, currency, locale),
-        hub.defaultCurrency || "USD"
-      ),
-      refundedRevenue: summarizePaymentItemRefundedRevenue(
-        summaryItems,
-        (amount, currency) => formatMoney(amount, currency, locale),
-        hub.defaultCurrency || "USD"
-      ),
-      overdueItems: summaryItems.filter((item) => normalizeString(item.paymentStatus) === "overdue").length,
-      recordCounts: {
-        paid: summaryItems.filter((item) => normalizeString(item.paymentStatus) === "paid").length,
-        refunded: summaryItems.filter((item) => {
-          const paymentStatus = normalizeString(item.paymentStatus);
-          return paymentStatus === "refunded" || paymentStatus === "partially_refunded";
-        }).length,
-        failed: summaryItems.filter((item) => normalizeString(item.paymentStatus) === "failed").length,
-      },
-    },
+    summary,
     pageInfo: {
       nextCursor: page.nextCursor,
       hasMore: page.hasMore,
