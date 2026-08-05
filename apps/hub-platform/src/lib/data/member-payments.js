@@ -27,10 +27,22 @@ function isPaymentItemsReadModelEnabled() {
 }
 
 function resolveProjectionBillingDate(item = {}) {
+  const paymentStatus = normalizeString(item.paymentStatus);
+
+  if (paymentStatus === "paid") {
+    return (
+      normalizeString(item.paidAt) ||
+      normalizeString(item.occurredAt) ||
+      normalizeString(item.updatedAt) ||
+      normalizeString(item.createdAt)
+    );
+  }
+
   return (
     normalizeString(item.dueAt) ||
     normalizeString(item.paidAt) ||
     normalizeString(item.refundedAt) ||
+    normalizeString(item.occurredAt) ||
     normalizeString(item.sortAt) ||
     normalizeString(item.updatedAt) ||
     normalizeString(item.createdAt)

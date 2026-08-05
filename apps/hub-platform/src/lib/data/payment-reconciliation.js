@@ -5,7 +5,7 @@ try {
 }
 
 import { listPendingMembershipUpgradeRequestsByHub } from "@/lib/data/memberships";
-import { listPaymentRecordsByHub } from "@/lib/data/payment-records";
+import { listPaymentRecordsByHub, updatePaymentRecord } from "@/lib/data/payment-records";
 import {
   buildPaymentItemDocumentIdFromPaymentRecord,
   deletePaymentItemById,
@@ -17,6 +17,7 @@ import { listNativePaymentTransactionsByHub, updateNativePaymentTransaction } fr
 import { listEventBookingPaymentItemsByHub } from "@/lib/data/event-bookings";
 import { listCoursePaymentItemsByHub } from "@/lib/data/course-registrations";
 import { rebuildPaymentSummaryFromPaymentItems } from "@/lib/data/payment-summary";
+import { listUsersByHub } from "@/lib/data/user-queries";
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -85,6 +86,52 @@ function resolvePaymentItemSortAt(record = {}) {
   );
 }
 
+function buildWorkflowItemsByPaymentRecordSource(items = []) {
+  const bySource = new Map();
+
+  for (const item of items) {
+    const recordId = normalizeString(item.recordId);
+
+    if (recordId) {
+      bySource.set(recordId, item);
+    }
+  }
+
+  return bySource;
+}
+
+function inferRepairPaidAt(record = {}, helpers = {}) {
+  if (normalizeString(record.financialStatus) !== "paid" || normalizeString(record.paidAt)) {
+    return "";
+  }
+
+  const nativeTransaction = normalizeString(record.nativeTransactionId)
+    ? helpers.nativeTransactionsById?.get(normalizeString(record.nativeTransactionId))
+    : null;
+  const nativePaidAt = normalizeString(nativeTransaction?.paymentReceivedAt);
+
+  if (nativePaidAt) {
+    return nativePaidAt;
+  }
+
+  const sourceType = normalizeString(record.sourceType);
+  const sourceId = normalizeString(record.sourceId);
+
+  if (sourceType === "eventBooking" || normalizeString(record.kind) === "event_booking") {
+    return normalizeString(helpers.eventItemsBySourceId?.get(sourceId)?.paymentCompletedAt);
+  }
+
+  if (sourceType === "courseRegistration" || normalizeString(record.kind) === "course_registration") {
+    return normalizeString(helpers.courseItemsBySourceId?.get(sourceId)?.paymentCompletedAt);
+  }
+
+  if (sourceType === "membershipPayment" || normalizeString(record.kind) === "membership_cycle") {
+    return normalizeString(record.occurredAt) || normalizeString(record.createdAt) || normalizeString(record.updatedAt);
+  }
+
+  return "";
+}
+
 function pushProjectionMismatch(issues, field, paymentRecord, paymentItem, expected, actual) {
   pushIssue(
     issues,
@@ -138,13 +185,14 @@ export async function getHubPaymentReconciliationReport(hubId, options = {}) {
     };
   }
 
-  const [paymentRecords, paymentItems, nativeTransactions, eventItems, courseItems, pendingUpgradeRequests] = await Promise.all([
+  const [paymentRecords, paymentItems, nativeTransactions, eventItems, courseItems, pendingUpgradeRequests, users] = await Promise.all([
     listPaymentRecordsByHub(normalizedHubId),
     listPaymentItemsByHubId(normalizedHubId),
     listNativePaymentTransactionsByHub(normalizedHubId),
     listEventBookingPaymentItemsByHub(normalizedHubId),
     listCoursePaymentItemsByHub(normalizedHubId),
     listPendingMembershipUpgradeRequestsByHub(normalizedHubId),
+    listUsersByHub(normalizedHubId),
   ]);
 
   const issues = [];
@@ -156,6 +204,7 @@ export async function getHubPaymentReconciliationReport(hubId, options = {}) {
       .map((record) => [normalizeString(record.nativeTransactionId), record])
   );
   const nativeTransactionsById = new Map(nativeTransactions.map((transaction) => [normalizeString(transaction.id), transaction]));
+  const usersById = new Map(users.map((user) => [normalizeString(user.id), user]));
 
   for (const record of paymentRecords) {
     const paymentRecordId = normalizeString(record.id);
@@ -180,6 +229,24 @@ export async function getHubPaymentReconciliationReport(hubId, options = {}) {
       continue;
     }
 
+    if (normalizeString(record.financialStatus) === "paid" && !normalizeString(record.paidAt)) {
+      pushIssue(
+        issues,
+        "paid_payment_record_missing_paid_at",
+        "danger",
+        "Paid payment record is missing paid date",
+        "This canonical payment record is marked paid but does not have a paidAt timestamp. The admin ledger cannot safely show an actual paid date until this is repaired.",
+        {
+          paymentRecordId,
+          kind: record.kind,
+          sourceType: record.sourceType,
+          sourceId: record.sourceId,
+          dueAt: record.dueAt,
+          occurredAt: record.occurredAt,
+        }
+      );
+    }
+
     const expectedValues = {
       paymentRecordId,
       sourceCollection: "paymentRecords",
@@ -193,6 +260,9 @@ export async function getHubPaymentReconciliationReport(hubId, options = {}) {
       currency: normalizeString(record.currency).toUpperCase(),
       reportingEligibility: normalizeString(record.reportingEligibility),
       sourceConfidence: normalizeString(record.sourceConfidence),
+      occurredAt: normalizeString(record.occurredAt),
+      paidAt: normalizeString(record.paidAt),
+      dueAt: normalizeString(record.dueAt),
       sortAt: resolvePaymentItemSortAt(record),
       schemaVersion: PAYMENT_ITEM_SCHEMA_VERSION,
     };
@@ -209,6 +279,9 @@ export async function getHubPaymentReconciliationReport(hubId, options = {}) {
       currency: normalizeString(paymentItem.currency).toUpperCase(),
       reportingEligibility: normalizeString(paymentItem.reportingEligibility),
       sourceConfidence: normalizeString(paymentItem.sourceConfidence),
+      occurredAt: normalizeString(paymentItem.occurredAt),
+      paidAt: normalizeString(paymentItem.paidAt),
+      dueAt: normalizeString(paymentItem.dueAt),
       sortAt: normalizeString(paymentItem.sortAt),
       schemaVersion: parseInteger(paymentItem.schemaVersion),
     };
@@ -219,6 +292,40 @@ export async function getHubPaymentReconciliationReport(hubId, options = {}) {
       if (normalizeString(expected) !== normalizeString(actual)) {
         pushProjectionMismatch(issues, field, record, paymentItem, expected, actual);
       }
+    }
+
+    if (normalizeString(paymentItem.paymentStatus) === "paid" && !normalizeString(paymentItem.paidAt)) {
+      pushIssue(
+        issues,
+        "paid_payment_item_missing_paid_at",
+        "danger",
+        "Paid payment item is missing paid date",
+        "This projected payment item is marked paid but does not have a paidAt timestamp. It should be repaired from the canonical payment record/source transaction.",
+        {
+          paymentRecordId,
+          paymentItemId: paymentItem.id,
+          sortAt: paymentItem.sortAt,
+          dueAt: paymentItem.dueAt,
+        }
+      );
+    }
+
+    const user = usersById.get(normalizeString(paymentItem.userId));
+
+    if (user && !normalizeString(paymentItem.displayName) && !normalizeString(paymentItem.email)) {
+      pushIssue(
+        issues,
+        "payment_item_missing_member_identity",
+        "warning",
+        "Payment item is missing member identity",
+        "This projected payment item points to an existing hub user but does not include the denormalized member name or email used by the payments table.",
+        {
+          paymentRecordId,
+          paymentItemId: paymentItem.id,
+          userId: paymentItem.userId,
+          userStatus: user.status,
+        }
+      );
     }
   }
 
@@ -489,10 +596,13 @@ export async function repairHubPaymentReconciliation(hubId, actorId = "payment-r
     throw new Error("Hub id is required.");
   }
 
-  const [paymentRecords, paymentItems, nativeTransactions] = await Promise.all([
+  const [paymentRecords, paymentItems, nativeTransactions, eventItems, courseItems, users] = await Promise.all([
     listPaymentRecordsByHub(normalizedHubId),
     listPaymentItemsByHubId(normalizedHubId),
     listNativePaymentTransactionsByHub(normalizedHubId),
+    listEventBookingPaymentItemsByHub(normalizedHubId),
+    listCoursePaymentItemsByHub(normalizedHubId),
+    listUsersByHub(normalizedHubId),
   ]);
   const startedAt = new Date().toISOString();
   const paymentRecordsById = new Map(paymentRecords.map((record) => [normalizeString(record.id), record]));
@@ -501,22 +611,54 @@ export async function repairHubPaymentReconciliation(hubId, actorId = "payment-r
       .filter((record) => normalizeString(record.nativeTransactionId))
       .map((record) => [normalizeString(record.nativeTransactionId), record])
   );
+  const nativeTransactionsById = new Map(nativeTransactions.map((transaction) => [normalizeString(transaction.id), transaction]));
+  const eventItemsBySourceId = buildWorkflowItemsByPaymentRecordSource(eventItems);
+  const courseItemsBySourceId = buildWorkflowItemsByPaymentRecordSource(courseItems);
+  const usersById = new Map(users.map((user) => [normalizeString(user.id), user]));
   const repairSummary = {
     startedAt,
     completedAt: "",
     actorId: normalizedActorId,
     paymentItemsUpserted: 0,
+    paymentRecordsPaidAtRepaired: 0,
     orphanPaymentItemsDeleted: 0,
     transactionLinksRepaired: 0,
     skippedManualReview: 0,
   };
 
   for (const record of paymentRecords) {
-    await upsertPaymentItemFromPaymentRecord(normalizedHubId, record, {
-      actorId: normalizedActorId,
-      updatedAt: startedAt,
-      syncMemberDirectory: false,
+    const inferredPaidAt = inferRepairPaidAt(record, {
+      nativeTransactionsById,
+      eventItemsBySourceId,
+      courseItemsBySourceId,
     });
+    const repairedRecord = inferredPaidAt
+      ? await updatePaymentRecord(
+          normalizedHubId,
+          record.id,
+          {
+            paidAt: inferredPaidAt,
+          },
+          normalizedActorId,
+          {
+            rebuildPaymentSummary: false,
+            syncMemberDirectory: false,
+          }
+        )
+      : record;
+
+    if (inferredPaidAt) {
+      repairSummary.paymentRecordsPaidAtRepaired += 1;
+    }
+
+    if (!inferredPaidAt) {
+      await upsertPaymentItemFromPaymentRecord(normalizedHubId, repairedRecord, {
+        actorId: normalizedActorId,
+        user: usersById.get(normalizeString(repairedRecord.userId)),
+        updatedAt: startedAt,
+        syncMemberDirectory: false,
+      });
+    }
     repairSummary.paymentItemsUpserted += 1;
   }
 

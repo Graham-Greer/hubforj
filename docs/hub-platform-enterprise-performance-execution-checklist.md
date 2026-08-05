@@ -152,6 +152,8 @@ Verification notes:
   - manual ledger sync now backfills `paymentItems` after existing membership/native payment normalization
   - the payment item page helper uses stable `sortAt` + document id cursors and currently allows one indexed secondary filter at a time
   - support-only reconciliation now checks `paymentRecords` to `paymentItems` projection parity
+  - projection parity includes lifecycle fields (`occurredAt`, `paidAt`, `dueAt`) so the optimized admin ledger cannot silently display a renewal/event date as a paid date
+  - live payment item writes hydrate denormalized member `displayName`/`email` from the hub user record when `userId` exists, preventing active members from appearing as former members in the payments table
   - Firebase `paymentItems` indexes must finish building before admin/member payment UI read paths are cut over
   - admin payments has an opt-in projection-backed report path behind `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true`
   - in read-model mode, admin payments status/type filters are URL-driven server queries and pagination uses opaque cursor tokens
@@ -176,10 +178,10 @@ Verification notes:
   - production verification after ledger sync showed the member billing route using the bounded user-scoped read path, with historical free/not-required records present in the ledger
 - Payments reconciliation and repair:
   - support diagnostics include a safe repair action for payment reconciliation issues
-  - safe repair upserts canonical `paymentRecords` into `paymentItems`, deletes orphan payment item projections, repairs missing native transaction back-links when an unambiguous payment record already exists, and rebuilds `paymentSummary`
-  - safe repair intentionally does not overwrite ambiguous financial state or workflow status drift; those issues remain diagnostics/manual-review items
+  - safe repair upserts canonical `paymentRecords` into `paymentItems`, deletes orphan payment item projections, repairs missing native transaction back-links when an unambiguous payment record already exists, repairs paid records missing `paidAt` only from unambiguous source timestamps, hydrates projected member identity, and rebuilds `paymentSummary`
+  - safe repair intentionally does not overwrite ambiguous financial state, workflow status drift, or paid dates that can only be guessed from future due dates; those issues remain diagnostics/manual-review items
   - expected support workflow: run ledger sync first for source normalization, then run safe reconciliation repair if projection/back-link drift remains
-  - current production diagnostics show no reconciliation issues flagged, so repair is available but not currently required
+  - after deploying payment paid-date/member-identity hardening, rerun payment reconciliation; old records may newly flag because the diagnostics now check stricter enterprise ledger invariants
 - Admin members directory:
   - `hubs/{hubId}/memberDirectory/{userId}` is the query-optimized read model for `/admin/members`
   - the route uses the read model only when `HUB_PLATFORM_MEMBER_DIRECTORY_READ_MODEL_ENABLED=true`

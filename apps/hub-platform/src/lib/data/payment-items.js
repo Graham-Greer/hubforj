@@ -8,6 +8,7 @@ import { getFirebaseAdminDb } from "@/lib/firebase/admin";
 import { getFallbackRegionalMarket } from "@/lib/domain/regional-markets";
 import { FieldPath } from "firebase-admin/firestore";
 import { syncMemberDirectoryPaymentAttentionForUser } from "./member-directory.js";
+import { getUserById } from "./user-queries.js";
 
 export const PAYMENT_ITEM_SCHEMA_VERSION = 1;
 
@@ -156,6 +157,7 @@ export function normalizePaymentItemRecord(record = {}) {
     sourceConfidence: normalizeString(record.sourceConfidence),
     createdAt: normalizeString(record.createdAt),
     updatedAt: normalizeString(record.updatedAt),
+    occurredAt: normalizeString(record.occurredAt),
     paidAt: normalizeString(record.paidAt),
     dueAt: normalizeString(record.dueAt),
     refundedAt: normalizeString(record.refundedAt),
@@ -199,6 +201,7 @@ export function buildPaymentItemFromPaymentRecord(record = {}, user = null) {
     sourceConfidence: record.sourceConfidence,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
+    occurredAt: record.occurredAt,
     paidAt: record.paidAt,
     dueAt: record.dueAt,
     refundedAt: record.refundedAt,
@@ -210,7 +213,14 @@ export function buildPaymentItemFromPaymentRecord(record = {}, user = null) {
 
 export async function upsertPaymentItemFromPaymentRecord(hubId, paymentRecord, options = {}) {
   const normalizedHubId = normalizeString(hubId);
-  const item = buildPaymentItemFromPaymentRecord({ ...paymentRecord, hubId: normalizedHubId }, options.user);
+  const normalizedUserId = normalizeString(paymentRecord?.userId);
+  let projectionUser = options.user || null;
+
+  if (!projectionUser && normalizedHubId && normalizedUserId) {
+    projectionUser = await getUserById(normalizedHubId, normalizedUserId);
+  }
+
+  const item = buildPaymentItemFromPaymentRecord({ ...paymentRecord, hubId: normalizedHubId }, projectionUser);
 
   if (!normalizedHubId || !item.id || !item.paymentRecordId) {
     return null;
@@ -223,8 +233,8 @@ export async function upsertPaymentItemFromPaymentRecord(hubId, paymentRecord, o
   const writeModel = {
     ...item,
     hubId: normalizedHubId,
-    displayName: item.displayName || (!options.user ? normalizeString(existing.displayName) : ""),
-    email: item.email || (!options.user ? normalizeString(existing.email).toLowerCase() : ""),
+    displayName: item.displayName || normalizeString(existing.displayName),
+    email: item.email || normalizeString(existing.email).toLowerCase(),
     updatedAt: now,
     schemaVersion: PAYMENT_ITEM_SCHEMA_VERSION,
   };

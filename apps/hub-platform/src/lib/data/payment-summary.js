@@ -111,9 +111,10 @@ function parseTimestampMs(value) {
 function getPaymentItemRevenueTimestampMs(item = {}) {
   return (
     parseTimestampMs(item.paidAt) ||
-    parseTimestampMs(item.sortAt) ||
+    parseTimestampMs(item.occurredAt) ||
     parseTimestampMs(item.updatedAt) ||
-    parseTimestampMs(item.createdAt)
+    parseTimestampMs(item.createdAt) ||
+    parseTimestampMs(item.sortAt)
   );
 }
 
