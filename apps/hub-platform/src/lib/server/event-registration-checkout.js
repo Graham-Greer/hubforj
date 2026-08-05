@@ -175,6 +175,7 @@ export async function startEventRegistrationCheckout({
       kind: "event_registration",
       sourceType: "eventRegistration",
       sourceId: registration.id,
+      sourceSlug: event.slug,
       title: event.title || "Event booking",
       description: normalizeString(hub?.name) ? `Event booking for ${hub.name}` : "Event booking",
       amountMinor,

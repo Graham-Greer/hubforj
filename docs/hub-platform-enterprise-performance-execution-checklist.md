@@ -162,6 +162,13 @@ Verification notes:
   - migration safety net: if `paymentSummary` is absent, the route can temporarily fall back to deriving the summary from `paymentItems`, but production rollout should run ledger sync so this fallback is not used
   - global search/date filtering and CSV export remain separate Phase 5 follow-up work and must not fall back to broad reads as the permanent enterprise path
   - payment UI still uses the legacy report builder by default until sync and dual-read parity are verified
+- Member billing read-model:
+  - `/account/billing` uses the projection-backed `listMemberPaymentItems` path when `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true`
+  - member billing is scoped to the authenticated member user id through the indexed `paymentItems` helper
+  - `/account` overview requests a smaller bounded member payment slice for recent billing/attention state
+  - event/course payment record writes now include `sourceSlug` for future precise member-facing billing actions
+  - older projected rows without `sourceSlug` intentionally fall back to `/events` or `/courses` rather than adding per-row public content reads
+  - expected Network/server result: member billing no longer reads all memberships, all user bookings, all user course registrations, and all user payment records just to render billing history when the read-model flag is enabled
 
 ## Per-Slice Rollout Checklist
 

@@ -8,13 +8,113 @@ import { getCurrentMembershipByUser } from "@/lib/data/memberships";
 import { listCourseRegistrationsByUser } from "@/lib/data/course-registrations";
 import { listEventBookingsByBooker } from "@/lib/data/event-bookings";
 import { listPaymentRecordsByUser } from "@/lib/data/payment-records";
+import { listPaymentItemPageByHubId } from "@/lib/data/payment-items";
+import { filterDuplicateProjectedMembershipCyclePaymentItems, mapPaymentItemTypeToAdminKind } from "@/lib/data/payment-summary";
 import { buildMemberPaymentItems } from "@/lib/domain/member-account";
+import { getFallbackRegionalMarket } from "@/lib/domain/regional-markets";
 
 function normalizeString(value) {
   return String(value || "").trim();
 }
 
-export async function listMemberPaymentItems(hubId, userId) {
+function parseInteger(value) {
+  const numeric = Number.parseInt(String(value || ""), 10);
+  return Number.isFinite(numeric) ? numeric : 0;
+}
+
+function isPaymentItemsReadModelEnabled() {
+  return normalizeString(process.env.HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED).toLowerCase() === "true";
+}
+
+function resolveProjectionBillingDate(item = {}) {
+  return (
+    normalizeString(item.dueAt) ||
+    normalizeString(item.paidAt) ||
+    normalizeString(item.refundedAt) ||
+    normalizeString(item.sortAt) ||
+    normalizeString(item.updatedAt) ||
+    normalizeString(item.createdAt)
+  );
+}
+
+function resolveProjectionBillingDetail(item = {}) {
+  const kind = mapPaymentItemTypeToAdminKind(item.type);
+  const paymentStatus = normalizeString(item.paymentStatus);
+
+  if (kind === "event") {
+    return paymentStatus === "paid"
+      ? "Payment received for your event booking."
+      : paymentStatus === "failed"
+        ? "Payment failed for your event booking."
+        : "Event booking payment state.";
+  }
+
+  if (kind === "course") {
+    return paymentStatus === "paid"
+      ? "Payment received for your course enrolment."
+      : paymentStatus === "failed"
+        ? "Payment failed for your course enrolment."
+        : "Course enrolment payment state.";
+  }
+
+  if (normalizeString(item.type) === "upgradeRequest") {
+    return paymentStatus === "paid"
+      ? "Payment received for your membership upgrade."
+      : paymentStatus === "failed"
+        ? "Payment failed for your membership upgrade."
+        : normalizeString(item.status) === "cancelled"
+          ? "Checkout was cancelled before payment completed."
+          : "Membership upgrade payment state.";
+  }
+
+  return "Membership payment record.";
+}
+
+function mapProjectionToMemberPaymentItem(item = {}) {
+  const kind = mapPaymentItemTypeToAdminKind(item.type);
+  const sourceSlug = normalizeString(item.sourceSlug);
+
+  return {
+    id: item.id,
+    recordId: item.paymentRecordId || item.sourceId || item.id,
+    userId: item.userId,
+    kind,
+    title: item.title || (kind === "course" ? "Course enrolment" : kind === "event" ? "Event booking" : "Membership"),
+    status: item.status,
+    paymentStatus: normalizeString(item.paymentStatus) || "unpaid",
+    amountMinor: parseInteger(item.amountMinor),
+    amount: normalizeString(item.amountDisplay),
+    currency: normalizeString(item.currency).toUpperCase() || getFallbackRegionalMarket().defaultCurrency,
+    dueDate: resolveProjectionBillingDate(item),
+    detail: resolveProjectionBillingDetail(item),
+    eventId: kind === "event" ? item.sourceParentId : "",
+    eventSlug: kind === "event" ? sourceSlug : "",
+    courseId: kind === "course" ? item.sourceParentId : "",
+    courseSlug: kind === "course" ? sourceSlug : "",
+    nativePaymentTransactionId: item.nativeTransactionId,
+  };
+}
+
+async function listMemberProjectedPaymentItems(hubId, userId, options = {}) {
+  const normalizedHubId = normalizeString(hubId);
+  const normalizedUserId = normalizeString(userId);
+
+  if (!normalizedHubId || !normalizedUserId) {
+    return [];
+  }
+
+  const page = await listPaymentItemPageByHubId(normalizedHubId, {
+    userId: normalizedUserId,
+    limit: options.limit || 100,
+  });
+
+  return filterDuplicateProjectedMembershipCyclePaymentItems(page.items)
+    .filter((item) => normalizeString(item.reportingEligibility) !== "informational_only")
+    .map(mapProjectionToMemberPaymentItem)
+    .sort((left, right) => String(right.dueDate || "").localeCompare(String(left.dueDate || "")));
+}
+
+async function listMemberLegacyPaymentItems(hubId, userId) {
   const [membership, eventBookings, courseRegistrations, paymentRecords] = await Promise.all([
     getCurrentMembershipByUser(hubId, userId),
     listEventBookingsByBooker(hubId, userId),
@@ -69,4 +169,12 @@ export async function listMemberPaymentItems(hubId, userId) {
       };
     })
     .sort((left, right) => String(right.dueDate || "").localeCompare(String(left.dueDate || "")));
+}
+
+export async function listMemberPaymentItems(hubId, userId, options = {}) {
+  if (isPaymentItemsReadModelEnabled()) {
+    return listMemberProjectedPaymentItems(hubId, userId, options);
+  }
+
+  return listMemberLegacyPaymentItems(hubId, userId);
 }

@@ -19,7 +19,7 @@ async function MemberAccountOverviewContent({ hub, routeMode }) {
     getCurrentMembershipByUser(hub.id, memberSession.user.id),
     listEventBookingsByBooker(hub.id, memberSession.user.id),
     listCourseRegistrationsByUser(hub.id, memberSession.user.id),
-    listMemberPaymentItems(hub.id, memberSession.user.id),
+    listMemberPaymentItems(hub.id, memberSession.user.id, { limit: 25 }),
   ]);
   const overview = buildMemberOverviewModel({
     hub,

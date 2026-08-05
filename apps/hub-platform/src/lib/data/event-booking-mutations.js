@@ -172,6 +172,7 @@ async function syncEventBookingPaymentRecord(hubId, eventId, booking, actorId = 
       kind: "event_booking",
       sourceType: "eventBooking",
       sourceId: booking.id,
+      sourceSlug: normalizeString(event?.slug) || normalizeString(existingRecord?.sourceSlug),
       title:
         normalizeString(event?.title) ||
         normalizeString(booking.eventTitleSnapshot) ||
