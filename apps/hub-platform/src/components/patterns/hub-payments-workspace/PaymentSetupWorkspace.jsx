@@ -220,6 +220,14 @@ export default function PaymentSetupWorkspace({
                   value={`${Number(syncStatus?.nativeMembershipUpgradesSynced || 0)} synced · ${Number(syncStatus?.nativeMembershipUpgradesSkipped || 0)} skipped · ${Number(syncStatus?.nativeMembershipUpgradesScanned || 0)} scanned`}
                 />
                 <DetailRow
+                  label="Event bookings"
+                  value={`${Number(syncStatus?.eventBookingPaymentsSynced || 0)} synced · ${Number(syncStatus?.eventBookingPaymentsSkipped || 0)} skipped · ${Number(syncStatus?.eventBookingPaymentsScanned || 0)} scanned`}
+                />
+                <DetailRow
+                  label="Course registrations"
+                  value={`${Number(syncStatus?.courseRegistrationPaymentsSynced || 0)} synced · ${Number(syncStatus?.courseRegistrationPaymentsSkipped || 0)} skipped · ${Number(syncStatus?.courseRegistrationPaymentsScanned || 0)} scanned`}
+                />
+                <DetailRow
                   label="Payment items"
                   value={`${Number(syncStatus?.paymentItemsSynced || 0)} synced · ${Number(syncStatus?.paymentItemsSkipped || 0)} skipped · ${Number(syncStatus?.paymentItemsScanned || 0)} scanned`}
                 />

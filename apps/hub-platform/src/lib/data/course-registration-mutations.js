@@ -116,6 +116,17 @@ function buildCourseRegistrationLedgerState(paymentStatus, registrationStatus, a
     };
   }
 
+  if (normalizedPaymentStatus === "not_required") {
+    return {
+      operationalStatus: normalizedRegistrationStatus === "cancelled" ? "cancelled" : "completed",
+      financialStatus: "not_required",
+      paidAt: "",
+      refundedAt: "",
+      refundAmountMinor: 0,
+      refundDisplay: "",
+    };
+  }
+
   return {
     operationalStatus: normalizedRegistrationStatus === "cancelled" ? "cancelled" : "open",
     financialStatus: "unpaid",
@@ -126,7 +137,7 @@ function buildCourseRegistrationLedgerState(paymentStatus, registrationStatus, a
   };
 }
 
-async function syncCourseRegistrationPaymentRecord(hubId, courseId, registration, actorId = "system") {
+export async function syncCourseRegistrationPaymentRecord(hubId, courseId, registration, actorId = "system", options = {}) {
   const normalizedHubId = normalizeString(hubId);
   const normalizedCourseId = normalizeString(courseId);
 
@@ -209,8 +220,62 @@ async function syncCourseRegistrationPaymentRecord(hubId, courseId, registration
         normalizeString(existingRecord?.sourceConfidence) || (nativeTransactionId ? "authoritative" : "declared"),
       reportingEligibility: resolvePaymentRecordReportingEligibility(amountMinor, registration.paymentStatus),
     },
-    actorId
+    actorId,
+    options
   );
+}
+
+export async function backfillCourseRegistrationPaymentRecordsToLedger(hubId, actorId = "course-registration-payment-backfill", options = {}) {
+  const normalizedHubId = normalizeString(hubId);
+
+  if (!normalizedHubId) {
+    return { total: 0, scanned: 0, synced: 0, skipped: 0, latestSourceTimestamp: "" };
+  }
+
+  const db = getFirebaseAdminDb();
+  const courseSnapshot = await db.collection("hubs").doc(normalizedHubId).collection("courses").get();
+  let scanned = 0;
+  let synced = 0;
+  let skipped = 0;
+  let latestSourceTimestamp = "";
+  const since = normalizeString(options.since);
+
+  for (const courseDoc of courseSnapshot.docs) {
+    const registrationSnapshot = await courseDoc.ref.collection("registrations").get();
+
+    for (const registrationDoc of registrationSnapshot.docs) {
+      scanned += 1;
+      const registration = normalizeCourseRegistrationRecord({
+        id: registrationDoc.id,
+        hubId: normalizedHubId,
+        courseId: courseDoc.id,
+        ...registrationDoc.data(),
+      });
+      const candidateTimestamp = normalizeString(registration.updatedAt || registration.createdAt);
+
+      if (candidateTimestamp && (!latestSourceTimestamp || candidateTimestamp > latestSourceTimestamp)) {
+        latestSourceTimestamp = candidateTimestamp;
+      }
+
+      if (since && candidateTimestamp && candidateTimestamp <= since) {
+        skipped += 1;
+        continue;
+      }
+
+      await syncCourseRegistrationPaymentRecord(normalizedHubId, courseDoc.id, registration, actorId, {
+        rebuildPaymentSummary: false,
+      });
+      synced += 1;
+    }
+  }
+
+  return {
+    total: scanned,
+    scanned,
+    synced,
+    skipped,
+    latestSourceTimestamp,
+  };
 }
 
 export async function createCourseRegistrationForMember(hubId, courseId, userId, actorId = "system") {

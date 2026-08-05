@@ -336,15 +336,17 @@ Implementation note:
 - Duplicate paid membership upgrade versus membership-cycle suppression is applied to the user-scoped projection list before rendering.
 - Informational-only payment items are included in member billing because member billing is an account activity/payment-history view, not an admin revenue report.
 - Admin revenue/reporting paths continue to exclude informational-only rows where appropriate.
-- While historical `paymentItems` coverage matures, the projection-backed member helper merges in missing legacy user-scoped billing rows from membership, event bookings, course registrations, and payment records.
-- The legacy merge is deduped by stable payment/source/transaction identifiers and exists to preserve member-facing correctness for historical free/not-required records that may not yet have complete `paymentItems` projections.
+- Historical event bookings and course registrations are backfilled into canonical `paymentRecords` by the support-only ledger sync before `paymentItems` are rebuilt.
+- The projection-backed member helper no longer performs a runtime legacy-source merge; production member billing should be served from the user-scoped `paymentItems` read model once sync has run.
+- Event/course `not_required` source records are preserved as `financialStatus: not_required` and `reportingEligibility: informational_only`, so member billing can display them while admin revenue reporting can continue excluding them.
 - If the read-model flag is false, the legacy composer remains available as rollback and still reads membership, event bookings, course registrations, and payment records.
 
 Remaining Phase 6 follow-up:
 
 - Add cursor pagination to the member billing UI before the route needs to show more than the bounded first-page result set.
 - Backfill `sourceSlug` for existing event/course payment records if precise historical “View event/course” links become important enough to justify the migration.
-- Backfill historical free/not-required member activity into `paymentRecords`/`paymentItems`; once verified, remove the member billing legacy-source merge fallback.
+- Confirm support diagnostics show event booking and course registration sync counts after deployment.
+- Confirm historical free/not-required member activity appears in `paymentItems`; if any source family remains missing, add it to the support-only backfill rather than reintroducing runtime fallback reads.
 - Consider a small member billing summary aggregate only if individual members regularly exceed the bounded result size.
 
 ### Phase 7: Reconciliation And Repair
