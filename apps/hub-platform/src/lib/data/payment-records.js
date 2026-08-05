@@ -6,6 +6,8 @@ try {
 
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
 import { getFallbackRegionalMarket } from "@/lib/domain/regional-markets";
+import { listUsersByHub } from "./users.js";
+import { upsertPaymentItemFromPaymentRecord } from "./payment-items.js";
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -136,6 +138,7 @@ export async function createPaymentRecord(hubId, payload, actorId = "system") {
   };
 
   await ref.set(writeModel);
+  await upsertPaymentItemFromPaymentRecord(normalizedHubId, { id: ref.id, ...writeModel }, { updatedAt: now });
 
   return normalizePaymentRecord({
     id: ref.id,
@@ -332,6 +335,16 @@ export async function upsertPaymentRecordBySource(hubId, payload, actorId = "sys
       createdAt: now,
       createdBy: normalizedActorId,
     });
+    await upsertPaymentItemFromPaymentRecord(
+      normalizedHubId,
+      {
+        id: documentId,
+        ...writeModel,
+        createdAt: now,
+        createdBy: normalizedActorId,
+      },
+      { updatedAt: now }
+    );
 
     return normalizePaymentRecord({
       id: documentId,
@@ -342,6 +355,16 @@ export async function upsertPaymentRecordBySource(hubId, payload, actorId = "sys
   }
 
   await ref.set(writeModel, { merge: true });
+  await upsertPaymentItemFromPaymentRecord(
+    normalizedHubId,
+    {
+      id: documentId,
+      hubId: normalizedHubId,
+      ...existing.data(),
+      ...writeModel,
+    },
+    { updatedAt: now }
+  );
 
   return normalizePaymentRecord({
     id: documentId,
@@ -366,13 +389,24 @@ export async function updatePaymentRecord(hubId, paymentRecordId, payload, actor
     throw new Error("Payment record not found.");
   }
 
+  const now = new Date().toISOString();
   const writeModel = {
     ...payload,
-    updatedAt: new Date().toISOString(),
+    updatedAt: now,
     updatedBy: normalizeString(actorId) || "system",
   };
 
   await ref.set(writeModel, { merge: true });
+  await upsertPaymentItemFromPaymentRecord(
+    normalizedHubId,
+    {
+      id: normalizedPaymentRecordId,
+      hubId: normalizedHubId,
+      ...existing.data(),
+      ...writeModel,
+    },
+    { updatedAt: now }
+  );
 
   return normalizePaymentRecord({
     id: normalizedPaymentRecordId,
@@ -380,4 +414,58 @@ export async function updatePaymentRecord(hubId, paymentRecordId, payload, actor
     ...existing.data(),
     ...writeModel,
   });
+}
+
+export async function backfillPaymentRecordsToPaymentItems(hubId, actorId = "payment-item-backfill", options = {}) {
+  const normalizedHubId = normalizeString(hubId);
+  const since = normalizeString(options.since);
+
+  if (!normalizedHubId) {
+    return {
+      total: 0,
+      scanned: 0,
+      synced: 0,
+      skipped: 0,
+      latestSourceTimestamp: "",
+    };
+  }
+
+  const [paymentRecords, users] = await Promise.all([
+    listPaymentRecordsByHub(normalizedHubId),
+    listUsersByHub(normalizedHubId),
+  ]);
+  const usersById = new Map(users.map((user) => [normalizeString(user.id), user]));
+  let scanned = 0;
+  let synced = 0;
+  let skipped = 0;
+  let latestSourceTimestamp = "";
+
+  for (const record of paymentRecords) {
+    scanned += 1;
+    const candidateTimestamp = normalizeString(record.updatedAt || record.paidAt || record.occurredAt || record.createdAt);
+
+    if (candidateTimestamp && (!latestSourceTimestamp || candidateTimestamp > latestSourceTimestamp)) {
+      latestSourceTimestamp = candidateTimestamp;
+    }
+
+    if (since && candidateTimestamp && candidateTimestamp <= since) {
+      skipped += 1;
+      continue;
+    }
+
+    await upsertPaymentItemFromPaymentRecord(normalizedHubId, record, {
+      actorId,
+      user: usersById.get(normalizeString(record.userId)),
+      updatedAt: candidateTimestamp || new Date().toISOString(),
+    });
+    synced += 1;
+  }
+
+  return {
+    total: paymentRecords.length,
+    scanned,
+    synced,
+    skipped,
+    latestSourceTimestamp,
+  };
 }

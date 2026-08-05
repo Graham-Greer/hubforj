@@ -111,6 +111,15 @@ Copy this block into the relevant implementation notes before starting a slice.
 
 ### Current Admin Detail Slice Notes
 
+Status: implemented and user-verified in production-like route testing.
+
+Verification notes:
+
+- User confirmed the event/course route-family changes look as planned after testing.
+- Course list/detail counts now agree after the course registration summary projection repair and display-semantics fix.
+- Read-only event/course detail routes no longer show the previously observed edit-only media/payment work.
+- Event/course route-family navigation no longer intentionally emits slug-prefixed admin hrefs on host-mode URLs.
+
 - Event detail/edit route:
   - sibling `registrations`, `attendance`, and `export` route prefetches have been disabled on the detail action buttons
   - the detail/edit shell no longer calls `listEventAdminAttendanceRows`
@@ -135,6 +144,17 @@ Copy this block into the relevant implementation notes before starting a slice.
   - route-scoped onboarding state is reused per hub once loaded
   - full checklist hydration still occurs only where the checklist is relevant
   - expected Network result: route/query changes such as `?mode=edit` should not produce repeated `onboarding?scope=route` fetches for the same hub
+- Payments ledger projection:
+  - first projection slice adds `hubs/{hubId}/paymentItems/{paymentItemId}` as a query-optimized read model
+  - existing `paymentRecords` remain canonical during migration
+  - `paymentItems` use deterministic ids derived from canonical payment records
+  - `createPaymentRecord`, `upsertPaymentRecordBySource`, and `updatePaymentRecord` now maintain the projection
+  - manual ledger sync now backfills `paymentItems` after existing membership/native payment normalization
+  - the payment item page helper uses stable `sortAt` + document id cursors and currently allows one indexed secondary filter at a time
+  - support-only reconciliation now checks `paymentRecords` to `paymentItems` projection parity
+  - Firebase `paymentItems` indexes must finish building before admin/member payment UI read paths are cut over
+  - admin payments has an opt-in projection-backed report path behind `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true`
+  - payment UI still uses the legacy report builder by default until sync and dual-read parity are verified
 
 ## Per-Slice Rollout Checklist
 

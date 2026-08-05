@@ -147,6 +147,13 @@ Current improvements already completed:
 - course registration summary projections now include a schema version; legacy or incomplete projections perform one lightweight status-only summary repair before being trusted
 - admin course list badges now use the same resolved summary projection as course detail, avoiding per-course live enrolment count fan-out and preventing list/detail count drift
 
+Verified progress:
+
+- Event/course admin route-family performance slice is implemented and user-verified.
+- Course detail uses enrolled registrations for upcoming `Attending` display and switches to marked attendance after the course has happened.
+- Read-only event/course detail routes avoid edit-only media/payment dependencies.
+- Event/course route-family links and create/delete redirects use host/path-aware admin URLs, reducing avoidable middleware slug-stripping redirects on subdomain hubs.
+
 Known gaps:
 
 - hub-platform-wide skeleton primitive layer exists for the first admin slice, but broader route rollout is still pending
