@@ -173,6 +173,11 @@ Verification notes:
   - member billing no longer performs a runtime legacy-source merge when the read-model flag is enabled
   - member account nav and billing item action links disable prefetch so sibling account routes and event/course pages are not fetched before navigation
   - expected Network/server result: member billing reads user-scoped `paymentItems` only when the read-model flag is enabled and support sync has completed
+- Payments reconciliation and repair:
+  - support diagnostics include a safe repair action for payment reconciliation issues
+  - safe repair upserts canonical `paymentRecords` into `paymentItems`, deletes orphan payment item projections, repairs missing native transaction back-links when an unambiguous payment record already exists, and rebuilds `paymentSummary`
+  - safe repair intentionally does not overwrite ambiguous financial state or workflow status drift; those issues remain diagnostics/manual-review items
+  - expected support workflow: run ledger sync first for source normalization, then run safe reconciliation repair if projection/back-link drift remains
 
 ## Per-Slice Rollout Checklist
 

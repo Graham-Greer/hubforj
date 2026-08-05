@@ -264,6 +264,19 @@ export async function getPaymentItemById(hubId, paymentItemId) {
   });
 }
 
+export async function deletePaymentItemById(hubId, paymentItemId) {
+  const normalizedHubId = normalizeString(hubId);
+  const normalizedPaymentItemId = normalizeString(paymentItemId);
+
+  if (!normalizedHubId || !normalizedPaymentItemId) {
+    return false;
+  }
+
+  await getPaymentItemsCollection(normalizedHubId).doc(normalizedPaymentItemId).delete();
+
+  return true;
+}
+
 export async function listPaymentItemPageByHubId(hubId, options = {}) {
   const normalizedHubId = normalizeString(hubId);
   const limit = Math.min(Math.max(parseInteger(options.limit) || 25, 1), 100);

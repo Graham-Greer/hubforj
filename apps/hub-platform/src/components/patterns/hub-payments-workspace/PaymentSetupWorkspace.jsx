@@ -92,6 +92,7 @@ export default function PaymentSetupWorkspace({
   beginHubPaymentSetupAction,
   refreshHubPaymentSetupAction,
   syncHubPaymentLedgerAction,
+  repairHubPaymentReconciliationAction,
 }) {
   const configuration = setupState?.configuration || {};
   const hasOutstandingRequirements = configuration.hasOutstandingRequirements === true;
@@ -282,6 +283,17 @@ export default function PaymentSetupWorkspace({
                   ))}
                 </ul>
               ) : null}
+            </div>
+
+            <div className={styles.setupActions}>
+              <form action={repairHubPaymentReconciliationAction} className={styles.setupActionForm}>
+                <input type="hidden" name="hubSlug" value={hub.slug} />
+                <SubmitButton
+                  idleLabel="Repair safe reconciliation issues"
+                  pendingLabel="Repairing reconciliation issues"
+                  variant="secondary"
+                />
+              </form>
             </div>
           </Surface>
         </>
