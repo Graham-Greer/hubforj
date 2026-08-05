@@ -264,6 +264,7 @@ export async function backfillCourseRegistrationPaymentRecordsToLedger(hubId, ac
 
       await syncCourseRegistrationPaymentRecord(normalizedHubId, courseDoc.id, registration, actorId, {
         rebuildPaymentSummary: false,
+        syncMemberDirectory: false,
       });
       synced += 1;
     }

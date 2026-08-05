@@ -6,6 +6,7 @@ try {
 
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
 import { getHubById } from "@/lib/data/hubs";
+import { rebuildMemberDirectoryForUser } from "@/lib/data/member-directory";
 import { getUserById, listUsersByHub } from "@/lib/data/users";
 import {
   getAvailableMembershipUpgradePlans,
@@ -231,6 +232,7 @@ export async function createMembershipUpgradeRequest(hubId, userId, planId, acto
   };
 
   await ref.set(writeModel);
+  await rebuildMemberDirectoryForUser(normalizedHubId, normalizedUserId, normalizedActorId);
 
   return normalizeMembershipUpgradeRequestRecord({
     id: ref.id,
@@ -282,6 +284,7 @@ export async function updateMembershipUpgradeRequestPaymentState(
   };
 
   await ref.set(update, { merge: true });
+  await rebuildMemberDirectoryForUser(normalizedHubId, request.userId, normalizedActorId);
 
   return normalizeMembershipUpgradeRequestRecord({
     ...request,
@@ -345,6 +348,7 @@ export async function approveMembershipUpgradeRequest(
   };
 
   await ref.set(update, { merge: true });
+  await rebuildMemberDirectoryForUser(normalizedHubId, request.userId, normalizedActorId);
 
   return normalizeMembershipUpgradeRequestRecord({
     ...request,
@@ -390,6 +394,7 @@ export async function cancelMembershipUpgradeRequest(hubId, requestId, actorId =
   };
 
   await ref.set(update, { merge: true });
+  await rebuildMemberDirectoryForUser(normalizedHubId, request.userId, normalizedActorId);
 
   return normalizeMembershipUpgradeRequestRecord({
     ...request,

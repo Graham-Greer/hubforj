@@ -76,20 +76,20 @@ Privacy rule:
 
 ### Current Phase Status
 
-- Phase 1, ledger contract: first implementation slice complete for canonical `paymentRecords` projected into `paymentItems`.
+- Phase 1, ledger contract: implemented for canonical `paymentRecords` projected into deterministic `paymentItems`.
 - Phase 2, indexes: committed in `firestore.indexes.json`; Firebase indexes have been built for the current planned payment item query shapes.
-- Phase 3, backfill: first implementation slice complete through the existing support-only payment ledger sync action.
-- Phase 4, maintain on writes: first implementation slice complete for `createPaymentRecord`, `upsertPaymentRecordBySource`, and `updatePaymentRecord`.
-- Phase 5, replace admin payments report reads: projection-backed admin route is implemented behind `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true` with URL-driven status/type filters, cursor pagination, and an aggregate `paymentSummary` read model for summary cards.
-- Phase 6, replace member billing reads: first implementation slice complete behind `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true`.
-- Phase 7, reconciliation and repair: support-only diagnostics and safe repair mode are implemented for projection drift, orphan projection cleanup, and missing native transaction back-links.
+- Phase 3, backfill: implemented through the support-only payment ledger sync action, including historical membership, native payment, event booking, and course registration normalization.
+- Phase 4, maintain on writes: implemented for `createPaymentRecord`, `upsertPaymentRecordBySource`, and `updatePaymentRecord`.
+- Phase 5, replace admin payments report reads: implemented behind `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true` with URL-driven status/type filters, cursor pagination, and an aggregate `paymentSummary` read model for summary cards. Production has been synced and verified by route testing.
+- Phase 6, replace member billing reads: implemented behind `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true`; production has been synced and verified after historical free/not-required member activity backfill.
+- Phase 7, reconciliation and repair: support-only diagnostics and safe repair mode are implemented for projection drift, orphan projection cleanup, and missing native transaction back-links. Current production diagnostics show no reconciliation issues flagged.
 
 Current migration rule:
 
-- Keep member payment UI on the legacy report builder when `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED` is unset or false.
+- Keep member payment UI on the legacy report builder only when `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED` is unset or false as an emergency rollback path.
 - With `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true`, member billing reads use the user-scoped `paymentItems` read model.
-- Keep admin payment UI on the projection-backed read model only after all `paymentItems` indexes are enabled, ledger sync has populated payment items, payment summary diagnostics are present, and support diagnostics show no unresolved projection parity issues.
-- Enable `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true` only after the admin checks pass.
+- Keep admin payment UI on the projection-backed read model after all `paymentItems` indexes are enabled, ledger sync has populated payment items, payment summary diagnostics are present, and support diagnostics show no unresolved projection parity issues.
+- `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true` is the intended production mode after those checks pass.
 
 ### Phase 1: Define Ledger Contract
 
@@ -126,7 +126,7 @@ Implementation note:
 - `paymentItems` use deterministic ids derived from the source payment record: `payment_record_{paymentRecordId}`.
 - A `paymentRecord` can represent membership cycles, membership upgrades, event bookings/registrations, course registrations, and native Stripe-backed outcomes.
 - Native transaction-only records are first normalized into `paymentRecords` by the existing sync/backfill process, then projected into `paymentItems`.
-- The first implementation slice intentionally does not cut admin/member UI over to `paymentItems`; it creates and maintains the read model for later dual-read verification.
+- Rollout history: the first implementation slice created and maintained the read model before UI cutover. The current production-ready path uses `paymentItems` for the admin payments and member billing journeys when `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true`.
 
 Current projection contract:
 
@@ -345,8 +345,8 @@ Remaining Phase 6 follow-up:
 
 - Add cursor pagination to the member billing UI before the route needs to show more than the bounded first-page result set.
 - Backfill `sourceSlug` for existing event/course payment records if precise historical “View event/course” links become important enough to justify the migration.
-- Confirm support diagnostics show event booking and course registration sync counts after deployment.
-- Confirm historical free/not-required member activity appears in `paymentItems`; if any source family remains missing, add it to the support-only backfill rather than reintroducing runtime fallback reads.
+- Continue confirming support diagnostics show event booking and course registration sync counts after future production syncs.
+- If any historical source family is later found missing from `paymentItems`, add it to the support-only backfill rather than reintroducing runtime fallback reads.
 - Consider a small member billing summary aggregate only if individual members regularly exceed the bounded result size.
 
 ### Phase 7: Reconciliation And Repair

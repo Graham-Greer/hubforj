@@ -270,6 +270,7 @@ export async function backfillEventBookingPaymentRecordsToLedger(hubId, actorId 
 
       await syncEventBookingPaymentRecord(normalizedHubId, eventDoc.id, booking, actorId, {
         rebuildPaymentSummary: false,
+        syncMemberDirectory: false,
       });
       synced += 1;
     }

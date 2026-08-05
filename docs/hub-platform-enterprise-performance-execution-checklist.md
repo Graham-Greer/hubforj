@@ -145,7 +145,7 @@ Verification notes:
   - full checklist hydration still occurs only where the checklist is relevant
   - expected Network result: route/query changes such as `?mode=edit` should not produce repeated `onboarding?scope=route` fetches for the same hub
 - Payments ledger projection:
-  - first projection slice adds `hubs/{hubId}/paymentItems/{paymentItemId}` as a query-optimized read model
+  - projection adds `hubs/{hubId}/paymentItems/{paymentItemId}` as a query-optimized read model
   - existing `paymentRecords` remain canonical during migration
   - `paymentItems` use deterministic ids derived from canonical payment records
   - `createPaymentRecord`, `upsertPaymentRecordBySource`, and `updatePaymentRecord` now maintain the projection
@@ -161,7 +161,7 @@ Verification notes:
   - expected steady-state Network/server result: `/admin/payments?view=payments` performs a bounded `paymentItems` page query plus one small `paymentSummary` document read for stat cards
   - migration safety net: if `paymentSummary` is absent, the route can temporarily fall back to deriving the summary from `paymentItems`, but production rollout should run ledger sync so this fallback is not used
   - global search/date filtering and CSV export remain separate Phase 5 follow-up work and must not fall back to broad reads as the permanent enterprise path
-  - payment UI still uses the legacy report builder by default until sync and dual-read parity are verified
+  - production has been synced and verified with the read-model flag enabled; the legacy report builder now exists as rollback rather than the intended steady-state path
 - Member billing read-model:
   - `/account/billing` uses the projection-backed `listMemberPaymentItems` path when `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true`
   - member billing is scoped to the authenticated member user id through the indexed `paymentItems` helper
@@ -173,11 +173,20 @@ Verification notes:
   - member billing no longer performs a runtime legacy-source merge when the read-model flag is enabled
   - member account nav and billing item action links disable prefetch so sibling account routes and event/course pages are not fetched before navigation
   - expected Network/server result: member billing reads user-scoped `paymentItems` only when the read-model flag is enabled and support sync has completed
+  - production verification after ledger sync showed the member billing route using the bounded user-scoped read path, with historical free/not-required records present in the ledger
 - Payments reconciliation and repair:
   - support diagnostics include a safe repair action for payment reconciliation issues
   - safe repair upserts canonical `paymentRecords` into `paymentItems`, deletes orphan payment item projections, repairs missing native transaction back-links when an unambiguous payment record already exists, and rebuilds `paymentSummary`
   - safe repair intentionally does not overwrite ambiguous financial state or workflow status drift; those issues remain diagnostics/manual-review items
   - expected support workflow: run ledger sync first for source normalization, then run safe reconciliation repair if projection/back-link drift remains
+  - current production diagnostics show no reconciliation issues flagged, so repair is available but not currently required
+- Admin members directory:
+  - `hubs/{hubId}/memberDirectory/{userId}` is the query-optimized read model for `/admin/members`
+  - the route uses the read model only when `HUB_PLATFORM_MEMBER_DIRECTORY_READ_MODEL_ENABLED=true`
+  - support-only payment ledger sync now rebuilds member-directory rows once after payment ledger/payment summary sync
+  - payment attention state is sourced from `paymentItems`, not legacy event/course payment scans
+  - expected steady-state Network/server result: `/admin/members` performs bounded `memberDirectory` page reads plus small count queries for summary cards
+  - full CSV export remains a separate follow-up and must not make normal page load fetch all members
 
 ## Per-Slice Rollout Checklist
 

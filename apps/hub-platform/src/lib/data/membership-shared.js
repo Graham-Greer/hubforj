@@ -255,6 +255,7 @@ export async function syncMembershipPaymentRecordToLedger({
   hubId,
   membershipPaymentRecord,
   actorId = "system",
+  syncMemberDirectory = true,
 }) {
   const normalizedHubId = normalizeString(hubId);
   const record = normalizeMembershipPaymentRecord(membershipPaymentRecord);
@@ -300,6 +301,9 @@ export async function syncMembershipPaymentRecordToLedger({
       sourceConfidence,
       reportingEligibility,
     },
-    actorId
+    actorId,
+    {
+      syncMemberDirectory,
+    }
   );
 }

@@ -351,7 +351,10 @@ export async function upsertPaymentRecordBySource(hubId, payload, actorId = "sys
         createdAt: now,
         createdBy: normalizedActorId,
       },
-      { updatedAt: now }
+      {
+        updatedAt: now,
+        syncMemberDirectory: options.syncMemberDirectory !== false,
+      }
     );
     if (options.rebuildPaymentSummary !== false) {
       await rebuildPaymentSummaryFromPaymentItems(normalizedHubId, {
@@ -377,7 +380,10 @@ export async function upsertPaymentRecordBySource(hubId, payload, actorId = "sys
       ...existing.data(),
       ...writeModel,
     },
-    { updatedAt: now }
+    {
+      updatedAt: now,
+      syncMemberDirectory: options.syncMemberDirectory !== false,
+    }
   );
   if (options.rebuildPaymentSummary !== false) {
     await rebuildPaymentSummaryFromPaymentItems(normalizedHubId, {
@@ -481,6 +487,7 @@ export async function backfillPaymentRecordsToPaymentItems(hubId, actorId = "pay
       actorId,
       user: usersById.get(normalizeString(record.userId)),
       updatedAt: candidateTimestamp || new Date().toISOString(),
+      syncMemberDirectory: false,
     });
     synced += 1;
   }

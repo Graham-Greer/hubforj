@@ -14,6 +14,7 @@ import {
   deriveInviteStatus,
   normalizeCreateAdminInvitePayload,
 } from "@/lib/domain/invites";
+import { rebuildMemberDirectoryForUser } from "@/lib/data/member-directory";
 import { normalizeUserRecord } from "./user-shared.js";
 
 function normalizeString(value) {
@@ -351,6 +352,10 @@ export async function acceptAdminInvite(hubId, inviteId, payload) {
     { merge: true }
   );
   await batch.commit();
+
+  if (userRecord.role === "member") {
+    await rebuildMemberDirectoryForUser(normalizedHubId, userRef.id, authUid);
+  }
 
   return {
     invite: normalizeInviteRecord({

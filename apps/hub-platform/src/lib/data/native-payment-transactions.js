@@ -252,7 +252,10 @@ export async function backfillNativeMembershipUpgradeTransactionsToLedger(hubId,
         sourceConfidence: "authoritative",
         reportingEligibility: "count_in_revenue",
       },
-      normalizedActorId
+      normalizedActorId,
+      {
+        syncMemberDirectory: false,
+      }
     );
 
     if (record && normalizeString(transaction.paymentRecordId) !== normalizeString(record.id)) {

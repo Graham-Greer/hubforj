@@ -515,6 +515,7 @@ export async function repairHubPaymentReconciliation(hubId, actorId = "payment-r
     await upsertPaymentItemFromPaymentRecord(normalizedHubId, record, {
       actorId: normalizedActorId,
       updatedAt: startedAt,
+      syncMemberDirectory: false,
     });
     repairSummary.paymentItemsUpserted += 1;
   }

@@ -236,6 +236,10 @@ export default function PaymentSetupWorkspace({
                   label="Payment summary"
                   value={`${Number(syncStatus?.paymentSummaryReportableItems || 0)} reportable · ${Number(syncStatus?.paymentSummaryTotalSourceItems || 0)} source items · ${formatSyncDate(syncStatus?.paymentSummaryRebuiltAt, hub?.locale || fallbackRegionalMarket.defaultLocale)}`}
                 />
+                <DetailRow
+                  label="Member directory"
+                  value={`${Number(syncStatus?.memberDirectorySynced || 0)} synced · ${Number(syncStatus?.memberDirectoryScanned || 0)} scanned · ${formatSyncDate(syncStatus?.memberDirectoryRebuiltAt, hub?.locale || fallbackRegionalMarket.defaultLocale)}`}
+                />
                 <DetailRow label="Last actor" value={syncStatus?.lastActorId || "Not recorded"} />
               </div>
               {syncStatus?.lastSince ? (

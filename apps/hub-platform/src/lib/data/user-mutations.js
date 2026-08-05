@@ -13,6 +13,7 @@ import {
 } from "@/lib/domain/users";
 import { normalizeString } from "./user-shared.js";
 import { getUserById, listUsersByHub } from "./user-queries.js";
+import { rebuildMemberDirectoryForUser } from "./member-directory.js";
 import { createMediaUsageReference, syncMediaUsageReferenceForAssetChange } from "./media-usage-projection.js";
 
 export async function updateMemberProfileById(hubId, userId, payload, actorId = "system") {
@@ -41,6 +42,7 @@ export async function updateMemberProfileById(hubId, userId, payload, actorId = 
     updatedAt: now,
     updatedBy: actorId,
   });
+  await rebuildMemberDirectoryForUser(normalizedHubId, normalizedUserId, actorId);
 
   return {
     ...existing,
@@ -77,6 +79,7 @@ export async function updateMemberAvatarById(hubId, userId, payload, actorId = "
     updatedAt: now,
     updatedBy: actorId,
   });
+  await rebuildMemberDirectoryForUser(normalizedHubId, normalizedUserId, actorId);
   await syncMediaUsageReferenceForAssetChange({
     hubId: normalizedHubId,
     previousAssetId: existing.avatarAssetId,
@@ -125,6 +128,7 @@ export async function updateHubUserStatusById(hubId, userId, payload, actorId = 
     updatedAt: now,
     updatedBy: actorId,
   });
+  await rebuildMemberDirectoryForUser(normalizedHubId, normalizedUserId, actorId);
 
   return {
     ...existing,

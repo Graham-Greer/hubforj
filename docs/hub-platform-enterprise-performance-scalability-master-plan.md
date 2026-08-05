@@ -14,8 +14,8 @@ The audit found that the application has made strong progress on perceived perfo
 - Public routes are dynamic because they read request headers and often check session state for personalized header behavior.
 - Several public listing queries fetch whole hub collections and sort or filter in memory.
 - Admin summary and deferred dashboard data still read large collections and rebuild derived values per request.
-- Members and payments routes have improved perceived performance, but still rely on broad reads and client-side filtering in key areas.
-- Payment reporting is reconstructed from several collections instead of a single queryable ledger/projection.
+- Members and payments routes have improved perceived performance. Payments now use the ledger projection/read model for the main admin and member billing journeys; remaining payment work is focused on global search/date/export strategy and long-tail member billing pagination.
+- Payment reporting has been moved from multi-collection reconstruction to a canonical `paymentRecords` source with queryable `paymentItems` and aggregate `paymentSummary` projections.
 - Member account bookings and registrations use nested fan-out patterns that will become expensive at scale.
 - Media usage reporting scans multiple content domains to determine usage.
 - Firestore indexes are incomplete for the query shapes needed by an enterprise-grade implementation.
