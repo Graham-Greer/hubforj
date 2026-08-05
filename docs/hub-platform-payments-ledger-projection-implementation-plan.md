@@ -82,7 +82,7 @@ Privacy rule:
 - Phase 4, maintain on writes: first implementation slice complete for `createPaymentRecord`, `upsertPaymentRecordBySource`, and `updatePaymentRecord`.
 - Phase 5, replace admin payments report reads: projection-backed admin route is implemented behind `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true` with URL-driven status/type filters, cursor pagination, and an aggregate `paymentSummary` read model for summary cards.
 - Phase 6, replace member billing reads: first implementation slice complete behind `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true`.
-- Phase 7, reconciliation and repair: support-only projection parity diagnostics are in progress; repair mode is not started.
+- Phase 7, reconciliation and repair: support-only diagnostics and safe repair mode are implemented for projection drift, orphan projection cleanup, and missing native transaction back-links.
 
 Current migration rule:
 
@@ -368,7 +368,14 @@ Implementation note:
   - stale or mismatched projection fields
   - orphaned payment items whose canonical payment record no longer exists
 - This diagnostic intentionally runs only in the support diagnostics path, not on normal admin/member payment routes.
-- Repair mode has not been implemented yet; the current safe repair path is rerunning the idempotent payment ledger sync after indexes and deployment are healthy.
+- Safe repair mode has been added to the support diagnostics path.
+- Safe repair does:
+  - upsert every `paymentRecord` into its deterministic `paymentItems` projection
+  - delete orphan `paymentItems` that point to missing canonical `paymentRecords`
+  - repair missing `nativePaymentTransactions.paymentRecordId` back-links when exactly one canonical payment record already references that transaction
+  - rebuild `paymentSummary` once after repair
+- Safe repair deliberately does not auto-resolve ambiguous financial conflicts, such as transaction/payment-record mismatch where both sides point at different records, missing native transactions, or workflow/payment status drift. Those remain visible diagnostics for manual review or a more specific source-of-truth repair.
+- If workflow records are missing canonical ledger records, run the support-only payment ledger sync first, because sync is the source-normalization repair path for historical membership/event/course/native records.
 
 ## Edge Cases
 

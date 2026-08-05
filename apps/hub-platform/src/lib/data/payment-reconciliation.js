@@ -8,12 +8,15 @@ import { listPendingMembershipUpgradeRequestsByHub } from "@/lib/data/membership
 import { listPaymentRecordsByHub } from "@/lib/data/payment-records";
 import {
   buildPaymentItemDocumentIdFromPaymentRecord,
+  deletePaymentItemById,
   listPaymentItemsByHubId,
   PAYMENT_ITEM_SCHEMA_VERSION,
+  upsertPaymentItemFromPaymentRecord,
 } from "@/lib/data/payment-items";
-import { listNativePaymentTransactionsByHub } from "@/lib/data/native-payment-transactions";
+import { listNativePaymentTransactionsByHub, updateNativePaymentTransaction } from "@/lib/data/native-payment-transactions";
 import { listEventBookingPaymentItemsByHub } from "@/lib/data/event-bookings";
 import { listCoursePaymentItemsByHub } from "@/lib/data/course-registrations";
+import { rebuildPaymentSummaryFromPaymentItems } from "@/lib/data/payment-summary";
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -123,7 +126,7 @@ function buildIssueSummary(issues = []) {
   return [...byCode.values()].sort((left, right) => right.count - left.count || left.title.localeCompare(right.title));
 }
 
-export async function getHubPaymentReconciliationReport(hubId) {
+export async function getHubPaymentReconciliationReport(hubId, options = {}) {
   const normalizedHubId = normalizeString(hubId);
 
   if (!normalizedHubId) {
@@ -474,6 +477,102 @@ export async function getHubPaymentReconciliationReport(hubId) {
     generatedAt: new Date().toISOString(),
     totalIssues: issues.length,
     summary: buildIssueSummary(issues),
-    issues: issues.slice(0, 20),
+    issues: issues.slice(0, Number.isFinite(Number(options.issueLimit)) ? Number(options.issueLimit) : 20),
+  };
+}
+
+export async function repairHubPaymentReconciliation(hubId, actorId = "payment-reconciliation-repair") {
+  const normalizedHubId = normalizeString(hubId);
+  const normalizedActorId = normalizeString(actorId) || "payment-reconciliation-repair";
+
+  if (!normalizedHubId) {
+    throw new Error("Hub id is required.");
+  }
+
+  const [paymentRecords, paymentItems, nativeTransactions] = await Promise.all([
+    listPaymentRecordsByHub(normalizedHubId),
+    listPaymentItemsByHubId(normalizedHubId),
+    listNativePaymentTransactionsByHub(normalizedHubId),
+  ]);
+  const startedAt = new Date().toISOString();
+  const paymentRecordsById = new Map(paymentRecords.map((record) => [normalizeString(record.id), record]));
+  const paymentRecordsByNativeTransactionId = new Map(
+    paymentRecords
+      .filter((record) => normalizeString(record.nativeTransactionId))
+      .map((record) => [normalizeString(record.nativeTransactionId), record])
+  );
+  const repairSummary = {
+    startedAt,
+    completedAt: "",
+    actorId: normalizedActorId,
+    paymentItemsUpserted: 0,
+    orphanPaymentItemsDeleted: 0,
+    transactionLinksRepaired: 0,
+    skippedManualReview: 0,
+  };
+
+  for (const record of paymentRecords) {
+    await upsertPaymentItemFromPaymentRecord(normalizedHubId, record, {
+      actorId: normalizedActorId,
+      updatedAt: startedAt,
+    });
+    repairSummary.paymentItemsUpserted += 1;
+  }
+
+  for (const item of paymentItems) {
+    if (normalizeString(item.sourceCollection) !== "paymentRecords") {
+      continue;
+    }
+
+    const paymentRecordId = normalizeString(item.paymentRecordId);
+
+    if (!paymentRecordId || paymentRecordsById.has(paymentRecordId)) {
+      continue;
+    }
+
+    await deletePaymentItemById(normalizedHubId, item.id);
+    repairSummary.orphanPaymentItemsDeleted += 1;
+  }
+
+  for (const transaction of nativeTransactions) {
+    const transactionId = normalizeString(transaction.id);
+    const existingPaymentRecordId = normalizeString(transaction.paymentRecordId);
+    const inferredRecord = paymentRecordsByNativeTransactionId.get(transactionId);
+
+    if (!transactionId || !inferredRecord) {
+      continue;
+    }
+
+    if (!existingPaymentRecordId) {
+      await updateNativePaymentTransaction(
+        normalizedHubId,
+        transactionId,
+        {
+          paymentRecordId: inferredRecord.id,
+        },
+        normalizedActorId
+      );
+      repairSummary.transactionLinksRepaired += 1;
+      continue;
+    }
+
+    if (existingPaymentRecordId !== normalizeString(inferredRecord.id)) {
+      repairSummary.skippedManualReview += 1;
+    }
+  }
+
+  const paymentSummary = await rebuildPaymentSummaryFromPaymentItems(normalizedHubId, {
+    actorId: normalizedActorId,
+    updatedAt: new Date().toISOString(),
+  });
+  const afterReport = await getHubPaymentReconciliationReport(normalizedHubId, { issueLimit: 100 });
+
+  return {
+    ...repairSummary,
+    completedAt: new Date().toISOString(),
+    paymentSummaryReportableItems: paymentSummary?.reportableItems || 0,
+    paymentSummaryTotalSourceItems: paymentSummary?.totalSourceItems || 0,
+    remainingIssues: afterReport.totalIssues,
+    remainingSummary: afterReport.summary,
   };
 }

@@ -32,6 +32,7 @@ import {
   createMembershipPlanAction,
   deleteMembershipPlanAction,
   refreshHubPaymentSetupAction,
+  repairHubPaymentReconciliationAction,
   syncHubPaymentLedgerAction,
   updateMembershipPlanAction,
 } from "./actions";
@@ -59,17 +60,19 @@ function buildPaymentSuccessMessage(success) {
       ? "Stripe setup status refreshed."
       : success === "paymentLedgerSynced"
         ? "Payment ledger sync completed."
-        : success === "planCreated"
-          ? "Membership plan created."
-          : success === "planUpdated"
-            ? "Membership plan updated."
-            : success === "planDeleted"
-              ? "Membership plan deleted."
-              : success === "upgradeRequestApproved"
-                ? "Membership upgrade request approved."
-                : success === "paymentUpdated"
-                  ? "Payment status updated."
-                  : "";
+        : success === "paymentReconciliationRepaired"
+          ? "Safe payment reconciliation repairs completed."
+          : success === "planCreated"
+            ? "Membership plan created."
+            : success === "planUpdated"
+              ? "Membership plan updated."
+              : success === "planDeleted"
+                ? "Membership plan deleted."
+                : success === "upgradeRequestApproved"
+                  ? "Membership upgrade request approved."
+                  : success === "paymentUpdated"
+                    ? "Payment status updated."
+                    : "";
 }
 
 function PaymentsWorkspaceFallback({ selectedView }) {
@@ -272,6 +275,7 @@ async function PaymentsWorkspaceLoader({ hubSlug, selectedView, success, error, 
       beginHubPaymentSetupAction={beginHubPaymentSetupAction}
       refreshHubPaymentSetupAction={refreshHubPaymentSetupAction}
       syncHubPaymentLedgerAction={syncHubPaymentLedgerAction}
+      repairHubPaymentReconciliationAction={repairHubPaymentReconciliationAction}
       createMembershipPlanAction={createMembershipPlanAction}
       updateMembershipPlanAction={updateMembershipPlanAction}
       deleteMembershipPlanAction={deleteMembershipPlanAction}

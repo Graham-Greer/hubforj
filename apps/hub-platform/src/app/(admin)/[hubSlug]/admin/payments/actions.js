@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireHubOperatorActionAccess } from "@/lib/auth/action-access";
 import { syncHubPaymentLedger } from "@/lib/data/payment-ledger-sync";
+import { repairHubPaymentReconciliation } from "@/lib/data/payment-reconciliation";
 import { assertHubRegionalSetupComplete } from "@/lib/domain/hub-regional-setup";
 import { assertHubCapability } from "@/lib/domain/package-guards";
 import { createMembershipPlan, deleteMembershipPlan, updateMembershipPlan, updateMembershipPaymentStatus } from "@/lib/data/memberships";
@@ -183,4 +184,23 @@ export async function syncHubPaymentLedgerAction(formData) {
   }
 
   redirect(`/${hubSlug}/admin/payments?view=setup&success=paymentLedgerSynced`);
+}
+
+export async function repairHubPaymentReconciliationAction(formData) {
+  const hubSlug = normalizeString(formData.get("hubSlug"));
+
+  if (!hubSlug) {
+    redirect("/platform");
+  }
+
+  try {
+    const { hub, access } = await requireHubPaymentsAccess(hubSlug);
+    await repairHubPaymentReconciliation(hub.id, access.actorId);
+    revalidatePaymentsPaths(hub.slug);
+    revalidatePath(`/${hub.slug}/admin`);
+  } catch (error) {
+    redirect(`/${hubSlug}/admin/payments?view=setup&error=${encodeURIComponent(String(error?.message || "Unable to repair payment reconciliation issues."))}`);
+  }
+
+  redirect(`/${hubSlug}/admin/payments?view=setup&success=paymentReconciliationRepaired`);
 }
