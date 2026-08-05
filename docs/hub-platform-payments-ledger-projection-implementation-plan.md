@@ -287,6 +287,7 @@ Implementation note:
 - Row display must not apply revenue-summary duplicate suppression or informational-only exclusion after fetching a bounded page. Those rules belong to summary/reporting aggregates; applying them to page rows can collapse a normal page to one visible record when recent records are mostly free/not-required or duplicate-suppressed rows.
 - CSV export amount display must use the same normalized formatting rules as the admin payments table: `not_required` and zero-value membership rows display as `Free`, minor-unit values are formatted with the record currency and hub locale, and missing amounts display as `Amount to be confirmed`.
 - The default CSV export is an admin-facing operational export, not a raw ledger reconciliation dump. It should expose only the fields admins need in day-to-day use, with one readable `Amount` column and the record `Currency`.
+- Payment export dates are admin-facing display values, not raw ISO timestamps. `Paid Date` uses the hub locale/country formatting context so exported CSVs are readable for non-technical operators.
 - `createPaymentRecord`, `upsertPaymentRecordBySource`, and `updatePaymentRecord` rebuild the aggregate after updating the canonical record and projected payment item.
 - The support-only `Sync payment ledger` action rebuilds the aggregate once after payment records have been projected into `paymentItems`.
 - Support diagnostics display payment summary reportable/source counts and the last summary rebuild timestamp.

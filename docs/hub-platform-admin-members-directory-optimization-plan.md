@@ -285,6 +285,7 @@ Completed:
 - Server-driven member export uses the `memberDirectory` projection and current search/status/membership/attention filters.
 - Normal `/admin/members` page load remains bounded; export is an explicit route request and does not preload all rows.
 - Export is capped at 10,000 projected rows for the current implementation slice. Larger hubs should move to a background export job before exceeding that scale.
+- Member export dates are admin-facing display values, not raw ISO timestamps. `Last Sign In` and `Joined` use the hub locale/country formatting context so exported CSVs are readable for non-technical operators.
 - The workspace export button now calls the server export route in read-model mode and keeps the legacy current-list export only for the fallback path.
 - Added support-only member directory reconciliation reporting.
 - Reconciliation detects:
