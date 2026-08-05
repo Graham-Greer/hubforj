@@ -130,10 +130,17 @@ Replace expensive admin dashboard summaries and payments reporting with maintain
 
 Deliver:
 
-- `hubStats/current` counters.
+- `hubs/{hubId}/stats/current` counters.
 - Payment ledger/projection documents.
 - Summary routes using small bounded reads.
 - Backfill scripts and reconciliation checks.
+
+Progress:
+
+- Payment ledger/projection documents are implemented for admin payments and member billing.
+- Admin dashboard summary strip now prefers `hubs/{hubId}/stats/current` with explicit legacy fallback while hubs are being synced.
+- Dashboard stats rebuild is available through support maintenance and is also rebuilt after payment ledger sync.
+- Deferred admin dashboard panels still need companion bounded projections for recent events, top courses, attention required, and newest members.
 
 Dependency note:
 

@@ -3,11 +3,17 @@ import { requireHubOperatorRouteAccess } from "@/lib/auth/action-access";
 import { listHubPaymentItemsBySlug } from "@/lib/data/hub-payments";
 import { assertHubCapability } from "@/lib/domain/package-guards";
 import {
+  getFallbackRegionalMarket,
+  resolveLaunchFormattingLocale,
+} from "@/lib/domain/regional-markets";
+import {
   formatPaymentAmount,
   getOperationalPaymentStatus,
 } from "@/components/patterns/hub-payments-workspace/hub-payments-helpers";
 
 export const runtime = "nodejs";
+
+const fallbackRegionalMarket = getFallbackRegionalMarket();
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -23,7 +29,30 @@ function escapeCsvValue(value) {
   return text;
 }
 
-function buildCsv(items = [], locale) {
+function formatCsvDateTime(value, locale = fallbackRegionalMarket.defaultLocale) {
+  const normalized = normalizeString(value);
+  const resolvedLocale = resolveLaunchFormattingLocale(locale);
+
+  if (!normalized) {
+    return "";
+  }
+
+  const date = new Date(normalized);
+
+  if (Number.isNaN(date.getTime())) {
+    return normalized;
+  }
+
+  return new Intl.DateTimeFormat(resolvedLocale, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function buildCsv(items = [], locale = fallbackRegionalMarket.defaultLocale) {
   const headers = [
     "Member",
     "Title",
@@ -44,7 +73,7 @@ function buildCsv(items = [], locale) {
     item.status || "",
     formatPaymentAmount(item, locale),
     item.currency || "",
-    item.lifecycleDate || item.dueDate || "",
+    formatCsvDateTime(item.lifecycleDate || item.dueDate, locale),
     item.lifecycleLabel || "",
   ]);
 
@@ -125,7 +154,7 @@ export async function GET(request, { params }) {
       request.nextUrl.searchParams.get("date_from") || "",
       request.nextUrl.searchParams.get("date_to") || ""
     );
-    const csv = buildCsv(filteredItems, hub.locale);
+    const csv = buildCsv(filteredItems, resolveLaunchFormattingLocale(hub.locale, hub.country));
     const filename = `${normalizeString(hub.slug) || "hub"}-payments-export.csv`;
 
     return new Response(csv, {

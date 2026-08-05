@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireHubOperatorActionAccess } from "@/lib/auth/action-access";
+import { rebuildHubAdminDashboardStats } from "@/lib/data/hub-dashboard-stats";
 import { syncHubPaymentLedger } from "@/lib/data/payment-ledger-sync";
 import { repairHubPaymentReconciliation } from "@/lib/data/payment-reconciliation";
 import { assertHubRegionalSetupComplete } from "@/lib/domain/hub-regional-setup";
@@ -35,6 +36,16 @@ async function requireHubPaymentsAccess(hubSlug) {
 function revalidatePaymentsPaths(hubSlug) {
   revalidatePath(`/${hubSlug}/admin/payments`);
   revalidatePath(`/${hubSlug}/admin/settings/account`);
+}
+
+async function requireSupportHubPaymentsAccess(hubSlug) {
+  const result = await requireHubPaymentsAccess(hubSlug);
+
+  if (result.access?.mode !== "support") {
+    throw new Error("Dashboard stats maintenance is available only in support mode.");
+  }
+
+  return result;
 }
 
 export async function createMembershipPlanAction(_previousState, formData) {
@@ -203,4 +214,23 @@ export async function repairHubPaymentReconciliationAction(formData) {
   }
 
   redirect(`/${hubSlug}/admin/payments?view=setup&success=paymentReconciliationRepaired`);
+}
+
+export async function syncHubDashboardStatsAction(formData) {
+  const hubSlug = normalizeString(formData.get("hubSlug"));
+
+  if (!hubSlug) {
+    redirect("/platform");
+  }
+
+  try {
+    const { hub, access } = await requireSupportHubPaymentsAccess(hubSlug);
+    await rebuildHubAdminDashboardStats(hub, access.actorId);
+    revalidatePaymentsPaths(hub.slug);
+    revalidatePath(`/${hub.slug}/admin`);
+  } catch (error) {
+    redirect(`/${hubSlug}/admin/payments?view=setup&error=${encodeURIComponent(String(error?.message || "Unable to sync dashboard stats."))}`);
+  }
+
+  redirect(`/${hubSlug}/admin/payments?view=setup&success=dashboardStatsSynced`);
 }

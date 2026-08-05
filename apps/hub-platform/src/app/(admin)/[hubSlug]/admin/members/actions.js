@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireHubOperatorActionAccess } from "@/lib/auth/action-access";
+import { rebuildHubAdminDashboardStats } from "@/lib/data/hub-dashboard-stats";
 import { repairHubMemberDirectoryReconciliation, syncHubMemberDirectory } from "@/lib/data/member-directory";
 
 function normalizeString(value) {
@@ -69,4 +70,23 @@ export async function repairHubMemberDirectoryReconciliationAction(formData) {
   }
 
   redirect(buildMembersRedirect(hubSlug, "success=memberDirectoryRepaired"));
+}
+
+export async function syncHubDashboardStatsFromMembersAction(formData) {
+  const hubSlug = normalizeString(formData.get("hubSlug"));
+
+  if (!hubSlug) {
+    redirect(buildMembersRedirect(hubSlug, `error=${encodeURIComponent("Hub context is required.")}`));
+  }
+
+  try {
+    const { hub, actorId } = await requireSupportMemberDirectoryAccess(hubSlug);
+    await rebuildHubAdminDashboardStats(hub, actorId);
+    revalidatePath(`/${hubSlug}/admin`);
+    revalidatePath(`/${hubSlug}/admin/members`);
+  } catch (error) {
+    redirect(buildMembersRedirect(hubSlug, `error=${encodeURIComponent(String(error?.message || "Unable to sync dashboard stats."))}`));
+  }
+
+  redirect(buildMembersRedirect(hubSlug, "success=dashboardStatsSynced"));
 }

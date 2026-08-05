@@ -88,6 +88,20 @@ Acceptance criteria:
 - No counter is introduced without identifying all mutation paths.
 - A counter ownership table exists in the implementation notes before code changes begin.
 
+Counter ownership table:
+
+| Counter | Source of truth | Current projection source | Accuracy | Maintenance rule |
+| --- | --- | --- | --- | --- |
+| `memberCount` | `users` where `hubId` and `role=member` | `stats/current` rebuilt from Firestore count aggregation | Exact at rebuild time | Rebuild during dashboard stats sync; future incremental maintenance can follow user create/delete/status mutation paths. |
+| `activeMemberCount` | `users` where `hubId`, `role=member`, `status=active` | `stats/current` rebuilt from Firestore count aggregation | Exact at rebuild time | Rebuild during dashboard stats sync; user status changes remain authoritative until incremental maintenance is added. |
+| `pendingInviteCount` | `hubs/{hubId}/invites` where `status=pending` | `stats/current` rebuilt from Firestore count aggregation | Exact at rebuild time | Rebuild during dashboard stats sync; invite create/accept/revoke can incrementally update later. |
+| `pendingUpgradeRequestCount` | `hubs/{hubId}/membershipUpgradeRequests` pending rows | `memberDirectorySummary.upgradeRequests` into `stats/current` | Exact when member directory is synced | Payment ledger/member directory sync rebuilds this before dashboard stats; support dashboard stats sync can repair after member directory repair. |
+| `suspendedMemberCount` | `users` member status | `memberDirectorySummary.suspended` into `stats/current` | Exact when member directory is synced | Rebuild via member directory sync/dashboard stats sync. |
+| `openPaymentAttentionCount` | `paymentItems`/member payment attention state | `memberDirectorySummary.paymentAttention` into `stats/current` | Exact when payment ledger and member directory are synced | Ledger sync rebuilds payment items, payment summary, member directory, then dashboard stats. |
+| `activeUpcomingPublishedEventCount` | `hubs/{hubId}/events` published rows and date fields | `stats/current` rebuilt from selected `startAt/endAt` fields | Exact at rebuild time | Rebuild during dashboard stats sync; event publish/date mutations can be added later. |
+| `activeUpcomingPublishedCourseCount` | `hubs/{hubId}/courses` published rows and date fields | `stats/current` rebuilt from selected `startAt/endAt` fields | Exact at rebuild time | Rebuild during dashboard stats sync; course publish/date mutations can be added later. |
+| `totalRevenue` | canonical payment ledger/projection | `paymentSummary.byAdminType.all.collectedRevenueMinorByCurrency` into `stats/current` | Exact when payment summary is synced | Ledger sync rebuilds payment summary before dashboard stats. |
+
 ### Phase 2: Add Read Helpers With Fallbacks
 
 - Add `getHubAdminStatsByHubId`.
@@ -95,6 +109,19 @@ Acceptance criteria:
 - Make fallback explicit and observable in logs.
 - Keep fallback output shape identical to projection output.
 - Include stale-state information for admin display or debug logging.
+
+Status: implemented for the dashboard summary strip.
+
+Implementation notes:
+
+- Added `apps/hub-platform/src/lib/data/hub-dashboard-stats.js`.
+- Added `getHubAdminStatsByHubId`.
+- Added `getHubAdminDashboardStatsWithFallback`.
+- `/admin` summary strip now prefers `hubs/{hubId}/stats/current`.
+- Missing or old-schema stats fall back to explicit source computation and log a warning.
+- The fallback is for rollout safety only; it should not be treated as the steady-state enterprise path.
+- Summary strip revenue now reads from `paymentSummary` via dashboard stats instead of rebuilding the full payment report.
+- Lower dashboard panels are intentionally unchanged in this pass and remain the next projection target.
 
 Acceptance criteria:
 
@@ -115,6 +142,18 @@ Acceptance criteria:
 - Backfill can be run safely more than once.
 - Backfilled stats match current computed values.
 - Backfill failures for one hub do not prevent other hubs from being processed.
+
+Status: implemented as a support-only per-hub maintenance action.
+
+Implementation notes:
+
+- Added `rebuildHubAdminDashboardStats`.
+- `stats/current` is deterministic and can be safely overwritten.
+- Existing support ledger sync now rebuilds dashboard stats after payment summary and member directory sync complete.
+- Added a support-only **Sync dashboard stats** action in payment setup diagnostics for targeted repair.
+- Added the same support-only **Sync dashboard stats** action in member directory diagnostics so non-Growth hubs have a universal dashboard stats maintenance path.
+- Sync records `schemaVersion`, `updatedAt`, `reconciledAt`, `reconciliationStatus`, `rebuiltBy`, and `counterSources`.
+- The current slice is per-hub by design. A multi-hub script/job remains future work if production operations require bulk migration.
 
 ### Phase 4: Maintain Counters On Writes
 
@@ -148,6 +187,25 @@ Implementation rules:
 - Update deferred panels to query bounded summary lists instead of rebuilding from all data.
 - Keep existing skeleton and Suspense behavior.
 - If payment ledger is not live yet, keep payment/revenue summaries on a transitional path rather than inventing a second payment projection.
+
+Status: partially implemented.
+
+Completed:
+
+- Summary strip now uses `stats/current` when present.
+- Summary strip missing-stats fallback is explicit and shape-compatible.
+- Dashboard no longer needs full payment report assembly for summary-card revenue once stats are synced.
+- Existing Suspense and skeleton behavior is preserved.
+
+Remaining:
+
+- Deferred dashboard panels still rebuild recent events, top courses, attention required, and newest members from broad reads.
+- Add bounded companion projections for:
+  - recent event cards
+  - top course cards
+  - attention required items
+  - newest members
+- Replace `getHubAdminDashboardDeferredOverviewBySlug` broad reads after those projections exist.
 
 Acceptance criteria:
 
