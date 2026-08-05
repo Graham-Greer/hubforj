@@ -170,96 +170,6 @@ function mapProjectedPaymentItemTypeToItemKind(type) {
   return "membership";
 }
 
-function getPaymentItemRevenueTimestampMs(item = {}) {
-  const normalizedValue = normalizeString(item.paidAt || item.sortAt || item.updatedAt || item.createdAt);
-
-  if (!normalizedValue) {
-    return null;
-  }
-
-  const date = new Date(normalizedValue);
-  return Number.isNaN(date.getTime()) ? null : date.getTime();
-}
-
-function buildProjectedMembershipRevenueValueKey(item = {}) {
-  const parts = [
-    normalizeString(item.userId),
-    String(Number.parseInt(String(item.amountMinor || ""), 10) || 0),
-    normalizeString(item.currency).toUpperCase(),
-  ];
-
-  if (parts.some((part) => !part)) {
-    return "";
-  }
-
-  return parts.join("::");
-}
-
-function filterDuplicateProjectedMembershipCyclePaymentItems(items = []) {
-  const duplicateItemIds = new Set();
-  const membershipCycleCandidatesByValue = new Map();
-  const maxDuplicateWindowMs = 45 * 24 * 60 * 60 * 1000;
-
-  items
-    .filter((item) => {
-      const type = normalizeString(item.type);
-      return (
-        type === "membership" &&
-        normalizeString(item.reportingEligibility) !== "informational_only" &&
-        normalizeString(item.paymentStatus) === "paid"
-      );
-    })
-    .forEach((item) => {
-      const valueKey = buildProjectedMembershipRevenueValueKey(item);
-
-      if (!valueKey) {
-        return;
-      }
-
-      const rows = membershipCycleCandidatesByValue.get(valueKey) || [];
-      rows.push(item);
-      membershipCycleCandidatesByValue.set(valueKey, rows);
-    });
-
-  items
-    .filter((item) => {
-      const type = normalizeString(item.type);
-      return (
-        type === "upgradeRequest" &&
-        normalizeString(item.reportingEligibility) !== "informational_only" &&
-        normalizeString(item.paymentStatus) === "paid"
-      );
-    })
-    .forEach((upgradeItem) => {
-      const valueKey = buildProjectedMembershipRevenueValueKey(upgradeItem);
-      const upgradeTimestampMs = getPaymentItemRevenueTimestampMs(upgradeItem);
-      const candidates = membershipCycleCandidatesByValue.get(valueKey) || [];
-
-      if (!valueKey || !candidates.length || !upgradeTimestampMs) {
-        return;
-      }
-
-      const closestCandidate = candidates
-        .filter((candidate) => normalizeString(candidate.id) && !duplicateItemIds.has(normalizeString(candidate.id)))
-        .map((candidate) => ({
-          candidate,
-          distanceMs: Math.abs((getPaymentItemRevenueTimestampMs(candidate) || 0) - upgradeTimestampMs),
-        }))
-        .filter((entry) => entry.distanceMs <= maxDuplicateWindowMs)
-        .sort((left, right) => left.distanceMs - right.distanceMs)[0];
-
-      if (closestCandidate?.candidate?.id) {
-        duplicateItemIds.add(normalizeString(closestCandidate.candidate.id));
-      }
-    });
-
-  if (!duplicateItemIds.size) {
-    return items;
-  }
-
-  return items.filter((item) => !duplicateItemIds.has(normalizeString(item.id)));
-}
-
 function buildSyntheticRevenueItemsFromMinorTotals(totals = {}, paymentStatus = "paid") {
   return Object.entries(totals || {})
     .map(([currency, amountMinor]) => ({
@@ -958,10 +868,7 @@ export async function getHubPaymentProjectionReportByHub(hub, options = {}) {
     listPaymentItemPageByHubId(hub.id, queryOptions),
     getPaymentSummaryByHubId(hub.id),
   ]);
-  const reportableProjectionItems = filterDuplicateProjectedMembershipCyclePaymentItems(page.items);
-  const items = reportableProjectionItems
-    .filter((item) => normalizeString(item.reportingEligibility) !== "informational_only")
-    .map((item) => mapProjectedPaymentItemToPaymentItem(item, hub.slug, routeMode));
+  const items = page.items.map((item) => mapProjectedPaymentItemToPaymentItem(item, hub.slug, routeMode));
   let summary = null;
 
   if (paymentSummary?.schemaVersion) {

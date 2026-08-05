@@ -96,7 +96,7 @@ export default function HubPaymentsWorkspace({
   const [isExporting, setIsExporting] = useState(false);
   const hubFallbackCurrency = hub?.defaultCurrency || fallbackRegionalMarket.defaultCurrency;
   const activeItems = paymentReadModelEnabled ? items : workspace.filteredItems;
-  const visibleItems = workspace.filteredItems;
+  const visibleItems = paymentReadModelEnabled ? items : workspace.filteredItems;
   const activeTypeFilter = paymentReadModelEnabled ? paymentFilters?.type || "all" : workspace.typeFilter;
   const activeStatusFilter = paymentReadModelEnabled ? paymentFilters?.status || "all" : workspace.statusFilter;
   const activePageSize = paymentReadModelEnabled ? Number(paymentFilters?.pageSize || 20) : workspace.pageSize;
@@ -405,10 +405,7 @@ export default function HubPaymentsWorkspace({
                 />
               )}
 
-              <PaymentItemsTable
-                hub={hub}
-                items={paymentReadModelEnabled ? visibleItems : workspace.paginatedItems}
-              />
+              <PaymentItemsTable hub={hub} items={paymentReadModelEnabled ? items : workspace.paginatedItems} />
             </div>
           ) : (
             <div data-onboarding="payments-records-list">

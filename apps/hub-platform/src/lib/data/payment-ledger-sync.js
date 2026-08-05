@@ -73,6 +73,7 @@ export async function getHubPaymentLedgerSyncStatus(hubId) {
     paymentSummaryRebuiltAt: normalizeString(data.paymentSummaryRebuiltAt),
     memberDirectorySynced: Number.parseInt(String(data.memberDirectorySynced || ""), 10) || 0,
     memberDirectoryScanned: Number.parseInt(String(data.memberDirectoryScanned || ""), 10) || 0,
+    memberDirectoryOrphaned: Number.parseInt(String(data.memberDirectoryOrphaned || ""), 10) || 0,
     memberDirectoryRebuiltAt: normalizeString(data.memberDirectoryRebuiltAt),
     lastError: normalizeString(data.lastError),
   };
@@ -161,6 +162,7 @@ export async function syncHubPaymentLedger(hubId, actorId = "ledger-sync") {
         paymentSummaryRebuiltAt: paymentSummary?.rebuiltAt || completedAt,
         memberDirectorySynced: memberDirectory?.synced || 0,
         memberDirectoryScanned: memberDirectory?.scanned || 0,
+        memberDirectoryOrphaned: memberDirectory?.orphaned || 0,
         memberDirectoryRebuiltAt: memberDirectory?.generatedAt || completedAt,
         lastError: "",
       },

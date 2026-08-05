@@ -7,6 +7,7 @@ import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
 import CompactMenu from "@/components/ui/compact-menu/CompactMenu";
 import EmptyState from "@/components/patterns/empty-state/EmptyState";
+import FormMessage from "@/components/ui/form-message/FormMessage";
 import Icon from "@/components/ui/icon/Icon";
 import PaginationControls from "@/components/patterns/pagination-controls/PaginationControls";
 import SearchField from "@/components/ui/search-field/SearchField";
@@ -87,6 +88,7 @@ export default function MembersWorkspace({
   pageSize: serverPageSize = 10,
   previousHref = "",
   nextHref = "",
+  exportHref = "",
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -95,6 +97,8 @@ export default function MembersWorkspace({
   const [activeFilters, setActiveFilters] = useState(() => buildFilterStateFromSearchParams(filterDefinitions, searchParams));
   const [pageSize, setPageSize] = useState(serverPageSize || 10);
   const [currentPage, setCurrentPage] = useState(1);
+  const [exportError, setExportError] = useState("");
+  const [isExporting, setIsExporting] = useState(false);
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
 
@@ -162,7 +166,57 @@ export default function MembersWorkspace({
 
   const hasActiveFilters = filterDefinitions.some((filter) => (activeFilters[filter.key] || "all") !== "all");
 
-  function handleExportCsv() {
+  async function handleExportCsv() {
+    setExportError("");
+
+    if (serverDriven && exportHref) {
+      setIsExporting(true);
+
+      try {
+        const response = await fetch(exportHref, {
+          method: "GET",
+          credentials: "same-origin",
+        });
+
+        if (!response.ok) {
+          const contentType = response.headers.get("Content-Type") || "";
+          let message = "Unable to export member records right now.";
+
+          if (contentType.includes("application/json")) {
+            const payload = await response.json().catch(() => null);
+            message = payload?.error || message;
+          } else {
+            const text = await response.text().catch(() => "");
+            if (text) {
+              message = text;
+            }
+          }
+
+          throw new Error(message);
+        }
+
+        const blob = await response.blob();
+        const contentDisposition = response.headers.get("Content-Disposition") || "";
+        const filenameMatch = contentDisposition.match(/filename="([^"]+)"/i);
+        const filename = filenameMatch?.[1] || `${hubSlug || "hub"}-members-export.csv`;
+        const objectUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        link.href = objectUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(objectUrl);
+      } catch (error) {
+        setExportError(error instanceof Error ? error.message : "Unable to export member records right now.");
+      } finally {
+        setIsExporting(false);
+      }
+
+      return;
+    }
+
     const rows = [
       ["Name", "Email", "Membership", "Last sign in date"],
       ...filteredItems.map((item) => [
@@ -195,6 +249,7 @@ export default function MembersWorkspace({
       </div>
 
       <div className={styles.toolbar} data-onboarding="members-list-toolbar">
+        {exportError ? <FormMessage tone="danger">{exportError}</FormMessage> : null}
         <div className={styles.toolbarControls}>
           <SearchField
             name="admin-members-search"
@@ -230,8 +285,8 @@ export default function MembersWorkspace({
                 <span>{getActiveFilterLabel(filter, activeFilters[filter.key])}</span>
               </CompactMenu>
             ))}
-            <Button type="button" variant="secondary" size="sm" onClick={handleExportCsv} disabled={!filteredItems.length}>
-              Export CSV
+            <Button type="button" variant="secondary" size="sm" onClick={handleExportCsv} disabled={isExporting || !summary.total}>
+              {isExporting ? "Exporting..." : "Export CSV"}
             </Button>
           </div>
         </div>

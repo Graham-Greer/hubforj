@@ -2,15 +2,19 @@ import { Suspense } from "react";
 import EmptyState from "@/components/patterns/empty-state/EmptyState";
 import MembersWorkspace from "@/components/patterns/members-workspace/MembersWorkspace";
 import PageHeader from "@/components/patterns/page-header/PageHeader";
+import Surface from "@/components/primitives/surface/Surface";
+import SubmitButton from "@/components/ui/submit-button/SubmitButton";
 import {
   SkeletonButtonRow,
   SkeletonList,
   SkeletonMetricGrid,
 } from "@/components/patterns/loading-skeleton";
+import { getCurrentHubOperatorAccess } from "@/lib/auth/hub-access";
 import { listCourseRegistrationPaymentAttentionUserIdsByHub } from "@/lib/data/course-registrations";
 import { listEventBookingPaymentAttentionUserIdsByHub } from "@/lib/data/event-bookings";
 import { requireHubCoreBySlug } from "@/lib/data/hubs";
 import {
+  getHubMemberDirectoryReconciliationReport,
   getMemberDirectorySummaryByHubId,
   isMemberDirectoryReadModelEnabled,
   listMemberDirectoryPageByHubId,
@@ -25,6 +29,10 @@ import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/dom
 import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
 import { getUserStatusLabel, getUserStatusTone } from "@/lib/domain/users";
 import { headers } from "next/headers";
+import {
+  repairHubMemberDirectoryReconciliationAction,
+  syncHubMemberDirectoryAction,
+} from "./actions";
 import styles from "./page.module.css";
 
 function MembersWorkspaceFallback() {
@@ -34,6 +42,68 @@ function MembersWorkspaceFallback() {
       <SkeletonButtonRow count={4} />
       <SkeletonList rows={8} withBadges />
     </section>
+  );
+}
+
+function getMembersFeedback(searchParams = {}) {
+  const success = String(searchParams?.success || "");
+  const error = String(searchParams?.error || "");
+
+  if (error) {
+    return { tone: "danger", message: error };
+  }
+
+  if (success === "memberDirectorySynced") {
+    return { tone: "success", message: "Member directory sync completed." };
+  }
+
+  if (success === "memberDirectoryRepaired") {
+    return { tone: "success", message: "Member directory reconciliation repair completed." };
+  }
+
+  return null;
+}
+
+function MembersSupportDiagnostics({ hubSlug, report }) {
+  return (
+    <Surface tone="muted" padding="md" className={styles.supportPanel}>
+      <div className={styles.supportContent}>
+        <div className={styles.supportCopy}>
+          <h2 className={styles.supportTitle}>Member directory diagnostics</h2>
+          <p className={styles.supportText}>
+            Projection diagnostics compare source member, membership, upgrade, and payment-attention records with the
+            optimized member directory read model.
+          </p>
+          <div className={styles.supportGrid}>
+            <span>Generated: {report?.generatedAt || "Not run"}</span>
+            <span>Open issues: {Number(report?.totalIssues || 0)}</span>
+            <span>Source rows: {Number(report?.expectedRows || 0)}</span>
+            <span>Projected rows: {Number(report?.actualRows || 0)}</span>
+          </div>
+          {report?.summary?.length ? (
+            <ul className={styles.issueList}>
+              {report.summary.map((item) => (
+                <li key={item.code}>
+                  {item.title}: {item.count}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className={styles.supportText}>No member directory reconciliation issues are currently flagged.</p>
+          )}
+        </div>
+        <div className={styles.supportActions}>
+          <form action={syncHubMemberDirectoryAction}>
+            <input type="hidden" name="hubSlug" value={hubSlug} />
+            <SubmitButton idleLabel="Sync member directory" pendingLabel="Syncing member directory" variant="secondary" size="sm" />
+          </form>
+          <form action={repairHubMemberDirectoryReconciliationAction}>
+            <input type="hidden" name="hubSlug" value={hubSlug} />
+            <SubmitButton idleLabel="Repair safe issues" pendingLabel="Repairing issues" variant="secondary" size="sm" />
+          </form>
+        </div>
+      </div>
+    </Surface>
   );
 }
 
@@ -151,10 +221,20 @@ function buildCursorHref({ basePath, searchParams, cursor = "", cursorStack = []
   return `${basePath}${queryString ? `?${queryString}` : ""}`;
 }
 
-async function OptimizedMembersDirectoryLoader({ hubSlug, searchParams }) {
+function buildMembersExportHref({ basePath, searchParams }) {
+  const params = new URLSearchParams(searchParams);
+
+  params.delete("cursor");
+  params.delete("cursorStack");
+  params.delete("limit");
+
+  const queryString = params.toString();
+  return `${basePath}/export${queryString ? `?${queryString}` : ""}`;
+}
+
+async function OptimizedMembersDirectoryLoader({ hub, searchParams }) {
   const headerStore = await headers();
   const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
-  const hub = await requireHubCoreBySlug(hubSlug);
   const filters = normalizeMemberDirectoryFilters(searchParams);
   const [page, summary] = await Promise.all([
     listMemberDirectoryPageByHubId(hub.id, filters),
@@ -163,6 +243,7 @@ async function OptimizedMembersDirectoryLoader({ hubSlug, searchParams }) {
   const filterDefinitions = buildFilterDefinitions({ includeLastSeen: false });
   const memberItems = page.items.map((item) => buildMemberItemFromDirectoryItem(item, hub, routeMode));
   const basePath = buildHubRuntimeHref(hub.slug, "/admin/members", routeMode);
+  const exportHref = buildMembersExportHref({ basePath, searchParams });
   const currentCursor = filters.cursor || "";
   const cursorStack = String(searchParams?.cursorStack || "")
     .split(",")
@@ -207,6 +288,7 @@ async function OptimizedMembersDirectoryLoader({ hubSlug, searchParams }) {
           pageSize={filters.limit}
           nextHref={nextHref}
           previousHref={previousHref}
+          exportHref={exportHref}
         />
       ) : null}
       {!summary.total && !hasActiveDirectoryView ? (
@@ -221,10 +303,9 @@ async function OptimizedMembersDirectoryLoader({ hubSlug, searchParams }) {
   );
 }
 
-async function LegacyMembersDirectoryLoader({ hubSlug }) {
+async function LegacyMembersDirectoryLoader({ hub }) {
   const headerStore = await headers();
   const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
-  const hub = await requireHubCoreBySlug(hubSlug);
   const [members, memberships, upgradeRequestUserIds, eventPaymentAttentionUserIds, coursePaymentAttentionUserIds] = await Promise.all([
     listUserDirectoryRowsByHub(hub.id, { role: "member" }),
     listMembershipDirectorySummariesByHub(hub.id),
@@ -325,6 +406,13 @@ async function LegacyMembersDirectoryLoader({ hubSlug }) {
 export default async function MembersPage({ params, searchParams }) {
   const { hubSlug } = await params;
   const resolvedSearchParams = await searchParams;
+  const hub = await requireHubCoreBySlug(hubSlug);
+  const access = await getCurrentHubOperatorAccess(hub);
+  const showSupportDiagnostics = access?.mode === "support";
+  const [feedback, reconciliationReport] = await Promise.all([
+    Promise.resolve(getMembersFeedback(resolvedSearchParams || {})),
+    showSupportDiagnostics ? getHubMemberDirectoryReconciliationReport(hub.id) : Promise.resolve(null),
+  ]);
 
   return (
     <div className={styles.layout}>
@@ -333,11 +421,17 @@ export default async function MembersPage({ params, searchParams }) {
         title="Member directory"
         description="Review members, check their status and payment context, and open the right record for follow-up."
       />
+      {feedback ? (
+        <Surface tone={feedback.tone === "danger" ? "accent" : "muted"} padding="sm">
+          {feedback.message}
+        </Surface>
+      ) : null}
+      {showSupportDiagnostics ? <MembersSupportDiagnostics hubSlug={hub.slug} report={reconciliationReport} /> : null}
       <Suspense fallback={<MembersWorkspaceFallback />}>
         {isMemberDirectoryReadModelEnabled() ? (
-          <OptimizedMembersDirectoryLoader hubSlug={hubSlug} searchParams={resolvedSearchParams || {}} />
+          <OptimizedMembersDirectoryLoader hub={hub} searchParams={resolvedSearchParams || {}} />
         ) : (
-          <LegacyMembersDirectoryLoader hubSlug={hubSlug} />
+          <LegacyMembersDirectoryLoader hub={hub} />
         )}
       </Suspense>
     </div>
