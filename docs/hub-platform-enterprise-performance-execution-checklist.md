@@ -249,6 +249,7 @@ Verification notes:
   - recommended first production run is dry-run for one known hub, then repair for that same hub, then dry-run again
   - scheduled operation should remain bounded and page through hubs with `nextCursor` if multi-hub maintenance is required
   - callers must send `Authorization: Bearer <INTERNAL_AUTOMATION_SECRET>` or `x-internal-automation-secret: <INTERNAL_AUTOMATION_SECRET>`
+  - production dry-run on `maplegrovecommunityhub` completed successfully with `0` payment, member-directory, dashboard, and media-usage issues
 
 Production verification examples:
 
@@ -269,6 +270,52 @@ Production verification examples:
   - per-hub `reports` with `totalIssues`
   - per-hub `repairs` when `dryRun=false`
 - Vercel Cron should start with `dryRun=true` and `limit=1`. Increase cadence or paging only after production timings are known.
+
+## Next Public Site Verification Pass
+
+Run this before adding more public-site performance code. The current public cache/query work is strong, so the next value is proving invalidation and personalized visibility rather than changing data paths speculatively.
+
+### Signed-In Visibility
+
+- Sign in as a member who can see member-only offerings.
+- Hard refresh `/events`.
+- Confirm member-only events are visible where expected.
+- Hard refresh `/courses`.
+- Confirm member-only courses are visible where expected.
+- Sign out or use an anonymous/incognito window.
+- Hard refresh `/events` and `/courses`.
+- Confirm member-only offerings are not visible anonymously.
+- Expected result: signed-in requests bypass the anonymous offerings cache; anonymous requests can still use cached public data.
+
+### Public Content Invalidation
+
+- Edit a testimonial that is visible on `/testimonials` and/or the public home page.
+- Confirm `/testimonials` reflects the edit after refresh.
+- Confirm the public home page reflects the edit when the testimonial appears there.
+- Edit a what-we-do item that appears on the public home page.
+- Confirm the public home page reflects the edit after refresh.
+- Expected result: cached testimonial and what-we-do data invalidates through the shared public cache tags.
+
+### Public Media Invalidation
+
+- Change branding logo/header media.
+- Change homepage hero media.
+- Change homepage info media.
+- Change events page hero media.
+- Change courses page hero media.
+- Change testimonials page hero media.
+- Change an event card/detail image.
+- Change a course card/detail image.
+- Change a testimonial author/image.
+- After each change, hard refresh the relevant public route and confirm the new media appears.
+- Expected result: public shell/home/offering/testimonial cache tags and media cache tags are invalidated without requiring a manual projection sync.
+
+### Media Usage Follow-Up
+
+- Select an asset with known usage in `/admin/media` and confirm usage appears.
+- Select an unused asset twice and confirm the second lookup remains fast and shows no usage.
+- Delete an unused asset and confirm its usage projection does not linger.
+- Expected result: selected asset usage is served from `mediaUsage` after sync/fallback repair, and deletion safety still uses strict source verification.
 
 ## Per-Slice Rollout Checklist
 
