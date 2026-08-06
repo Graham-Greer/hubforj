@@ -5,6 +5,7 @@ try {
 }
 
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
+import { FieldPath } from "firebase-admin/firestore";
 import { cache } from "react";
 import { createPublicContentCache, getPublicHubSlugCacheTag } from "@/lib/cache/public-content";
 import { normalizeHubCustomDomain, normalizePlatformSubdomainLabel } from "@/lib/domain/hub-domains";
@@ -215,6 +216,40 @@ const getCachedFirestoreHubCoreBySlug = cache(getFirestoreHubCoreBySlug);
 
 export async function listHubs() {
   return listFirestoreHubs();
+}
+
+export async function listHubCoresForProjectionMaintenance(options = {}) {
+  const hubSlug = normalizeString(options.hubSlug);
+  const limit = Math.min(Math.max(Number.parseInt(String(options.limit || ""), 10) || 1, 1), 10);
+  const cursor = normalizeString(options.cursor);
+
+  if (hubSlug) {
+    const hub = await getFirestoreHubCoreBySlug(hubSlug);
+
+    return {
+      hubs: hub ? [hub] : [],
+      nextCursor: "",
+      hasMore: false,
+    };
+  }
+
+  let query = getFirebaseAdminDb()
+    .collection("hubs")
+    .orderBy(FieldPath.documentId())
+    .limit(limit + 1);
+
+  if (cursor) {
+    query = query.startAfter(cursor);
+  }
+
+  const snapshot = await query.get();
+  const docs = snapshot.docs.slice(0, limit);
+
+  return {
+    hubs: docs.map((doc) => normalizeHubRecord({ id: doc.id, ...doc.data() })),
+    nextCursor: snapshot.docs.length > limit ? docs[docs.length - 1]?.id || "" : "",
+    hasMore: snapshot.docs.length > limit,
+  };
 }
 
 export async function getHubById(hubId) {

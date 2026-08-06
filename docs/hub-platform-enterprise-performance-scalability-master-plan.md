@@ -14,11 +14,11 @@ The audit found that the application has made strong progress on perceived perfo
 - Public routes are dynamic because they read request headers and often check session state for personalized header behavior.
 - Several public listing queries fetch whole hub collections and sort or filter in memory.
 - Admin summary and deferred dashboard data still read large collections and rebuild derived values per request.
-- Members and payments routes have improved perceived performance. Payments now use the ledger projection/read model for the main admin and member billing journeys; remaining payment work is focused on global search/date/export strategy and long-tail member billing pagination.
+- Members and payments routes have improved perceived performance. Payments now use the ledger projection/read model for the main admin and member billing journeys, including URL-driven status/type/date/search filters, cursor pagination, aggregate summary cards, and projection-backed CSV export.
 - Payment reporting has been moved from multi-collection reconstruction to a canonical `paymentRecords` source with queryable `paymentItems` and aggregate `paymentSummary` projections.
-- Member account bookings and registrations use nested fan-out patterns that will become expensive at scale.
-- Media usage reporting scans multiple content domains to determine usage.
-- Firestore indexes are incomplete for the query shapes needed by an enterprise-grade implementation.
+- Member account bookings and registrations now have collection-group and member-activity projection paths, with legacy fan-out preserved as a fallback.
+- Media usage reporting now has lazy projected usage and support reconciliation, with scheduled/internal maintenance added as the fleet-level hardening path.
+- Firestore indexes have been expanded for the major projection query shapes; every future query shape must still be documented before use.
 
 ## Implementation Documents
 
@@ -170,6 +170,26 @@ Deliver:
 - Usage projection model or on-demand usage hydration.
 - Admin mutation invalidation.
 - Clear stale-state handling.
+
+### Phase 6: Projection Operations Hardening
+
+Once read models are live, protect correctness through bounded internal maintenance rather than relying only on manual support actions.
+
+Deliver:
+
+- Secured internal projection maintenance endpoint.
+- Dry-run reconciliation mode for one hub or a small bounded hub page.
+- Repair mode that reuses existing projection sync/rebuild helpers.
+- Cron/manual invocation guidance using `INTERNAL_AUTOMATION_SECRET`.
+- Documentation for paging through hubs with `nextCursor` instead of running unbounded fleet work.
+
+Progress:
+
+- `/api/internal/projections/reconcile` supports `GET` and `POST`.
+- Default mode is dry-run with `limit=1`.
+- Repair mode reuses the payment ledger sync chain for payment items, payment summary, member directory, member activity, dashboard stats, and dashboard overview.
+- Repair mode also rebuilds media usage projections.
+- The route is protected by the same internal automation secret pattern as the existing scheduled processors.
 
 ## Shared Engineering Rules
 
