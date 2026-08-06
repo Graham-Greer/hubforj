@@ -33,6 +33,7 @@ import {
   normalizeString,
 } from "./event-booking-shared.js";
 import { getPaymentRecordBySource, upsertPaymentRecordBySource } from "./payment-records.js";
+import { upsertEventBookingMemberActivity } from "./member-activity.js";
 import { getFallbackRegionalMarket } from "@/lib/domain/regional-markets";
 
 function normalizeInteger(value, fallback = 0) {
@@ -74,6 +75,31 @@ async function maintainDashboardProjectionsForEventBookingChange(
       actorId: normalizeString(actorId) || "system",
       reason,
       error: String(error?.message || "Unable to maintain dashboard projections."),
+    });
+    return null;
+  }
+}
+
+async function maintainMemberActivityForEventBookingChange(
+  hubId,
+  eventId,
+  booking,
+  actorId,
+  reason = "event-booking-change"
+) {
+  try {
+    return await upsertEventBookingMemberActivity(hubId, eventId, booking, {
+      actorId,
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.warn("Unable to maintain member activity projection after event booking change", {
+      hubId: normalizeString(hubId),
+      eventId: normalizeString(eventId),
+      bookingId: normalizeString(booking?.id),
+      actorId: normalizeString(actorId) || "system",
+      reason,
+      error: String(error?.message || "Unable to maintain member activity projection."),
     });
     return null;
   }
@@ -477,6 +503,16 @@ async function promoteOneWaitlistedEventBooking(hubId, eventId, bookingId, actor
     };
   });
 
+  if (outcome?.booking) {
+    await maintainMemberActivityForEventBookingChange(
+      normalizedHubId,
+      normalizedEventId,
+      outcome.booking,
+      actorId,
+      "event-booking-waitlist-promotion"
+    );
+  }
+
   return outcome;
 }
 
@@ -649,9 +685,7 @@ export async function createEventBookingForMember(
       updatedAt: now,
     });
   });
-  await maintainDashboardProjectionsForEventBookingChange(normalizedHubId, actorId, "event-booking-create");
-
-  return normalizeEventBookingRecord({
+  const createdBooking = normalizeEventBookingRecord({
     id: bookingId,
     hubId: normalizedHubId,
     eventId: normalizedEventId,
@@ -682,6 +716,16 @@ export async function createEventBookingForMember(
     cancelledByUserId: "",
     ...snapshots,
   });
+  await maintainMemberActivityForEventBookingChange(
+    normalizedHubId,
+    normalizedEventId,
+    createdBooking,
+    actorId,
+    "event-booking-create"
+  );
+  await maintainDashboardProjectionsForEventBookingChange(normalizedHubId, actorId, "event-booking-create");
+
+  return createdBooking;
 }
 
 export async function updateEventBookingPaymentState(
@@ -758,6 +802,13 @@ export async function updateEventBookingPaymentState(
   });
 
   await syncEventBookingPaymentRecord(normalizedHubId, normalizedEventId, booking, actorId);
+  await maintainMemberActivityForEventBookingChange(
+    normalizedHubId,
+    normalizedEventId,
+    booking,
+    actorId,
+    "event-booking-payment-update"
+  );
 
   return booking;
 }
@@ -936,6 +987,13 @@ export async function updateEventBookingStatus(
 
   await maintainDashboardProjectionsForEventBookingChange(
     normalizedHubId,
+    actorId,
+    "event-booking-status-update"
+  );
+  await maintainMemberActivityForEventBookingChange(
+    normalizedHubId,
+    normalizedEventId,
+    result,
     actorId,
     "event-booking-status-update"
   );
@@ -1129,6 +1187,13 @@ export async function updateEventBookingAttendeeStatus(
 
   await maintainDashboardProjectionsForEventBookingChange(
     normalizedHubId,
+    actorId,
+    "event-booking-attendee-status-update"
+  );
+  await maintainMemberActivityForEventBookingChange(
+    normalizedHubId,
+    normalizedEventId,
+    result?.booking,
     actorId,
     "event-booking-attendee-status-update"
   );
@@ -1377,6 +1442,13 @@ export async function cancelEventBookingAttendee(
   if (result && normalizeInteger(result.booking?.activeAttendeeCount, 0) >= 0) {
     await promoteWaitlistedEventBookings(normalizedHubId, normalizedEventId, actorId);
   }
+  await maintainMemberActivityForEventBookingChange(
+    normalizedHubId,
+    normalizedEventId,
+    result?.booking,
+    actorId,
+    "event-booking-attendee-cancel"
+  );
 
   return result;
 }

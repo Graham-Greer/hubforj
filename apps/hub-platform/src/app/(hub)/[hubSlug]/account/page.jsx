@@ -7,6 +7,7 @@ import { requireCurrentMemberSessionForHub } from "@/lib/auth/member-session";
 import { listCourseRegistrationsByUser } from "@/lib/data/course-registrations";
 import { listEventBookingsByBooker } from "@/lib/data/event-bookings";
 import { requireHubBySlug } from "@/lib/data/hubs";
+import { isMemberActivityReadModelEnabled, listMemberActivityBookingSources } from "@/lib/data/member-activity";
 import { getCurrentMembershipByUser } from "@/lib/data/memberships";
 import { listMemberPaymentItems } from "@/lib/data/member-payments";
 import { buildMemberOverviewModel } from "@/lib/domain/member-account";
@@ -15,12 +16,27 @@ import styles from "./accountRoute.module.css";
 
 async function MemberAccountOverviewContent({ hub, routeMode }) {
   const memberSession = await requireCurrentMemberSessionForHub(hub, `/${hub.slug}/account`);
-  const [membership, eventBookings, courseRegistrations, paymentItems] = await Promise.all([
+  const activityPromise = isMemberActivityReadModelEnabled()
+    ? listMemberActivityBookingSources(hub.id, memberSession.user.id, { limit: 200 }).catch((error) => {
+        console.warn("Falling back to collection-group member account activity for overview.", {
+          hubId: hub.id,
+          userId: memberSession.user.id,
+          error: String(error?.message || "Unable to read member activity projection."),
+        });
+        return null;
+      })
+    : Promise.resolve(null);
+  const [membership, projectedActivity, paymentItems] = await Promise.all([
     getCurrentMembershipByUser(hub.id, memberSession.user.id),
-    listEventBookingsByBooker(hub.id, memberSession.user.id, { limit: 200 }),
-    listCourseRegistrationsByUser(hub.id, memberSession.user.id, { limit: 200 }),
+    activityPromise,
     listMemberPaymentItems(hub.id, memberSession.user.id, { limit: 25 }),
   ]);
+  const [eventBookings, courseRegistrations] = projectedActivity
+    ? [projectedActivity.eventBookings, projectedActivity.courseRegistrations]
+    : await Promise.all([
+        listEventBookingsByBooker(hub.id, memberSession.user.id, { limit: 200 }),
+        listCourseRegistrationsByUser(hub.id, memberSession.user.id, { limit: 200 }),
+      ]);
   const overview = buildMemberOverviewModel({
     hub,
     membership,

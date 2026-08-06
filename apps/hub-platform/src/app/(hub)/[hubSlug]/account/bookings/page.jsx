@@ -7,16 +7,29 @@ import { requireCurrentMemberSessionForHub } from "@/lib/auth/member-session";
 import { listCourseRegistrationsByUser } from "@/lib/data/course-registrations";
 import { listEventBookingsByBooker } from "@/lib/data/event-bookings";
 import { requireHubBySlug } from "@/lib/data/hubs";
+import { isMemberActivityReadModelEnabled, listMemberActivityBookingSources } from "@/lib/data/member-activity";
 import { buildUnifiedBookingItems } from "@/lib/domain/member-account";
 import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
 import styles from "../accountRoute.module.css";
 
 async function BookingsContent({ hub, routeMode }) {
   const memberSession = await requireCurrentMemberSessionForHub(hub, `/${hub.slug}/account/bookings`);
-  const [eventBookings, courseRegistrations] = await Promise.all([
-    listEventBookingsByBooker(hub.id, memberSession.user.id, { limit: 500 }),
-    listCourseRegistrationsByUser(hub.id, memberSession.user.id, { limit: 500 }),
-  ]);
+  const projectedActivity = isMemberActivityReadModelEnabled()
+    ? await listMemberActivityBookingSources(hub.id, memberSession.user.id, { limit: 500 }).catch((error) => {
+        console.warn("Falling back to collection-group member account activity for bookings.", {
+          hubId: hub.id,
+          userId: memberSession.user.id,
+          error: String(error?.message || "Unable to read member activity projection."),
+        });
+        return null;
+      })
+    : null;
+  const [eventBookings, courseRegistrations] = projectedActivity
+    ? [projectedActivity.eventBookings, projectedActivity.courseRegistrations]
+    : await Promise.all([
+        listEventBookingsByBooker(hub.id, memberSession.user.id, { limit: 500 }),
+        listCourseRegistrationsByUser(hub.id, memberSession.user.id, { limit: 500 }),
+      ]);
   const items = buildUnifiedBookingItems({
     hub,
     eventBookings,

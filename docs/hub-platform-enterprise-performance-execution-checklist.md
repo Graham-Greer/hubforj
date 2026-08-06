@@ -182,9 +182,18 @@ Verification notes:
   - event bookings use a collection-group query scoped by `hubId`, `bookerUserId`, and `createdAt desc`
   - course registrations use a collection-group query scoped by `hubId`, `userId`, and `createdAt desc`
   - `/account` requests smaller bounded slices for overview cards, while `/account/bookings` requests a larger bounded slice for the dedicated workspace
+  - admin member detail and public recurring-series member booking checks pass explicit bounded limits through the same helpers
   - parent event/course display data is hydrated only for returned rows
+  - member-facing reads derive the member id from `requireCurrentMemberSessionForHub`; submitted user ids are not trusted for account route data access
   - legacy fan-out remains as rollout fallback until indexes are built and production verification is complete
   - required Firebase indexes must be deployed before enabling `HUB_PLATFORM_MEMBER_ACCOUNT_COLLECTION_GROUP_ENABLED=true`
+  - `hubs/{hubId}/memberActivity/{kind}_{recordId}` now provides the next-stage projection for heavy member histories
+  - projection reads are separately gated by `HUB_PLATFORM_MEMBER_ACTIVITY_READ_MODEL_ENABLED=true`
+  - required Firebase index: `memberActivity` collection scope with `hubId`, `userId`, `sortAt desc`
+  - deploy code and index with the projection read flag disabled first, run support diagnostics **Sync payment ledger**, then confirm the diagnostics `Member activity` synced/scanned counts before enabling the read flag
+  - keep `HUB_PLATFORM_MEMBER_ACCOUNT_COLLECTION_GROUP_ENABLED=true` enabled as the safe fallback underneath the projection path
+  - live member activity maintenance covers event bookings, course registrations, status/payment/attendance changes, waitlist promotion, member cancellation, and parent event/course edits
+  - expected steady-state Network/server result: `/account` and `/account/bookings` read one bounded user-scoped `memberActivity` query instead of hydrating parent event/course records for each returned item
 - Payments reconciliation and repair:
   - support diagnostics include a safe repair action for payment reconciliation issues
   - safe repair upserts canonical `paymentRecords` into `paymentItems`, deletes orphan payment item projections, repairs missing native transaction back-links when an unambiguous payment record already exists, repairs paid records missing `paidAt` only from unambiguous source timestamps, hydrates projected member identity, and rebuilds `paymentSummary`

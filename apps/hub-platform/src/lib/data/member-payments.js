@@ -132,8 +132,8 @@ async function listMemberProjectedPaymentItems(hubId, userId, options = {}) {
 async function listMemberLegacyPaymentItems(hubId, userId) {
   const [membership, eventBookings, courseRegistrations, paymentRecords] = await Promise.all([
     getCurrentMembershipByUser(hubId, userId),
-    listEventBookingsByBooker(hubId, userId),
-    listCourseRegistrationsByUser(hubId, userId),
+    listEventBookingsByBooker(hubId, userId, { limit: 500 }),
+    listCourseRegistrationsByUser(hubId, userId, { limit: 500 }),
     listPaymentRecordsByUser(hubId, userId),
   ]);
 

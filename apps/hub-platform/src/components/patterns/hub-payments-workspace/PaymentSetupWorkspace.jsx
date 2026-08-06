@@ -242,6 +242,10 @@ export default function PaymentSetupWorkspace({
                   value={`${Number(syncStatus?.memberDirectorySynced || 0)} synced · ${Number(syncStatus?.memberDirectoryScanned || 0)} scanned · ${Number(syncStatus?.memberDirectoryOrphaned || 0)} orphaned · ${formatSyncDate(syncStatus?.memberDirectoryRebuiltAt, hub?.locale || fallbackRegionalMarket.defaultLocale)}`}
                 />
                 <DetailRow
+                  label="Member activity"
+                  value={`${Number(syncStatus?.memberActivitySynced || 0)} synced · ${Number(syncStatus?.memberActivitySkipped || 0)} skipped · ${Number(syncStatus?.memberActivityScanned || 0)} scanned · ${formatSyncDate(syncStatus?.memberActivityRebuiltAt, hub?.locale || fallbackRegionalMarket.defaultLocale)}`}
+                />
+                <DetailRow
                   label="Dashboard stats"
                   value={`${syncStatus?.dashboardStatsStatus || "Not run yet"} · ${formatSyncDate(syncStatus?.dashboardStatsRebuiltAt, hub?.locale || fallbackRegionalMarket.defaultLocale)}`}
                 />

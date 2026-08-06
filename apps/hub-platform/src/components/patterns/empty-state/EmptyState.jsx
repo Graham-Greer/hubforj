@@ -13,6 +13,7 @@ export default function EmptyState({ eyebrow, title, description, primaryAction,
           {primaryAction ? (
             <Button
               href={primaryAction.href}
+              prefetch={primaryAction.prefetch}
               target={primaryAction.external ? "_blank" : undefined}
               rel={primaryAction.external ? "noreferrer" : undefined}
             >
@@ -22,6 +23,7 @@ export default function EmptyState({ eyebrow, title, description, primaryAction,
           {secondaryAction ? (
             <Button
               href={secondaryAction.href}
+              prefetch={secondaryAction.prefetch}
               variant="secondary"
               target={secondaryAction.external ? "_blank" : undefined}
               rel={secondaryAction.external ? "noreferrer" : undefined}

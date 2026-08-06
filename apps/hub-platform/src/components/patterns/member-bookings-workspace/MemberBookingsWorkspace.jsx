@@ -78,21 +78,21 @@ function getBrowseActions(hub, capabilities) {
   const routeMode = hub?.routeMode || "path";
   if (capabilities.eventsEnabled && capabilities.coursesEnabled) {
     return {
-      primaryAction: { href: buildHubRuntimeHref(hub.slug, "/events", routeMode), label: "Browse events" },
-      secondaryAction: { href: buildHubRuntimeHref(hub.slug, "/courses", routeMode), label: "Browse courses" },
+      primaryAction: { href: buildHubRuntimeHref(hub.slug, "/events", routeMode), label: "Browse events", prefetch: false },
+      secondaryAction: { href: buildHubRuntimeHref(hub.slug, "/courses", routeMode), label: "Browse courses", prefetch: false },
     };
   }
 
   if (capabilities.coursesEnabled) {
     return {
-      primaryAction: { href: buildHubRuntimeHref(hub.slug, "/courses", routeMode), label: "Browse courses" },
-      secondaryAction: { href: buildHubRuntimeHref(hub.slug, "/account", routeMode), label: "Back to overview" },
+      primaryAction: { href: buildHubRuntimeHref(hub.slug, "/courses", routeMode), label: "Browse courses", prefetch: false },
+      secondaryAction: { href: buildHubRuntimeHref(hub.slug, "/account", routeMode), label: "Back to overview", prefetch: false },
     };
   }
 
   return {
-    primaryAction: { href: buildHubRuntimeHref(hub.slug, "/events", routeMode), label: "Browse events" },
-    secondaryAction: { href: buildHubRuntimeHref(hub.slug, "/account", routeMode), label: "Back to overview" },
+    primaryAction: { href: buildHubRuntimeHref(hub.slug, "/events", routeMode), label: "Browse events", prefetch: false },
+    secondaryAction: { href: buildHubRuntimeHref(hub.slug, "/account", routeMode), label: "Back to overview", prefetch: false },
   };
 }
 
@@ -214,7 +214,7 @@ function BookingRow({ hubSlug, item }) {
       {item.statusHelpText ? <p className={styles.statusHelpText}>{item.statusHelpText}</p> : null}
 
       <div className={styles.itemActions}>
-        <Button href={item.primaryAction.href} variant="secondary">
+        <Button href={item.primaryAction.href} prefetch={false} variant="secondary">
           {item.primaryAction.label}
         </Button>
         <BookingCancelAction hubSlug={hubSlug} item={item} />
@@ -279,7 +279,7 @@ export default function MemberBookingsWorkspace({ hub, items, showHeader = true 
       : {
           title: "No booking history yet",
           description: "Completed, cancelled, and earlier bookings will appear here once your account history begins to build.",
-          primaryAction: { href: `/${hub.slug}/account`, label: "Back to overview" },
+          primaryAction: { href: `/${hub.slug}/account`, label: "Back to overview", prefetch: false },
           secondaryAction: null,
         };
 
@@ -336,12 +336,12 @@ export default function MemberBookingsWorkspace({ hub, items, showHeader = true 
             <p className={styles.emptyDescription}>{emptyState.description}</p>
             <div className={styles.emptyActions}>
               {emptyState.primaryAction ? (
-                <Button href={emptyState.primaryAction.href} variant="primary">
+                <Button href={emptyState.primaryAction.href} prefetch={false} variant="primary">
                   {emptyState.primaryAction.label}
                 </Button>
               ) : null}
               {emptyState.secondaryAction ? (
-                <Button href={emptyState.secondaryAction.href} variant="secondary">
+                <Button href={emptyState.secondaryAction.href} prefetch={false} variant="secondary">
                   {emptyState.secondaryAction.label}
                 </Button>
               ) : null}

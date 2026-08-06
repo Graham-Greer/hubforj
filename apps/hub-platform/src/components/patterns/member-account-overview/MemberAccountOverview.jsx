@@ -45,7 +45,7 @@ function BookingPreviewItem({ item }) {
       </div>
       {item.statusHelpText ? <p className={styles.previewSupport}>{item.statusHelpText}</p> : null}
       <div className={styles.previewActions}>
-        <Button href={item.primaryAction.href} variant="ghost">{item.primaryAction.label}</Button>
+        <Button href={item.primaryAction.href} prefetch={false} variant="ghost">{item.primaryAction.label}</Button>
       </div>
     </div>
   );
@@ -109,7 +109,7 @@ export default function MemberAccountOverview({ hub, overview, showHeader = true
               <p className={styles.membershipCopy}>Renews {membership.renewalLabel}</p>
             </div>
             <div className={styles.sectionActions}>
-              <Button href={membership.href} variant="secondary">View membership</Button>
+              <Button href={membership.href} prefetch={false} variant="secondary">View membership</Button>
             </div>
           </div>
         ) : (
@@ -118,7 +118,7 @@ export default function MemberAccountOverview({ hub, overview, showHeader = true
               eyebrow="No membership yet"
               title="Membership has not been set up"
               description="When a membership is added to your account, the latest plan and renewal details will appear here."
-              primaryAction={{ href: buildHubRuntimeHref(hub.slug, "/account/membership", routeMode), label: "Open membership" }}
+              primaryAction={{ href: buildHubRuntimeHref(hub.slug, "/account/membership", routeMode), label: "Open membership", prefetch: false }}
             />
           </div>
         )}
@@ -133,7 +133,7 @@ export default function MemberAccountOverview({ hub, overview, showHeader = true
               <p className={styles.sectionDescription}>See what you have coming up next.</p>
             </div>
             <div className={styles.sectionActions}>
-              <Button href={buildHubRuntimeHref(hub.slug, "/account/bookings", routeMode)} variant="secondary">Open bookings</Button>
+              <Button href={buildHubRuntimeHref(hub.slug, "/account/bookings", routeMode)} prefetch={false} variant="secondary">Open bookings</Button>
             </div>
           </div>
           {upcomingBookings.length ? (
@@ -147,7 +147,7 @@ export default function MemberAccountOverview({ hub, overview, showHeader = true
               eyebrow="No upcoming bookings"
               title="Nothing is scheduled right now"
               description="Event and course bookings will appear here as soon as you book them."
-              primaryAction={{ href: buildHubRuntimeHref(hub.slug, "/events", routeMode), label: "Browse events" }}
+              primaryAction={{ href: buildHubRuntimeHref(hub.slug, "/events", routeMode), label: "Browse events", prefetch: false }}
             />
           )}
         </Surface>
@@ -160,7 +160,7 @@ export default function MemberAccountOverview({ hub, overview, showHeader = true
               <p className={styles.sectionDescription}>Review the latest payment activity on your account.</p>
             </div>
             <div className={styles.sectionActions}>
-              <Button href={buildHubRuntimeHref(hub.slug, "/account/billing", routeMode)} variant="secondary">Open billing</Button>
+              <Button href={buildHubRuntimeHref(hub.slug, "/account/billing", routeMode)} prefetch={false} variant="secondary">Open billing</Button>
             </div>
           </div>
           {recentBilling.length ? (
@@ -174,7 +174,7 @@ export default function MemberAccountOverview({ hub, overview, showHeader = true
               eyebrow="No billing activity"
               title="Payments will appear here"
               description="Membership, event, and course payment records will show up once they exist on your account."
-              primaryAction={{ href: buildHubRuntimeHref(hub.slug, "/account/billing", routeMode), label: "Open billing" }}
+              primaryAction={{ href: buildHubRuntimeHref(hub.slug, "/account/billing", routeMode), label: "Open billing", prefetch: false }}
             />
           )}
         </Surface>

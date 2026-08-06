@@ -24,6 +24,7 @@ import {
   syncCourseRegistrationSummaryForChange,
 } from "./course-registration-shared.js";
 import { getCourseRegistrationByUser } from "./course-registration-queries.js";
+import { upsertCourseRegistrationMemberActivity } from "./member-activity.js";
 import { getPaymentRecordBySource, upsertPaymentRecordBySource } from "./payment-records.js";
 import { getFallbackRegionalMarket } from "@/lib/domain/regional-markets";
 
@@ -50,6 +51,31 @@ async function maintainDashboardProjectionsForCourseRegistrationChange(
       actorId: normalizeString(actorId) || "system",
       reason,
       error: String(error?.message || "Unable to maintain dashboard projections."),
+    });
+    return null;
+  }
+}
+
+async function maintainMemberActivityForCourseRegistrationChange(
+  hubId,
+  courseId,
+  registration,
+  actorId,
+  reason = "course-registration-change"
+) {
+  try {
+    return await upsertCourseRegistrationMemberActivity(hubId, courseId, registration, {
+      actorId,
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.warn("Unable to maintain member activity projection after course registration change", {
+      hubId: normalizeString(hubId),
+      courseId: normalizeString(courseId),
+      registrationId: normalizeString(registration?.id),
+      actorId: normalizeString(actorId) || "system",
+      reason,
+      error: String(error?.message || "Unable to maintain member activity projection."),
     });
     return null;
   }
@@ -355,14 +381,22 @@ export async function createCourseRegistrationForMember(hubId, courseId, userId,
   };
 
   await ref.set(writeModel);
+  const registration = normalizeCourseRegistrationRecord({ id: ref.id, ...writeModel });
   await syncCourseRegistrationSummaryForChange({
     hubId: normalizedHubId,
     courseId: normalizedCourseId,
     previousRegistration: null,
-    nextRegistration: { id: ref.id, ...writeModel },
+    nextRegistration: registration,
     actorId,
     updatedAt: now,
   });
+  await maintainMemberActivityForCourseRegistrationChange(
+    normalizedHubId,
+    normalizedCourseId,
+    registration,
+    actorId,
+    "course-registration-create"
+  );
   revalidateCourseListingCapacity(normalizedHubId);
   await maintainDashboardProjectionsForCourseRegistrationChange(
     normalizedHubId,
@@ -370,7 +404,7 @@ export async function createCourseRegistrationForMember(hubId, courseId, userId,
     "course-registration-create"
   );
 
-  return normalizeCourseRegistrationRecord({ id: ref.id, ...writeModel });
+  return registration;
 }
 
 export async function updateCourseRegistrationStatus(hubId, courseId, registrationId, nextStatus, actorId = "system") {
@@ -421,6 +455,13 @@ export async function updateCourseRegistrationStatus(hubId, courseId, registrati
     actorId,
     updatedAt: now,
   });
+  await maintainMemberActivityForCourseRegistrationChange(
+    normalizedHubId,
+    normalizedCourseId,
+    { ...current, ...update },
+    actorId,
+    "course-registration-status-update"
+  );
   revalidateCourseListingCapacity(normalizedHubId);
   await maintainDashboardProjectionsForCourseRegistrationChange(
     normalizedHubId,
@@ -476,6 +517,13 @@ export async function updateCourseRegistrationAttendanceStatus(
     actorId,
     updatedAt: now,
   });
+  await maintainMemberActivityForCourseRegistrationChange(
+    normalizedHubId,
+    normalizedCourseId,
+    { ...current, ...update },
+    actorId,
+    "course-registration-attendance-update"
+  );
 
   return normalizeCourseRegistrationRecord({ ...current, ...update });
 }
@@ -525,6 +573,13 @@ export async function updateCourseRegistrationPaymentStatus(
   const registration = normalizeCourseRegistrationRecord({ ...current, ...update });
 
   await syncCourseRegistrationPaymentRecord(normalizedHubId, normalizedCourseId, registration, actorId);
+  await maintainMemberActivityForCourseRegistrationChange(
+    normalizedHubId,
+    normalizedCourseId,
+    registration,
+    actorId,
+    "course-registration-payment-update"
+  );
 
   return registration;
 }
@@ -579,5 +634,14 @@ export async function updateCourseRegistrationNativePaymentState(
 
   await doc.ref.update(update);
 
-  return normalizeCourseRegistrationRecord({ ...current, ...update });
+  const registration = normalizeCourseRegistrationRecord({ ...current, ...update });
+  await maintainMemberActivityForCourseRegistrationChange(
+    normalizedHubId,
+    normalizedCourseId,
+    registration,
+    actorId,
+    "course-registration-native-payment-update"
+  );
+
+  return registration;
 }
