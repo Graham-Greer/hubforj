@@ -196,10 +196,13 @@ Verification notes:
   - expected steady-state Network/server result: `/account` and `/account/bookings` read one bounded user-scoped `memberActivity` query instead of hydrating parent event/course records for each returned item
 - Member sign-in/account handoff:
   - Firebase ID tokens continue using revoked-token verification during session creation for security-sensitive member/admin access
+  - client sign-in uses the token returned by Firebase sign-in without forcing an additional client token refresh
   - hub lookup and token verification run in parallel where possible
   - member-directory repair after sign-in is scheduled after the session response instead of blocking the login request
   - successful member sign-in uses a single `router.replace` navigation and does not force a second `router.refresh`
   - sign-in page join CTA disables prefetch so the auth route does not warm the join page before navigation
+  - temporary timing diagnostics are available behind `HUB_PLATFORM_PERFORMANCE_TIMING_ENABLED=true`
+  - timing diagnostics cover `/api/auth/member/session`, post-response member-directory repair, `/account` shell loading, and `/account` overview data loading
   - expected Network/server result: one `/api/auth/member/session` response followed by one account RSC/navigation request
 - Payments reconciliation and repair:
   - support diagnostics include a safe repair action for payment reconciliation issues

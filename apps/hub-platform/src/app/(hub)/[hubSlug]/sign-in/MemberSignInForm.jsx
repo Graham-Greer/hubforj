@@ -40,7 +40,7 @@ export default function MemberSignInForm({ hubSlug, nextPath, defaultEmail = "",
     startTransition(async () => {
       try {
         const credential = await signInWithEmailAndPassword(getFirebaseClientAuth(), email, password);
-        const idToken = await credential.user.getIdToken(true);
+        const idToken = await credential.user.getIdToken();
         const response = await fetch("/api/auth/member/session", {
           method: "POST",
           headers: {

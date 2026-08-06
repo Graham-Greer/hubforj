@@ -12,14 +12,34 @@ import { getCurrentMembershipByUser } from "@/lib/data/memberships";
 import { listMemberPaymentItems } from "@/lib/data/member-payments";
 import { buildMemberOverviewModel } from "@/lib/domain/member-account";
 import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
+import { createPerformanceTimer } from "@/lib/observability/performance-timing";
 import styles from "./accountRoute.module.css";
 
 async function MemberAccountOverviewContent({ hub, routeMode }) {
+  const timer = createPerformanceTimer("member-account-overview-content", {
+    hubId: hub.id,
+    routeMode,
+  });
   const memberSession = await requireCurrentMemberSessionForHub(hub, `/${hub.slug}/account`);
-  const activityPromise = isMemberActivityReadModelEnabled()
-    ? listMemberActivityBookingSources(hub.id, memberSession.user.id, { limit: 200 }).catch((error) => {
+  timer.log("member-session-loaded", {
+    userId: memberSession.user.id,
+  });
+  const memberActivityEnabled = isMemberActivityReadModelEnabled();
+  const activityPromise = memberActivityEnabled
+    ? listMemberActivityBookingSources(hub.id, memberSession.user.id, { limit: 200 }).then((activity) => {
+        timer.log("member-activity-loaded", {
+          userId: memberSession.user.id,
+          eventBookings: activity.eventBookings.length,
+          courseRegistrations: activity.courseRegistrations.length,
+        });
+        return activity;
+      }).catch((error) => {
         console.warn("Falling back to collection-group member account activity for overview.", {
           hubId: hub.id,
+          userId: memberSession.user.id,
+          error: String(error?.message || "Unable to read member activity projection."),
+        });
+        timer.log("member-activity-fallback", {
           userId: memberSession.user.id,
           error: String(error?.message || "Unable to read member activity projection."),
         });
@@ -27,16 +47,46 @@ async function MemberAccountOverviewContent({ hub, routeMode }) {
       })
     : Promise.resolve(null);
   const [membership, projectedActivity, paymentItems] = await Promise.all([
-    getCurrentMembershipByUser(hub.id, memberSession.user.id),
+    getCurrentMembershipByUser(hub.id, memberSession.user.id).then((membershipRecord) => {
+      timer.log("membership-loaded", {
+        userId: memberSession.user.id,
+        found: Boolean(membershipRecord),
+      });
+      return membershipRecord;
+    }),
     activityPromise,
-    listMemberPaymentItems(hub.id, memberSession.user.id, { limit: 25 }),
+    listMemberPaymentItems(hub.id, memberSession.user.id, { limit: 25 }).then((items) => {
+      timer.log("payment-items-loaded", {
+        userId: memberSession.user.id,
+        count: items.length,
+      });
+      return items;
+    }),
   ]);
   const [eventBookings, courseRegistrations] = projectedActivity
     ? [projectedActivity.eventBookings, projectedActivity.courseRegistrations]
     : await Promise.all([
-        listEventBookingsByBooker(hub.id, memberSession.user.id, { limit: 200 }),
-        listCourseRegistrationsByUser(hub.id, memberSession.user.id, { limit: 200 }),
+        listEventBookingsByBooker(hub.id, memberSession.user.id, { limit: 200 }).then((rows) => {
+          timer.log("fallback-event-bookings-loaded", {
+            userId: memberSession.user.id,
+            count: rows.length,
+          });
+          return rows;
+        }),
+        listCourseRegistrationsByUser(hub.id, memberSession.user.id, { limit: 200 }).then((rows) => {
+          timer.log("fallback-course-registrations-loaded", {
+            userId: memberSession.user.id,
+            count: rows.length,
+          });
+          return rows;
+        }),
       ]);
+  timer.log("activity-source-resolved", {
+    userId: memberSession.user.id,
+    source: projectedActivity ? "memberActivity" : memberActivityEnabled ? "fallback-after-projection-error" : "collectionGroup",
+    eventBookings: eventBookings.length,
+    courseRegistrations: courseRegistrations.length,
+  });
   const overview = buildMemberOverviewModel({
     hub,
     membership,
@@ -44,6 +94,10 @@ async function MemberAccountOverviewContent({ hub, routeMode }) {
     courseRegistrations,
     paymentItems,
     routeMode,
+  });
+  timer.end({
+    userId: memberSession.user.id,
+    source: projectedActivity ? "memberActivity" : memberActivityEnabled ? "fallback-after-projection-error" : "collectionGroup",
   });
 
   return (
@@ -57,10 +111,20 @@ async function MemberAccountOverviewContent({ hub, routeMode }) {
 
 export default async function MemberAccountPage({ params }) {
   const { hubSlug } = await params;
+  const timer = createPerformanceTimer("member-account-page", {
+    hubSlug,
+  });
   const hubRecord = await requireHubBySlug(hubSlug);
+  timer.log("hub-loaded", {
+    hubId: hubRecord.id,
+  });
   const requestHeaders = await headers();
   const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(requestHeaders));
   const hub = { ...hubRecord, routeMode };
+  timer.end({
+    hubId: hub.id,
+    routeMode,
+  });
 
   return (
     <div className={styles.routeStack}>
