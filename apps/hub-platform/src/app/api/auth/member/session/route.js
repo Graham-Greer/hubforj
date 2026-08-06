@@ -1,11 +1,28 @@
 import { after, NextResponse } from "next/server";
 import { resolveHubAuthRedirect } from "@/lib/auth/hub-auth-redirects";
-import { createHubUserSessionFromIdToken, rebuildSignedInMemberDirectoryBestEffort } from "@/lib/auth/member-auth";
+import {
+  createHubUserSessionFromIdToken,
+  rebuildSignedInMemberDirectoryBestEffort,
+  updateMemberLastSignedInBestEffort,
+} from "@/lib/auth/member-auth";
 import { buildSessionCookieOptions, sessionCookieName } from "@/lib/auth/session";
 import { createPerformanceTimer } from "@/lib/observability/performance-timing";
 
 function normalizeString(value) {
   return String(value || "").trim();
+}
+
+function buildPublicViewerPayload(user) {
+  const role = normalizeString(user?.role);
+
+  return {
+    viewerState: role === "member" ? "member" : "admin",
+    user: {
+      name: normalizeString(user?.name),
+      email: normalizeString(user?.email),
+      avatarAsset: user?.avatarAsset || null,
+    },
+  };
 }
 
 export async function POST(request) {
@@ -34,6 +51,7 @@ export async function POST(request) {
     const response = NextResponse.json({
       ok: true,
       redirectTo: resolveHubAuthRedirect(session.hub.slug, session.user.role, nextPath, routeMode),
+      viewer: buildPublicViewerPayload(session.user),
     });
 
     response.cookies.set(sessionCookieName, session.sessionValue, buildSessionCookieOptions());
@@ -46,7 +64,20 @@ export async function POST(request) {
         hubId: session.hub.id,
         userId: session.user.id,
       });
-      await rebuildSignedInMemberDirectoryBestEffort(session.hub, session.user);
+      await Promise.all([
+        updateMemberLastSignedInBestEffort(session.hub, session.user).then((updatedAt) => {
+          afterTimer.log("last-sign-in-updated", {
+            updated: Boolean(updatedAt),
+          });
+          return updatedAt;
+        }),
+        rebuildSignedInMemberDirectoryBestEffort(session.hub, session.user).then((result) => {
+          afterTimer.log("member-directory-refreshed", {
+            refreshed: Boolean(result),
+          });
+          return result;
+        }),
+      ]);
       afterTimer.end();
     });
     timer.end({

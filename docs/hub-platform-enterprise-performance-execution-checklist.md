@@ -197,9 +197,12 @@ Verification notes:
 - Member sign-in/account handoff:
   - Firebase ID tokens continue using revoked-token verification during session creation for security-sensitive member/admin access
   - client sign-in uses the token returned by Firebase sign-in without forcing an additional client token refresh
-  - hub lookup and token verification run in parallel where possible
+  - session creation uses `getHubCoreBySlug`, not the full operational `getHubBySlug`, because login only needs identity/routing hub fields and must not derive admin counts
+  - hub core lookup and revoked-token verification run in parallel where possible
+  - `lastSignedInAt` is updated after the response as best-effort audit metadata, so the login response is not blocked by a non-critical write
   - member-directory repair after sign-in is scheduled after the session response instead of blocking the login request
   - successful member sign-in uses a single `router.replace` navigation and does not force a second `router.refresh`
+  - the public header receives a lightweight signed-in viewer payload after successful session creation, so the shared public shell can switch from `Join`/`Sign in` to the member/admin utility menu without a full layout refresh
   - sign-in page join CTA disables prefetch so the auth route does not warm the join page before navigation
   - temporary timing diagnostics are available behind `HUB_PLATFORM_PERFORMANCE_TIMING_ENABLED=true`
   - timing diagnostics cover `/api/auth/member/session`, post-response member-directory repair, `/account` shell loading, and `/account` overview data loading

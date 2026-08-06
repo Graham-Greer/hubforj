@@ -12,31 +12,112 @@ import PublicAuthButton from "./PublicAuthButton";
 import PublicMobileNav from "./PublicMobileNav";
 import PublicShellNav from "./PublicShellNav";
 import PublicUtilityMenu from "./PublicUtilityMenu";
+import { buildHubRuntimeHref } from "@/lib/domain/hub-runtime-paths";
+import { PUBLIC_AUTH_SESSION_EVENT } from "./publicAuthSessionEvent";
 import styles from "./PublicHeader.module.css";
+
+function normalizeString(value) {
+  return String(value || "").trim();
+}
+
+function createAvatarModel(user = null) {
+  const name = normalizeString(user?.name);
+  const fallbackLabel = name || normalizeString(user?.email) || "Signed-in user";
+  const parts = fallbackLabel
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+  const initials = parts.length > 0
+    ? parts.map((part) => part.charAt(0).toUpperCase()).join("")
+    : fallbackLabel.slice(0, 2).toUpperCase();
+
+  return {
+    imageUrl: normalizeString(user?.avatarAsset?.publicUrl),
+    initials: initials || "U",
+    fallbackLabel,
+  };
+}
+
+function buildSignedInUtility({ hubSlug, routeMode, viewer }) {
+  const viewerState = viewer?.viewerState === "admin" ? "admin" : "member";
+
+  if (viewerState === "admin") {
+    return {
+      viewerState: "admin",
+      avatar: createAvatarModel(viewer?.user),
+      menuItems: [
+        { key: "admin", label: "Admin", href: buildHubRuntimeHref(hubSlug, "/admin", routeMode) },
+      ],
+      primaryAction: { label: "Admin", href: buildHubRuntimeHref(hubSlug, "/admin", routeMode) },
+      signOutEnabled: true,
+    };
+  }
+
+  return {
+    viewerState: "member",
+    avatar: createAvatarModel(viewer?.user),
+    menuItems: [
+      { key: "overview", label: "Overview", href: buildHubRuntimeHref(hubSlug, "/account", routeMode) },
+      { key: "bookings", label: "My Bookings", href: buildHubRuntimeHref(hubSlug, "/account/bookings", routeMode) },
+      { key: "membership", label: "Membership", href: buildHubRuntimeHref(hubSlug, "/account/membership", routeMode) },
+      { key: "billing", label: "Billing", href: buildHubRuntimeHref(hubSlug, "/account/billing", routeMode) },
+      { key: "profile", label: "Profile", href: buildHubRuntimeHref(hubSlug, "/account/profile", routeMode) },
+    ],
+    primaryAction: { label: "Overview", href: buildHubRuntimeHref(hubSlug, "/account", routeMode) },
+    signOutEnabled: true,
+  };
+}
 
 export default function PublicHeader({ hubSlug, routeMode = "path", headerModel }) {
   const mobilePanelId = useId();
+  const [currentHeaderModel, setCurrentHeaderModel] = useState(headerModel);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const closeMobileNav = useCallback(() => {
     setMobileNavOpen(false);
   }, []);
-  const siteName = headerModel?.brand?.siteName || hubSlug;
-  const homeHref = headerModel?.brand?.homeHref || `/${hubSlug}`;
-  const logoAsset = headerModel?.brand?.logoAsset || null;
-  const logoAlt = headerModel?.brand?.logoAlt || "";
+  const siteName = currentHeaderModel?.brand?.siteName || hubSlug;
+  const homeHref = currentHeaderModel?.brand?.homeHref || `/${hubSlug}`;
+  const logoAsset = currentHeaderModel?.brand?.logoAsset || null;
+  const logoAlt = currentHeaderModel?.brand?.logoAlt || "";
   const hasLogo = Boolean(logoAsset?.publicUrl);
-  const navItems = headerModel?.navigation?.items || [];
-  const navAlign = headerModel?.navigation?.desktopAlign || "start";
-  const utility = headerModel?.utility || { viewerState: "anonymous" };
-  const headerCta = headerModel?.cta || null;
-  const topBand = headerModel?.topBand || null;
-  const variants = headerModel?.variants || {};
+  const navItems = currentHeaderModel?.navigation?.items || [];
+  const navAlign = currentHeaderModel?.navigation?.desktopAlign || "start";
+  const utility = currentHeaderModel?.utility || { viewerState: "anonymous" };
+  const headerCta = currentHeaderModel?.cta || null;
+  const topBand = currentHeaderModel?.topBand || null;
+  const variants = currentHeaderModel?.variants || {};
   const widthMode = variants.widthMode || "content";
   const density = variants.density || "comfortable";
   const stickyMode = variants.stickyMode || "soft";
   const drawerSurface = variants.mobileDrawerSurface || "integrated";
   const headerContainerWidth = widthMode === "full" ? "full" : variants.contentWidth || "default";
   const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    setCurrentHeaderModel(headerModel);
+  }, [headerModel]);
+
+  useEffect(() => {
+    function handleAuthSession(event) {
+      const viewer = event?.detail?.viewer;
+
+      if (!viewer?.viewerState) {
+        return;
+      }
+
+      setCurrentHeaderModel((current) => ({
+        ...current,
+        utility: buildSignedInUtility({ hubSlug, routeMode, viewer }),
+        cta: current?.cta?.kind === "auth" ? null : current?.cta || null,
+      }));
+    }
+
+    window.addEventListener(PUBLIC_AUTH_SESSION_EVENT, handleAuthSession);
+
+    return () => {
+      window.removeEventListener(PUBLIC_AUTH_SESSION_EVENT, handleAuthSession);
+    };
+  }, [hubSlug, routeMode]);
 
   useEffect(() => {
     const collapseThreshold = topBand ? 64 : 12;
