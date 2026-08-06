@@ -322,6 +322,7 @@ Implementation status:
 - The repair path does not mutate source content when a page/event/course/testimonial/user references a missing asset; those remain visible as reconciliation issues for support/manual correction.
 - Added support-mode diagnostics and a **Sync media usage** action on `/admin/media`.
 - The diagnostics panel is hidden in embedded picker mode so content-editing media selection remains uncluttered.
+- Media usage display now groups repeated event-series/occurrence references into a single admin-facing row with a reference count, while preserving the granular projection rows for deletion safety and support diagnostics.
 
 Rollout verification:
 
@@ -334,6 +335,7 @@ Rollout verification:
 7. Select an asset with known usage and confirm the usage panel resolves from projection.
 8. Select an unused asset twice and confirm the second lookup is served from the explicit zero-usage projection.
 9. Confirm deleting an unused asset removes its `mediaUsage/{assetId}` row.
+10. Select an asset used by a recurring event series and confirm the panel shows one grouped event-series usage row rather than a noisy row for every generated occurrence.
 
 ## Edge Cases
 
