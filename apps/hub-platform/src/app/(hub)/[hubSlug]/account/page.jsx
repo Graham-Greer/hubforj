@@ -17,8 +17,8 @@ async function MemberAccountOverviewContent({ hub, routeMode }) {
   const memberSession = await requireCurrentMemberSessionForHub(hub, `/${hub.slug}/account`);
   const [membership, eventBookings, courseRegistrations, paymentItems] = await Promise.all([
     getCurrentMembershipByUser(hub.id, memberSession.user.id),
-    listEventBookingsByBooker(hub.id, memberSession.user.id),
-    listCourseRegistrationsByUser(hub.id, memberSession.user.id),
+    listEventBookingsByBooker(hub.id, memberSession.user.id, { limit: 200 }),
+    listCourseRegistrationsByUser(hub.id, memberSession.user.id, { limit: 200 }),
     listMemberPaymentItems(hub.id, memberSession.user.id, { limit: 25 }),
   ]);
   const overview = buildMemberOverviewModel({

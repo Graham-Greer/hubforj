@@ -17,6 +17,15 @@ function normalizeInteger(value, fallback = 0) {
   return Number.isFinite(next) ? next : fallback;
 }
 
+function isMemberAccountCollectionGroupEnabled() {
+  return normalizeString(process.env.HUB_PLATFORM_MEMBER_ACCOUNT_COLLECTION_GROUP_ENABLED).toLowerCase() === "true";
+}
+
+function normalizeMemberAccountLimit(value, fallback = 200) {
+  const next = Number.parseInt(String(value || ""), 10);
+  return Math.min(Math.max(Number.isFinite(next) ? next : fallback, 1), 500);
+}
+
 export function normalizeEventBookingRecord(booking, bookerUser = null) {
   if (!booking) {
     return null;
@@ -188,7 +197,7 @@ export async function listEventBookingDocsByBooker(hubId, eventId, bookerUserId)
   return snapshot.empty ? [] : snapshot.docs;
 }
 
-export async function listUserEventBookingsAcrossHub(hubId, userId) {
+async function listUserEventBookingsAcrossHubFanOut(hubId, userId) {
   const db = getFirebaseAdminDb();
   const eventSnapshot = await db.collection("hubs").doc(hubId).collection("events").get();
   const normalizedUserId = normalizeString(userId);
@@ -211,4 +220,46 @@ export async function listUserEventBookingsAcrossHub(hubId, userId) {
       )
     )
     .filter((row) => row.bookerUserId === normalizedUserId);
+}
+
+async function listUserEventBookingsAcrossHubCollectionGroup(hubId, userId, options = {}) {
+  const normalizedHubId = normalizeString(hubId);
+  const normalizedUserId = normalizeString(userId);
+  const limit = normalizeMemberAccountLimit(options.limit);
+
+  if (!normalizedHubId || !normalizedUserId) {
+    return [];
+  }
+
+  const snapshot = await getFirebaseAdminDb()
+    .collectionGroup("bookings")
+    .where("hubId", "==", normalizedHubId)
+    .where("bookerUserId", "==", normalizedUserId)
+    .orderBy("createdAt", "desc")
+    .limit(limit)
+    .get();
+
+  return snapshot.docs.map((doc) =>
+    normalizeEventBookingRecord({
+      id: doc.id,
+      ...doc.data(),
+    })
+  );
+}
+
+export async function listUserEventBookingsAcrossHub(hubId, userId, options = {}) {
+  if (!isMemberAccountCollectionGroupEnabled()) {
+    return listUserEventBookingsAcrossHubFanOut(hubId, userId);
+  }
+
+  try {
+    return await listUserEventBookingsAcrossHubCollectionGroup(hubId, userId, options);
+  } catch (error) {
+    console.warn("Falling back to member event booking fan-out query.", {
+      hubId: normalizeString(hubId),
+      userId: normalizeString(userId),
+      error: String(error?.message || "Unable to query member event bookings."),
+    });
+    return listUserEventBookingsAcrossHubFanOut(hubId, userId);
+  }
 }
