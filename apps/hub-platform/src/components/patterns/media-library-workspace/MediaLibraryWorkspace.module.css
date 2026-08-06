@@ -344,6 +344,31 @@
   padding: var(--space-3);
 }
 
+.usageItemCopy {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.usageItemHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.usageCountBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.5rem;
+  padding: 0 var(--space-2);
+  border: var(--space-px) solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--surface-primary);
+  color: var(--color-text-secondary);
+  font: var(--font-label-sm);
+}
+
 .usageItem strong,
 .usageEmpty {
   color: var(--color-text-primary);

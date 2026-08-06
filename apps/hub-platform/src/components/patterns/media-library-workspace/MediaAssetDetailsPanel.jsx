@@ -7,7 +7,7 @@ import Icon from "@/components/ui/icon/Icon";
 import Input from "@/components/ui/input/Input";
 import Textarea from "@/components/ui/textarea/Textarea";
 import MediaAssetPreview from "./MediaAssetPreview";
-import { formatDate, getAssetKindLabel, getUsageHref } from "./media-library-helpers";
+import { buildUsageDisplayGroups, formatDate, getAssetKindLabel, getUsageHref } from "./media-library-helpers";
 import styles from "./MediaLibraryWorkspace.module.css";
 
 export default function MediaAssetDetailsPanel({
@@ -26,6 +26,7 @@ export default function MediaAssetDetailsPanel({
   const isUsagePending = selectedAsset ? !usageError && (usageLoading || !selectedAsset.usageLoaded) : false;
   const isDeleteBlockedByUsage = selectedAsset ? usageError || isUsagePending || selectedAsset.usageCount > 0 : true;
   const usageRefs = Array.isArray(selectedAsset?.usageRefs) ? selectedAsset.usageRefs : [];
+  const usageGroups = buildUsageDisplayGroups(usageRefs);
 
   return (
     <Surface className={styles.detailsPanel} padding="md" data-onboarding="media-details-panel">
@@ -104,21 +105,24 @@ export default function MediaAssetDetailsPanel({
               <p className={styles.usageEmpty}>Usage references could not be loaded just now.</p>
             ) : isUsagePending ? (
               <p className={styles.usageEmpty}>Loading usage references...</p>
-            ) : usageRefs.length ? (
+            ) : usageGroups.length ? (
               <ul className={styles.usageList}>
-                {usageRefs.map((usage) => {
-                  const href = getUsageHref(hub.slug, usage);
+                {usageGroups.map((usageGroup) => {
+                  const href = getUsageHref(hub.slug, usageGroup.primaryUsage);
                   return (
                     <Surface
-                      key={`${usage.entityType}-${usage.entityId}-${usage.field}`}
+                      key={usageGroup.key}
                       as="li"
                       tone="muted"
                       padding="md"
                       className={styles.usageItem}
                     >
-                      <div>
-                        <strong>{usage.label}</strong>
-                        <span>{usage.field}</span>
+                      <div className={styles.usageItemCopy}>
+                        <div className={styles.usageItemHeader}>
+                          <strong>{usageGroup.label}</strong>
+                          {usageGroup.count > 1 ? <span className={styles.usageCountBadge}>{usageGroup.count} references</span> : null}
+                        </div>
+                        <span>{usageGroup.detail}</span>
                       </div>
                       {href ? <Button href={href} variant="ghost">Open</Button> : null}
                     </Surface>
