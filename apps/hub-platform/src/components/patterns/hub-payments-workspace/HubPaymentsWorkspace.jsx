@@ -94,7 +94,6 @@ export default function HubPaymentsWorkspace({
   const router = useRouter();
   const workspace = useHubPaymentsWorkspace(items, paymentFilters || {});
   const searchDebounceRef = useRef(null);
-  const dateDebounceRef = useRef(null);
   const [exportError, setExportError] = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const hubFallbackCurrency = hub?.defaultCurrency || fallbackRegionalMarket.defaultCurrency;
@@ -215,21 +214,23 @@ export default function HubPaymentsWorkspace({
     }, 350);
   }
 
-  function updateDateFilter(key, value) {
+  function updateDateDraft(key, value) {
     if (key === "dateFrom") {
       workspace.setDateFrom(value);
     } else {
       workspace.setDateTo(value);
     }
+  }
 
-    if (paymentReadModelEnabled) {
-      if (dateDebounceRef.current) {
-        clearTimeout(dateDebounceRef.current);
-      }
+  function commitDateFilter(key, value) {
+    if (!paymentReadModelEnabled) {
+      return;
+    }
 
-      dateDebounceRef.current = window.setTimeout(() => {
-        navigatePayments({ [key]: value, cursor: "", cursorStack: [] });
-      }, 650);
+    const currentValue = key === "dateFrom" ? paymentFilters?.dateFrom || "" : paymentFilters?.dateTo || "";
+
+    if (value !== currentValue) {
+      navigatePayments({ [key]: value, cursor: "", cursorStack: [] });
     }
   }
 
@@ -237,9 +238,6 @@ export default function HubPaymentsWorkspace({
     () => () => {
       if (searchDebounceRef.current) {
         clearTimeout(searchDebounceRef.current);
-      }
-      if (dateDebounceRef.current) {
-        clearTimeout(dateDebounceRef.current);
       }
     },
     []
@@ -370,7 +368,13 @@ export default function HubPaymentsWorkspace({
                     type="date"
                     className={`${fieldStyles.control} ${fieldStyles.compactControl}`}
                     value={workspace.dateFrom}
-                    onChange={(event) => updateDateFilter("dateFrom", event.target.value)}
+                    onChange={(event) => updateDateDraft("dateFrom", event.target.value)}
+                    onBlur={(event) => commitDateFilter("dateFrom", event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        commitDateFilter("dateFrom", event.currentTarget.value);
+                      }
+                    }}
                   />
                 </label>
                 <label className={styles.dateField}>
@@ -379,7 +383,13 @@ export default function HubPaymentsWorkspace({
                     type="date"
                     className={`${fieldStyles.control} ${fieldStyles.compactControl}`}
                     value={workspace.dateTo}
-                    onChange={(event) => updateDateFilter("dateTo", event.target.value)}
+                    onChange={(event) => updateDateDraft("dateTo", event.target.value)}
+                    onBlur={(event) => commitDateFilter("dateTo", event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        commitDateFilter("dateTo", event.currentTarget.value);
+                      }
+                    }}
                   />
                 </label>
               </div>
