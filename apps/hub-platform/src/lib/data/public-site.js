@@ -248,7 +248,7 @@ export async function getPublicEventDetailData(hubSlug, eventSlug) {
         .sort((left, right) => String(left.startAt || "").localeCompare(String(right.startAt || "")));
       const bookingsByEventId = currentMemberSession
         ? new Map(
-            (await listEventBookingsByBooker(context.hub.id, currentMemberSession.user.id))
+            (await listEventBookingsByBooker(context.hub.id, currentMemberSession.user.id, { limit: 500 }))
               .filter((booking) => booking.status === "active" || booking.status === "waitlisted")
               .map((booking) => [booking.eventId, booking])
           )

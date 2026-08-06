@@ -17,6 +17,7 @@ import {
 } from "@/lib/domain/courses";
 import { normalizeCourseRecord, normalizeString } from "./course-shared.js";
 import { createMediaUsageReference, removeMediaUsageReference, syncMediaUsageReferenceForAssetChange } from "./media-usage-projection.js";
+import { rebuildCourseMemberActivity } from "./member-activity.js";
 
 async function maintainDashboardProjectionsForCourseChange(hubId, actorId, reason = "course-change") {
   try {
@@ -28,6 +29,24 @@ async function maintainDashboardProjectionsForCourseChange(hubId, actorId, reaso
       actorId: normalizeString(actorId) || "system",
       reason,
       error: String(error?.message || "Unable to maintain dashboard projections."),
+    });
+    return null;
+  }
+}
+
+async function refreshMemberActivityForCourseChange(hubId, courseId, actorId, reason = "course-change") {
+  try {
+    return await rebuildCourseMemberActivity(hubId, courseId, {
+      actorId,
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.warn("Unable to refresh member activity projection after course change", {
+      hubId: normalizeString(hubId),
+      courseId: normalizeString(courseId),
+      actorId: normalizeString(actorId) || "system",
+      reason,
+      error: String(error?.message || "Unable to refresh member activity projection."),
     });
     return null;
   }
@@ -236,6 +255,7 @@ export async function updateCourseById(hubId, courseId, payload, actorId = "syst
     }),
     updatedAt: update.updatedAt,
   });
+  await refreshMemberActivityForCourseChange(normalizedHubId, normalizedCourseId, actorId, "course-update");
   await maintainDashboardProjectionsForCourseChange(normalizedHubId, actorId, "course-update");
   return normalizeCourseRecord({ id: normalizedCourseId, hubId: normalizedHubId, ...existing.data(), ...update });
 }

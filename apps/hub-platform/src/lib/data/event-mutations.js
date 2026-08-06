@@ -21,6 +21,7 @@ import { canHubUseGroupBookings } from "@/lib/domain/event-bookings";
 import { assertHubNativePaymentsReady } from "@/lib/domain/hub-payment-configuration";
 import { normalizeEventRecord, normalizeString } from "./event-shared.js";
 import { createMediaUsageReference, removeMediaUsageReference, syncMediaUsageReferenceForAssetChange } from "./media-usage-projection.js";
+import { rebuildEventMemberActivity } from "./member-activity.js";
 
 async function maintainDashboardProjectionsForEventChange(hubId, actorId, reason = "event-change") {
   try {
@@ -32,6 +33,24 @@ async function maintainDashboardProjectionsForEventChange(hubId, actorId, reason
       actorId: normalizeString(actorId) || "system",
       reason,
       error: String(error?.message || "Unable to maintain dashboard projections."),
+    });
+    return null;
+  }
+}
+
+async function refreshMemberActivityForEventChange(hubId, eventId, actorId, reason = "event-change") {
+  try {
+    return await rebuildEventMemberActivity(hubId, eventId, {
+      actorId,
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.warn("Unable to refresh member activity projection after event change", {
+      hubId: normalizeString(hubId),
+      eventId: normalizeString(eventId),
+      actorId: normalizeString(actorId) || "system",
+      reason,
+      error: String(error?.message || "Unable to refresh member activity projection."),
     });
     return null;
   }
@@ -293,6 +312,7 @@ export async function updateEventById(hubId, eventId, payload, actorId = "system
     }),
     updatedAt: update.updatedAt,
   });
+  await refreshMemberActivityForEventChange(normalizedHubId, normalizedEventId, actorId, "event-update");
   await maintainDashboardProjectionsForEventChange(normalizedHubId, actorId, "event-update");
   return normalizeEventRecord({ id: normalizedEventId, hubId: normalizedHubId, ...existing.data(), ...update });
 }

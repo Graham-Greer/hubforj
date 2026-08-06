@@ -21,8 +21,8 @@ export async function getMemberDetailById(hubId, memberId) {
   const [membership, membershipUpgradeRequest, eventBookings, courseRegistrations, paymentItems, membershipPaymentHistory] = await Promise.all([
     getCurrentMembershipByUser(hubId, memberId),
     getPendingMembershipUpgradeRequestByUser(hubId, memberId),
-    listEventBookingsByBooker(hubId, memberId),
-    listCourseRegistrationsByUser(hubId, memberId),
+    listEventBookingsByBooker(hubId, memberId, { limit: 500 }),
+    listCourseRegistrationsByUser(hubId, memberId, { limit: 500 }),
     listMemberPaymentItems(hubId, memberId),
     listMembershipPaymentHistoryByUser(hubId, memberId),
   ]);

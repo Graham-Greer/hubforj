@@ -107,6 +107,7 @@ Implementation progress:
   - collection group `registrations`: `hubId`, `userId`, `createdAt desc`
 - Preserved existing `bookings.hubId` and `registrations.hubId` field overrides.
 - The optimized read path remains behind `HUB_PLATFORM_MEMBER_ACCOUNT_COLLECTION_GROUP_ENABLED=true` so indexes can be deployed and built before production cutover.
+- Status/payment-status collection-group indexes remain deferred because the current member account UI does not execute server-side status/payment filters. Add them only when implementing URL-driven member booking filters or cursor pagination that requires those query shapes.
 
 ### Phase 3: Replace Fan-Out Account Queries
 
@@ -131,6 +132,8 @@ Implementation progress:
 - `listEventBookingsByBooker` and `listCourseRegistrationsByUser` keep their existing output shape and hydrate parent event/course display data only for returned rows.
 - `/account` now requests bounded member activity slices for overview previews, capped below the hard helper maximum while avoiding tiny slices that could hide future bookings behind a large history.
 - `/account/bookings` now requests the maximum bounded member activity slice for the dedicated bookings/history workspace.
+- Admin member detail now requests bounded member activity slices through the same helpers instead of relying on unbounded defaults.
+- Public recurring-series member booking checks now pass an explicit bounded limit through the same helper.
 - Legacy fan-out readers remain as rollout fallback when `HUB_PLATFORM_MEMBER_ACCOUNT_COLLECTION_GROUP_ENABLED` is false or if a collection-group query fails while indexes are being deployed.
 - The collection-group path is scoped by both `hubId` and the authenticated member user id, so member account routes do not scan every event/course in the hub.
 - Cursor pagination remains a future follow-up if individual members regularly exceed the bounded history cap; this slice is focused on removing hub-wide nested fan-out while preserving the current workspace shape.
@@ -171,6 +174,46 @@ Acceptance criteria:
 - Projection has backfill, live update, and reconciliation paths.
 - Existing booking and course journeys remain unchanged.
 
+Implementation progress:
+
+- Added `hubs/{hubId}/memberActivity/{kind}_{recordId}` as the member-facing activity read model.
+- Projection records duplicate only the display and workflow fields needed by `/account` and `/account/bookings`:
+  - hub id and authenticated member user id
+  - activity kind, source record id, parent event/course id
+  - parent title, slug, image, timing, location/format, price/currency, refund/payment metadata
+  - booking/enrolment status, payment status, attendance status, attendee counts, source timestamps, and `sortAt`
+- Added `MEMBER_ACTIVITY_SCHEMA_VERSION = 1`; account reads ignore stale projection documents with a mismatched schema version.
+- Added the collection-scoped Firestore index:
+  - `memberActivity`: `hubId`, `userId`, `sortAt desc`
+- Added `HUB_PLATFORM_MEMBER_ACTIVITY_READ_MODEL_ENABLED=true` as the read cutover flag.
+- `/account` and `/account/bookings` now read member activity projection rows when the flag is enabled.
+- If the projection query throws, both routes fall back to the existing collection-group booking/registration readers.
+- The existing `HUB_PLATFORM_MEMBER_ACCOUNT_COLLECTION_GROUP_ENABLED=true` path remains the safe fallback and should stay enabled.
+- Added live projection maintenance for:
+  - event booking creation
+  - event booking payment state changes
+  - event booking status changes
+  - event attendee status changes
+  - event attendee/member cancellation
+  - event waitlist promotion
+  - course registration creation
+  - course registration status changes
+  - course registration attendance changes
+  - course registration payment/native payment changes
+- Added parent refresh maintenance for:
+  - event edits, so member account rows reflect changed title, slug, dates, image, pricing, location, and refund metadata
+  - course edits, so member account rows reflect changed title, slug, dates, image, pricing, format/location, and refund metadata
+- Added `rebuildHubMemberActivity` and integrated it into the existing support-only **Sync payment ledger** maintenance flow.
+- The support diagnostics panel now displays member activity synced/skipped/scanned counts and rebuild timestamp.
+- Rollout order:
+  - deploy the new `memberActivity` Firestore index
+  - deploy code with `HUB_PLATFORM_MEMBER_ACTIVITY_READ_MODEL_ENABLED` unset or `false`
+  - run **Sync payment ledger** in support diagnostics for each production hub being verified
+  - confirm `Member activity` synced/scanned counts are sensible
+  - set `HUB_PLATFORM_MEMBER_ACTIVITY_READ_MODEL_ENABLED=true`
+  - hard refresh `/account` and `/account/bookings` for members with event-only, course-only, mixed, cancelled, paid, and free histories
+- Do not enable the read flag before the projection has been backfilled for the target production hub, because a valid but empty projection query will correctly return only projection rows.
+
 ### Phase 6: Authorization And Privacy Review
 
 - Confirm members cannot access another member's bookings, registrations, billing records, or profile data.
@@ -181,6 +224,17 @@ Acceptance criteria:
 
 - Security rules and server authorization checks are updated with any new collection group or projection paths.
 - Tests or manual verification cover cross-user access attempts.
+
+Implementation progress:
+
+- Member account pages continue to call `requireCurrentMemberSessionForHub` before loading bookings, registrations, billing, membership, or profile data.
+- Collection-group reads are server-side Admin SDK reads and are scoped by the authenticated hub id plus the authenticated member user id.
+- The repo does not currently include Firestore security rules for direct client reads; no browser/client code reads the new collection-group query path directly.
+- Admin member detail continues to require admin route authorization before calling member detail helpers, and the helpers are scoped to the selected hub id plus selected member id.
+- Member booking cancellation still revalidates ownership server-side:
+  - event cancellations load the booking by parent event id and booking id, then require `booking.bookerUserId === actorId`
+  - course cancellations load the registration by current actor id, then require the submitted registration id to match
+- Cross-user access remains blocked by deriving the user id from the authenticated session on member routes rather than trusting user ids from URL/search params.
 
 ## Edge Cases
 
