@@ -11,6 +11,7 @@ import { getUserByAuthUid } from "@/lib/data/users";
 import { createSignedSessionValue, sessionDurationSeconds } from "@/lib/auth/session";
 import { getServerEnv } from "@/lib/config/env";
 import { canAccessHubAdmin } from "@/lib/domain/users";
+import { createPerformanceTimer } from "@/lib/observability/performance-timing";
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -19,6 +20,9 @@ function normalizeString(value) {
 export async function createHubUserSessionFromIdToken(hubSlug, idToken) {
   const normalizedHubSlug = normalizeString(hubSlug);
   const normalizedIdToken = normalizeString(idToken);
+  const timer = createPerformanceTimer("member-auth-session", {
+    hubSlug: normalizedHubSlug,
+  });
 
   if (!normalizedHubSlug) {
     throw new Error("Hub slug is required.");
@@ -32,11 +36,19 @@ export async function createHubUserSessionFromIdToken(hubSlug, idToken) {
     getHubBySlug(normalizedHubSlug),
     getFirebaseAdminAuth().verifyIdToken(normalizedIdToken, true),
   ]);
+  timer.log("hub-and-token-verified", {
+    hubId: normalizeString(hub?.id),
+  });
   if (!hub) {
     throw new Error("Hub not found.");
   }
 
   const user = await getUserByAuthUid(hub.id, decodedToken.uid);
+  timer.log("hub-user-loaded", {
+    hubId: hub.id,
+    userId: normalizeString(user?.id),
+    role: normalizeString(user?.role),
+  });
 
   if (!user || (user.role !== "member" && !canAccessHubAdmin(user.role))) {
     throw new Error("No hub account exists for this sign-in.");
@@ -51,6 +63,10 @@ export async function createHubUserSessionFromIdToken(hubSlug, idToken) {
   await getFirebaseAdminDb().collection("users").doc(user.id).update({
     lastSignedInAt: now,
   });
+  timer.log("last-sign-in-updated", {
+    hubId: hub.id,
+    userId: user.id,
+  });
 
   const expiresAt = Math.floor(Date.now() / 1000) + sessionDurationSeconds;
   const sessionValue = createSignedSessionValue(
@@ -64,6 +80,12 @@ export async function createHubUserSessionFromIdToken(hubSlug, idToken) {
     },
     getServerEnv().sessionHmacSecret
   );
+
+  timer.end({
+    hubId: hub.id,
+    userId: user.id,
+    role: user.role,
+  });
 
   return {
     hub,
