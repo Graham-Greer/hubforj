@@ -204,6 +204,12 @@ Verification notes:
   - temporary timing diagnostics are available behind `HUB_PLATFORM_PERFORMANCE_TIMING_ENABLED=true`
   - timing diagnostics cover `/api/auth/member/session`, post-response member-directory repair, `/account` shell loading, and `/account` overview data loading
   - expected Network/server result: one `/api/auth/member/session` response followed by one account RSC/navigation request
+- Member account route shell:
+  - account layout and account child pages use `requireHubCoreBySlug` because member account UI does not need operational hub counts
+  - this avoids count hydration scans over users, invites, and events before rendering the account title/shell
+  - hub operational count hydration remains available through `requireHubBySlug` for admin/platform surfaces that need it
+  - user identity lookups are request-cached so layout/page authorization checks share the same member record load
+  - current membership reads use a bounded user-scoped query and request-cached plan hydration
 - Payments reconciliation and repair:
   - support diagnostics include a safe repair action for payment reconciliation issues
   - safe repair upserts canonical `paymentRecords` into `paymentItems`, deletes orphan payment item projections, repairs missing native transaction back-links when an unambiguous payment record already exists, repairs paid records missing `paidAt` only from unambiguous source timestamps, hydrates projected member identity, and rebuilds `paymentSummary`

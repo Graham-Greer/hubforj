@@ -6,7 +6,7 @@ import PageHeader from "@/components/patterns/page-header/PageHeader";
 import { requireCurrentMemberSessionForHub } from "@/lib/auth/member-session";
 import { listCourseRegistrationsByUser } from "@/lib/data/course-registrations";
 import { listEventBookingsByBooker } from "@/lib/data/event-bookings";
-import { requireHubBySlug } from "@/lib/data/hubs";
+import { requireHubCoreBySlug } from "@/lib/data/hubs";
 import { isMemberActivityReadModelEnabled, listMemberActivityBookingSources } from "@/lib/data/member-activity";
 import { getCurrentMembershipByUser } from "@/lib/data/memberships";
 import { listMemberPaymentItems } from "@/lib/data/member-payments";
@@ -114,7 +114,7 @@ export default async function MemberAccountPage({ params }) {
   const timer = createPerformanceTimer("member-account-page", {
     hubSlug,
   });
-  const hubRecord = await requireHubBySlug(hubSlug);
+  const hubRecord = await requireHubCoreBySlug(hubSlug);
   timer.log("hub-loaded", {
     hubId: hubRecord.id,
   });

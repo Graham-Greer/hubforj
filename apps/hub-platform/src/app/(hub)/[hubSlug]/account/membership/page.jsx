@@ -4,7 +4,7 @@ import MemberMembershipWorkspace from "@/components/patterns/member-membership-w
 import { MemberMembershipFallback } from "@/components/patterns/member-account-fallbacks";
 import PageHeader from "@/components/patterns/page-header/PageHeader";
 import { requireCurrentMemberSessionForHub } from "@/lib/auth/member-session";
-import { requireHubBySlug } from "@/lib/data/hubs";
+import { requireHubCoreBySlug } from "@/lib/data/hubs";
 import { getCurrentMembershipByUser, getPendingMembershipUpgradeRequestByUser, listMembershipPlansByHub } from "@/lib/data/memberships";
 import { getNativePaymentTransactionById } from "@/lib/data/native-payment-transactions";
 import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
@@ -54,7 +54,7 @@ async function MembershipContent({ hub, success = "", error = "" }) {
 export default async function MembershipPage({ params, searchParams }) {
   const { hubSlug } = await params;
   const { success = "", error = "" } = await searchParams;
-  const hubRecord = await requireHubBySlug(hubSlug);
+  const hubRecord = await requireHubCoreBySlug(hubSlug);
   const requestHeaders = await headers();
   const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(requestHeaders));
   const hub = { ...hubRecord, routeMode };

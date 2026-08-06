@@ -63,8 +63,38 @@ export async function listMembershipsByUser(hubId, userId) {
 }
 
 export async function getCurrentMembershipByUser(hubId, userId) {
-  const rows = await listMembershipsByUser(hubId, userId);
-  return rows[0] || null;
+  const normalizedHubId = normalizeString(hubId);
+  const normalizedUserId = normalizeString(userId);
+
+  if (!normalizedHubId || !normalizedUserId) {
+    return null;
+  }
+
+  const snapshot = await getFirebaseAdminDb()
+    .collection("hubs")
+    .doc(normalizedHubId)
+    .collection("memberships")
+    .where("userId", "==", normalizedUserId)
+    .limit(10)
+    .get();
+
+  if (snapshot.empty) {
+    return null;
+  }
+
+  const baseRows = snapshot.docs.map((doc) => ({
+    id: doc.id,
+    hubId: normalizedHubId,
+    ...doc.data(),
+  }));
+  const plansById = await getMembershipPlansByIds(
+    normalizedHubId,
+    baseRows.map((row) => row.planId)
+  );
+
+  return baseRows
+    .map((row) => normalizeMembershipRecord(row, plansById.get(row.planId)))
+    .sort((left, right) => getMembershipSortValue(right).localeCompare(getMembershipSortValue(left)))[0] || null;
 }
 
 export async function listMembershipsByHub(hubId) {

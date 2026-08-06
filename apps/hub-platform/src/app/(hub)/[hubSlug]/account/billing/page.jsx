@@ -4,7 +4,7 @@ import MemberPaymentsWorkspace from "@/components/patterns/member-payments-works
 import { MemberBillingFallback } from "@/components/patterns/member-account-fallbacks";
 import PageHeader from "@/components/patterns/page-header/PageHeader";
 import { requireCurrentMemberSessionForHub } from "@/lib/auth/member-session";
-import { requireHubBySlug } from "@/lib/data/hubs";
+import { requireHubCoreBySlug } from "@/lib/data/hubs";
 import { listMemberPaymentItems } from "@/lib/data/member-payments";
 import { buildMemberBillingItems } from "@/lib/domain/member-account";
 import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
@@ -20,7 +20,7 @@ async function BillingContent({ hub, routeMode }) {
 
 export default async function BillingPage({ params }) {
   const { hubSlug } = await params;
-  const hubRecord = await requireHubBySlug(hubSlug);
+  const hubRecord = await requireHubCoreBySlug(hubSlug);
   const requestHeaders = await headers();
   const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(requestHeaders));
   const hub = { ...hubRecord, routeMode };

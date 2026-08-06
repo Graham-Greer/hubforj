@@ -5,6 +5,7 @@ try {
 }
 
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
+import { cache } from "react";
 import { getHubById } from "@/lib/data/hubs";
 import { upsertPaymentRecordBySource } from "@/lib/data/payment-records";
 import { deriveMembershipStatus, findDefaultMembershipPlan, resolveMembershipPlanPricingMode } from "@/lib/domain/memberships";
@@ -160,8 +161,8 @@ export function normalizeMembershipPaymentRecord(record) {
   };
 }
 
-export async function getMembershipPlansByIds(hubId, planIds) {
-  const normalizedPlanIds = [...new Set(planIds.map(normalizeString).filter(Boolean))];
+async function getFirestoreMembershipPlansByIds(hubId, planIdsCsv) {
+  const normalizedPlanIds = [...new Set(String(planIdsCsv || "").split(",").map(normalizeString).filter(Boolean))];
 
   if (!normalizedPlanIds.length) {
     return new Map();
@@ -178,6 +179,13 @@ export async function getMembershipPlansByIds(hubId, planIds) {
       .filter((doc) => doc.exists)
       .map((doc) => [doc.id, normalizeMembershipPlanRecord({ id: doc.id, hubId, ...doc.data() })])
   );
+}
+
+const getCachedFirestoreMembershipPlansByIds = cache(getFirestoreMembershipPlansByIds);
+
+export async function getMembershipPlansByIds(hubId, planIds) {
+  const normalizedPlanIdsCsv = [...new Set(planIds.map(normalizeString).filter(Boolean))].sort().join(",");
+  return getCachedFirestoreMembershipPlansByIds(hubId, normalizedPlanIdsCsv);
 }
 
 export async function upsertMembershipPaymentRecord({
