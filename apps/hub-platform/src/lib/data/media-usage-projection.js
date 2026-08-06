@@ -5,9 +5,18 @@ try {
 }
 
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
-import { collectSiteSettingsMediaUsageReferences, hubRef, normalizeString, normalizeUsageRef } from "./media-shared.js";
+import {
+  buildMediaUsageByHubId,
+  collectSiteSettingsMediaUsageReferences,
+  hubRef,
+  mediaCollection,
+  normalizeActiveMediaAsset,
+  normalizeString,
+  normalizeUsageRef,
+} from "./media-shared.js";
 
-const MEDIA_USAGE_SCHEMA_VERSION = 1;
+export const MEDIA_USAGE_SCHEMA_VERSION = 1;
+const MEDIA_USAGE_BATCH_LIMIT = 400;
 
 function mediaUsageCollection(hubId) {
   return hubRef(hubId).collection("mediaUsage");
@@ -54,6 +63,26 @@ function buildReferenceMap(doc) {
   );
 }
 
+function serializeProjectionPayload(hubId, assetId, usageRefs = [], now = new Date().toISOString()) {
+  const referencesByKey = new Map(
+    usageRefs
+      .map((ref) => normalizeUsageRef(ref))
+      .filter((ref) => normalizeUsageReferenceKey(ref))
+      .map((ref) => [normalizeUsageReferenceKey(ref), ref])
+  );
+  const references = [...referencesByKey.values()];
+
+  return {
+    hubId,
+    assetId,
+    usageCount: references.length,
+    references,
+    lastReferencedAt: references.length ? now : "",
+    updatedAt: now,
+    schemaVersion: MEDIA_USAGE_SCHEMA_VERSION,
+  };
+}
+
 async function writeReferenceMap(transaction, docRef, hubId, assetId, referencesByKey, now) {
   const references = [...referencesByKey.values()];
 
@@ -66,6 +95,101 @@ async function writeReferenceMap(transaction, docRef, hubId, assetId, references
     updatedAt: now,
     schemaVersion: MEDIA_USAGE_SCHEMA_VERSION,
   }, { merge: false });
+}
+
+function stableReferenceEntries(value = []) {
+  return normalizeReferenceEntries(value)
+    .map((ref) => [normalizeUsageReferenceKey(ref), ref])
+    .filter(([key]) => key)
+    .sort(([left], [right]) => left.localeCompare(right));
+}
+
+function referencesAreEqual(leftRefs = [], rightRefs = []) {
+  const left = stableReferenceEntries(leftRefs);
+  const right = stableReferenceEntries(rightRefs);
+
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  return left.every(([leftKey, leftRef], index) => {
+    const [rightKey, rightRef] = right[index];
+
+    return leftKey === rightKey
+      && leftRef.entityType === rightRef.entityType
+      && leftRef.entityId === rightRef.entityId
+      && leftRef.field === rightRef.field
+      && leftRef.label === rightRef.label
+      && leftRef.href === rightRef.href;
+  });
+}
+
+function summarizeIssues(issues = []) {
+  const byCode = new Map();
+
+  issues.forEach((issue) => {
+    const existing = byCode.get(issue.code) || {
+      code: issue.code,
+      title: issue.title,
+      count: 0,
+    };
+
+    existing.count += 1;
+    byCode.set(issue.code, existing);
+  });
+
+  return [...byCode.values()].sort((left, right) => left.title.localeCompare(right.title));
+}
+
+function createIssue(code, title, detail, values = {}) {
+  return {
+    code,
+    title,
+    detail,
+    ...values,
+  };
+}
+
+async function listActiveMediaAssetIds(hubId) {
+  const snapshot = await mediaCollection(hubId).get();
+  const assetIds = snapshot.docs
+    .map((doc) => normalizeActiveMediaAsset(doc, hubId))
+    .filter(Boolean)
+    .map((asset) => asset.id);
+
+  return new Set(assetIds);
+}
+
+async function listMediaUsageProjectionDocs(hubId) {
+  const snapshot = await mediaUsageCollection(hubId).get();
+
+  return new Map(snapshot.docs.map((doc) => [doc.id, normalizeProjectionDoc(doc, hubId, doc.id)]));
+}
+
+async function commitMediaUsageBatch(operations = []) {
+  const db = getFirebaseAdminDb();
+  let batch = db.batch();
+  let pending = 0;
+
+  for (const operation of operations) {
+    if (operation.type === "delete") {
+      batch.delete(operation.ref);
+    } else {
+      batch.set(operation.ref, operation.payload, { merge: false });
+    }
+
+    pending += 1;
+
+    if (pending >= MEDIA_USAGE_BATCH_LIMIT) {
+      await batch.commit();
+      batch = db.batch();
+      pending = 0;
+    }
+  }
+
+  if (pending > 0) {
+    await batch.commit();
+  }
 }
 
 export function createMediaUsageReference({ entityType, entityId, field = "media", label = "", href = "" } = {}) {
@@ -93,25 +217,20 @@ export async function replaceMediaUsageProjectionForAsset(hubId, assetId, usageR
   }
 
   const now = normalizeString(options.updatedAt) || new Date().toISOString();
-  const referencesByKey = new Map(
-    usageRefs
-      .map((ref) => normalizeUsageRef(ref))
-      .filter((ref) => normalizeUsageReferenceKey(ref))
-      .map((ref) => [normalizeUsageReferenceKey(ref), ref])
-  );
+  const payload = serializeProjectionPayload(normalizedHubId, normalizedAssetId, usageRefs, now);
   const docRef = mediaUsageCollection(normalizedHubId).doc(normalizedAssetId);
   const db = getFirebaseAdminDb();
 
   await db.runTransaction(async (transaction) => {
-    await writeReferenceMap(transaction, docRef, normalizedHubId, normalizedAssetId, referencesByKey, now);
+    transaction.set(docRef, payload, { merge: false });
   });
 
   return {
     hubId: normalizedHubId,
     assetId: normalizedAssetId,
-    references: [...referencesByKey.values()],
-    usageRefs: [...referencesByKey.values()],
-    usageCount: referencesByKey.size,
+    references: payload.references,
+    usageRefs: payload.references,
+    usageCount: payload.usageCount,
     usageVerificationComplete: true,
     failedSources: [],
     schemaVersion: MEDIA_USAGE_SCHEMA_VERSION,
@@ -247,4 +366,206 @@ export async function syncSiteSettingsMediaUsageProjection(hubId, previousSettin
       })
     )
   );
+}
+
+export async function getHubMediaUsageReconciliationReport(hubId) {
+  const normalizedHubId = normalizeString(hubId);
+
+  if (!normalizedHubId) {
+    return {
+      generatedAt: new Date().toISOString(),
+      totalIssues: 0,
+      summary: [],
+      issues: [],
+      expectedRows: 0,
+      actualRows: 0,
+      sourceReferenceCount: 0,
+      missingReferencedAssetCount: 0,
+    };
+  }
+
+  const generatedAt = new Date().toISOString();
+  const [activeAssetIds, projectionsByAssetId, sourceUsageByAssetId] = await Promise.all([
+    listActiveMediaAssetIds(normalizedHubId),
+    listMediaUsageProjectionDocs(normalizedHubId),
+    buildMediaUsageByHubId(normalizedHubId),
+  ]);
+  const issues = [];
+  let sourceReferenceCount = 0;
+  let missingReferencedAssetCount = 0;
+
+  sourceUsageByAssetId.forEach((usageRefs, assetId) => {
+    const normalizedAssetId = normalizeString(assetId);
+    sourceReferenceCount += usageRefs.length;
+
+    if (!activeAssetIds.has(normalizedAssetId)) {
+      missingReferencedAssetCount += 1;
+      issues.push(createIssue(
+        "missing_asset_reference",
+        "Source references missing asset",
+        `${usageRefs.length} source reference${usageRefs.length === 1 ? "" : "s"} point to missing or inactive asset ${normalizedAssetId}.`,
+        {
+          assetId: normalizedAssetId,
+          sourceReferenceCount: usageRefs.length,
+        }
+      ));
+    }
+  });
+
+  activeAssetIds.forEach((assetId) => {
+    const expectedRefs = sourceUsageByAssetId.get(assetId) || [];
+    const projection = projectionsByAssetId.get(assetId);
+
+    if (!projection) {
+      issues.push(createIssue(
+        "missing_projection",
+        "Missing usage projection",
+        `Active asset ${assetId} does not have a mediaUsage projection row.`,
+        {
+          assetId,
+          expectedUsageCount: expectedRefs.length,
+        }
+      ));
+      return;
+    }
+
+    if (projection.schemaVersion !== MEDIA_USAGE_SCHEMA_VERSION) {
+      issues.push(createIssue(
+        "schema_mismatch",
+        "Usage projection schema mismatch",
+        `Asset ${assetId} has schema ${projection.schemaVersion}; expected ${MEDIA_USAGE_SCHEMA_VERSION}.`,
+        {
+          assetId,
+          actualSchemaVersion: projection.schemaVersion,
+          expectedSchemaVersion: MEDIA_USAGE_SCHEMA_VERSION,
+        }
+      ));
+    }
+
+    if (projection.usageCount !== expectedRefs.length) {
+      issues.push(createIssue(
+        "usage_count_mismatch",
+        "Usage count mismatch",
+        `Asset ${assetId} projects ${projection.usageCount} references; source scan found ${expectedRefs.length}.`,
+        {
+          assetId,
+          actualUsageCount: projection.usageCount,
+          expectedUsageCount: expectedRefs.length,
+        }
+      ));
+    }
+
+    if (!referencesAreEqual(projection.usageRefs, expectedRefs)) {
+      issues.push(createIssue(
+        "reference_mismatch",
+        "Usage reference mismatch",
+        `Asset ${assetId} projection references differ from the source scan.`,
+        {
+          assetId,
+          actualUsageCount: projection.usageRefs.length,
+          expectedUsageCount: expectedRefs.length,
+        }
+      ));
+    }
+  });
+
+  projectionsByAssetId.forEach((projection, assetId) => {
+    if (activeAssetIds.has(assetId)) {
+      return;
+    }
+
+    issues.push(createIssue(
+      "orphan_projection",
+      "Orphan usage projection",
+      `mediaUsage/${assetId} exists but the active media asset does not.`,
+      {
+        assetId,
+        actualUsageCount: projection.usageCount,
+      }
+    ));
+  });
+
+  return {
+    generatedAt,
+    totalIssues: issues.length,
+    summary: summarizeIssues(issues),
+    issues,
+    expectedRows: activeAssetIds.size,
+    actualRows: projectionsByAssetId.size,
+    sourceReferenceCount,
+    missingReferencedAssetCount,
+    schemaVersion: MEDIA_USAGE_SCHEMA_VERSION,
+  };
+}
+
+export async function rebuildHubMediaUsageProjections(hubId, actorId = "system") {
+  const normalizedHubId = normalizeString(hubId);
+
+  if (!normalizedHubId) {
+    return {
+      status: "skipped",
+      reason: "Hub id is required.",
+      assetsScanned: 0,
+      projectionsWritten: 0,
+      orphanedProjectionsDeleted: 0,
+      sourceReferenceCount: 0,
+      missingReferencedAssetCount: 0,
+      completedAt: new Date().toISOString(),
+    };
+  }
+
+  const completedAt = new Date().toISOString();
+  const [activeAssetIds, projectionsByAssetId, sourceUsageByAssetId] = await Promise.all([
+    listActiveMediaAssetIds(normalizedHubId),
+    listMediaUsageProjectionDocs(normalizedHubId),
+    buildMediaUsageByHubId(normalizedHubId),
+  ]);
+  const operations = [];
+  let sourceReferenceCount = 0;
+  let missingReferencedAssetCount = 0;
+
+  sourceUsageByAssetId.forEach((usageRefs, assetId) => {
+    sourceReferenceCount += usageRefs.length;
+
+    if (!activeAssetIds.has(normalizeString(assetId))) {
+      missingReferencedAssetCount += 1;
+    }
+  });
+
+  activeAssetIds.forEach((assetId) => {
+    operations.push({
+      type: "set",
+      ref: mediaUsageCollection(normalizedHubId).doc(assetId),
+      payload: {
+        ...serializeProjectionPayload(normalizedHubId, assetId, sourceUsageByAssetId.get(assetId) || [], completedAt),
+        reconciledAt: completedAt,
+        reconciledBy: normalizeString(actorId) || "system",
+      },
+    });
+  });
+
+  projectionsByAssetId.forEach((_projection, assetId) => {
+    if (activeAssetIds.has(assetId)) {
+      return;
+    }
+
+    operations.push({
+      type: "delete",
+      ref: mediaUsageCollection(normalizedHubId).doc(assetId),
+    });
+  });
+
+  await commitMediaUsageBatch(operations);
+
+  return {
+    status: "completed",
+    assetsScanned: activeAssetIds.size,
+    projectionsWritten: activeAssetIds.size,
+    orphanedProjectionsDeleted: Math.max(operations.length - activeAssetIds.size, 0),
+    sourceReferenceCount,
+    missingReferencedAssetCount,
+    completedAt,
+    actorId: normalizeString(actorId) || "system",
+    schemaVersion: MEDIA_USAGE_SCHEMA_VERSION,
+  };
 }
