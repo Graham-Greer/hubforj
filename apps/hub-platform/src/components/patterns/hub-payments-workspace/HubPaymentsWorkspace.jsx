@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import CompactMenu from "@/components/ui/compact-menu/CompactMenu";
 import EmptyState from "@/components/patterns/empty-state/EmptyState";
@@ -93,6 +93,7 @@ export default function HubPaymentsWorkspace({
 }) {
   const router = useRouter();
   const workspace = useHubPaymentsWorkspace(items, paymentFilters || {});
+  const searchDebounceRef = useRef(null);
   const [exportError, setExportError] = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const hubFallbackCurrency = hub?.defaultCurrency || fallbackRegionalMarket.defaultCurrency;
@@ -121,7 +122,6 @@ export default function HubPaymentsWorkspace({
         overdueItems: Number(summary?.overdueItems || 0),
       }
     : reportingSummary;
-  const hasSearchOrDateFilter = Boolean(activeSearchTerm || activeDateFrom || activeDateTo);
   const exportParams = new URLSearchParams();
 
   if (activeSearchTerm) {
@@ -198,25 +198,42 @@ export default function HubPaymentsWorkspace({
     router.push(buildPaymentsHref(overrides));
   }
 
-  function applyProjectionFilters() {
-    if (paymentReadModelEnabled) {
-      navigatePayments({ cursor: "", cursorStack: [] });
-    }
-  }
+  function scheduleSearchFilter(value) {
+    workspace.setSearchTerm(value);
 
-  function clearProjectionFilters() {
-    if (paymentReadModelEnabled) {
-      workspace.setSearchTerm("");
-      workspace.setDateFrom("");
-      workspace.setDateTo("");
-      navigatePayments({ search: "", dateFrom: "", dateTo: "", cursor: "", cursorStack: [] });
+    if (!paymentReadModelEnabled) {
       return;
     }
 
-    workspace.setSearchTerm("");
-    workspace.setDateFrom("");
-    workspace.setDateTo("");
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+
+    searchDebounceRef.current = window.setTimeout(() => {
+      navigatePayments({ search: value, cursor: "", cursorStack: [] });
+    }, 350);
   }
+
+  function updateDateFilter(key, value) {
+    if (key === "dateFrom") {
+      workspace.setDateFrom(value);
+    } else {
+      workspace.setDateTo(value);
+    }
+
+    if (paymentReadModelEnabled) {
+      navigatePayments({ [key]: value, cursor: "", cursorStack: [] });
+    }
+  }
+
+  useEffect(
+    () => () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
+    },
+    []
+  );
 
   async function handleExportCsv() {
     setExportError("");
@@ -316,7 +333,7 @@ export default function HubPaymentsWorkspace({
                 summary?.collectedRevenue?.formatted ||
                 formatMoney(0, hubFallbackCurrency, hub?.locale || fallbackRegionalMarket.defaultLocale)
               }
-              detail="Revenue for the current filtered records."
+              detail="Revenue collected through hub payments."
             />
             <StatCard
               label="Refunded"
@@ -325,12 +342,12 @@ export default function HubPaymentsWorkspace({
                 summary?.refundedRevenue?.formatted ||
                 formatMoney(0, hubFallbackCurrency, hub?.locale || fallbackRegionalMarket.defaultLocale)
               }
-              detail="Refunded amount for the current filtered records."
+              detail="Refunded amount recorded through hub payments."
             />
             <StatCard
               label="Overdue items"
               value={String(statSummary.overdueItems)}
-              detail="Visible records currently overdue."
+              detail="Records currently overdue."
             />
           </div>
 
@@ -343,7 +360,7 @@ export default function HubPaymentsWorkspace({
                     type="date"
                     className={`${fieldStyles.control} ${fieldStyles.compactControl}`}
                     value={workspace.dateFrom}
-                    onChange={(event) => workspace.setDateFrom(event.target.value)}
+                    onChange={(event) => updateDateFilter("dateFrom", event.target.value)}
                   />
                 </label>
                 <label className={styles.dateField}>
@@ -352,7 +369,7 @@ export default function HubPaymentsWorkspace({
                     type="date"
                     className={`${fieldStyles.control} ${fieldStyles.compactControl}`}
                     value={workspace.dateTo}
-                    onChange={(event) => workspace.setDateTo(event.target.value)}
+                    onChange={(event) => updateDateFilter("dateTo", event.target.value)}
                   />
                 </label>
               </div>
@@ -365,27 +382,9 @@ export default function HubPaymentsWorkspace({
                   size="sm"
                   placeholder="Search payments"
                   value={workspace.searchTerm}
-                  onChange={(event) => workspace.setSearchTerm(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      applyProjectionFilters();
-                    }
-                  }}
+                  onChange={(event) => scheduleSearchFilter(event.target.value)}
                   className={styles.search}
                 />
-                {paymentReadModelEnabled ? (
-                  <div className={styles.filterActions}>
-                    <Button type="button" variant="secondary" size="sm" onClick={applyProjectionFilters}>
-                      Apply
-                    </Button>
-                    {hasSearchOrDateFilter ? (
-                      <Button type="button" variant="ghost" size="sm" onClick={clearProjectionFilters}>
-                        Clear
-                      </Button>
-                    ) : null}
-                  </div>
-                ) : null}
               </div>
 
               <div className={styles.toolbarMenus}>

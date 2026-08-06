@@ -145,8 +145,7 @@
   inline-size: min(100%, 28rem);
 }
 
-.searchCluster,
-.filterActions {
+.searchCluster {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
