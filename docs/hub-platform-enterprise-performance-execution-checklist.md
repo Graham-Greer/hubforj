@@ -177,6 +177,14 @@ Verification notes:
   - member account nav and billing item action links disable prefetch so sibling account routes and event/course pages are not fetched before navigation
   - expected Network/server result: member billing reads user-scoped `paymentItems` only when the read-model flag is enabled and support sync has completed
   - production verification after ledger sync showed the member billing route using the bounded user-scoped read path, with historical free/not-required records present in the ledger
+- Member account bookings/registrations:
+  - optimized member activity reads are available behind `HUB_PLATFORM_MEMBER_ACCOUNT_COLLECTION_GROUP_ENABLED=true`
+  - event bookings use a collection-group query scoped by `hubId`, `bookerUserId`, and `createdAt desc`
+  - course registrations use a collection-group query scoped by `hubId`, `userId`, and `createdAt desc`
+  - `/account` requests smaller bounded slices for overview cards, while `/account/bookings` requests a larger bounded slice for the dedicated workspace
+  - parent event/course display data is hydrated only for returned rows
+  - legacy fan-out remains as rollout fallback until indexes are built and production verification is complete
+  - required Firebase indexes must be deployed before enabling `HUB_PLATFORM_MEMBER_ACCOUNT_COLLECTION_GROUP_ENABLED=true`
 - Payments reconciliation and repair:
   - support diagnostics include a safe repair action for payment reconciliation issues
   - safe repair upserts canonical `paymentRecords` into `paymentItems`, deletes orphan payment item projections, repairs missing native transaction back-links when an unambiguous payment record already exists, repairs paid records missing `paidAt` only from unambiguous source timestamps, hydrates projected member identity, and rebuilds `paymentSummary`

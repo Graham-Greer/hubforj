@@ -100,6 +100,14 @@ Acceptance criteria:
 - Existing field overrides are preserved.
 - Query paths stay behind a flag until indexes are deployed.
 
+Implementation progress:
+
+- Added the first production query indexes for the optimized member account read path:
+  - collection group `bookings`: `hubId`, `bookerUserId`, `createdAt desc`
+  - collection group `registrations`: `hubId`, `userId`, `createdAt desc`
+- Preserved existing `bookings.hubId` and `registrations.hubId` field overrides.
+- The optimized read path remains behind `HUB_PLATFORM_MEMBER_ACCOUNT_COLLECTION_GROUP_ENABLED=true` so indexes can be deployed and built before production cutover.
+
 ### Phase 3: Replace Fan-Out Account Queries
 
 - Update member account booking helpers to query collection groups by current user and hub.
@@ -116,6 +124,16 @@ Acceptance criteria:
 - Account bookings route does not scan all hub courses.
 - Data-rich sections still match current UI behavior.
 - Deleted parent event/course records produce a stable fallback row instead of throwing.
+
+Implementation progress:
+
+- Added feature-flagged collection-group readers for member event bookings and course registrations.
+- `listEventBookingsByBooker` and `listCourseRegistrationsByUser` keep their existing output shape and hydrate parent event/course display data only for returned rows.
+- `/account` now requests bounded member activity slices for overview previews, capped below the hard helper maximum while avoiding tiny slices that could hide future bookings behind a large history.
+- `/account/bookings` now requests the maximum bounded member activity slice for the dedicated bookings/history workspace.
+- Legacy fan-out readers remain as rollout fallback when `HUB_PLATFORM_MEMBER_ACCOUNT_COLLECTION_GROUP_ENABLED` is false or if a collection-group query fails while indexes are being deployed.
+- The collection-group path is scoped by both `hubId` and the authenticated member user id, so member account routes do not scan every event/course in the hub.
+- Cursor pagination remains a future follow-up if individual members regularly exceed the bounded history cap; this slice is focused on removing hub-wide nested fan-out while preserving the current workspace shape.
 
 ### Phase 4: Bound Account Billing Reads
 

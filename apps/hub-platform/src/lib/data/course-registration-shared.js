@@ -13,6 +13,15 @@ export function normalizeString(value) {
   return String(value || "").trim();
 }
 
+function isMemberAccountCollectionGroupEnabled() {
+  return normalizeString(process.env.HUB_PLATFORM_MEMBER_ACCOUNT_COLLECTION_GROUP_ENABLED).toLowerCase() === "true";
+}
+
+function normalizeMemberAccountLimit(value, fallback = 200) {
+  const next = Number.parseInt(String(value || ""), 10);
+  return Math.min(Math.max(Number.isFinite(next) ? next : fallback, 1), 500);
+}
+
 export function normalizeCourseRegistrationRecord(registration, user = null) {
   if (!registration) {
     return null;
@@ -80,7 +89,7 @@ export async function getCoursesByIds(hubId, courseIds) {
   return new Map(coursesWithMedia.map((course) => [course.id, course]));
 }
 
-export async function listUserCourseRegistrationsAcrossHub(hubId, userId) {
+async function listUserCourseRegistrationsAcrossHubFanOut(hubId, userId) {
   const db = getFirebaseAdminDb();
   const courseSnapshot = await db.collection("hubs").doc(hubId).collection("courses").get();
   const normalizedUserId = normalizeString(userId);
@@ -98,6 +107,43 @@ export async function listUserCourseRegistrationsAcrossHub(hubId, userId) {
       snapshot.docs.map((doc) => normalizeCourseRegistrationRecord({ id: doc.id, ...doc.data() }))
     )
     .filter((row) => row.userId === normalizedUserId);
+}
+
+async function listUserCourseRegistrationsAcrossHubCollectionGroup(hubId, userId, options = {}) {
+  const normalizedHubId = normalizeString(hubId);
+  const normalizedUserId = normalizeString(userId);
+  const limit = normalizeMemberAccountLimit(options.limit);
+
+  if (!normalizedHubId || !normalizedUserId) {
+    return [];
+  }
+
+  const snapshot = await getFirebaseAdminDb()
+    .collectionGroup("registrations")
+    .where("hubId", "==", normalizedHubId)
+    .where("userId", "==", normalizedUserId)
+    .orderBy("createdAt", "desc")
+    .limit(limit)
+    .get();
+
+  return snapshot.docs.map((doc) => normalizeCourseRegistrationRecord({ id: doc.id, ...doc.data() }));
+}
+
+export async function listUserCourseRegistrationsAcrossHub(hubId, userId, options = {}) {
+  if (!isMemberAccountCollectionGroupEnabled()) {
+    return listUserCourseRegistrationsAcrossHubFanOut(hubId, userId);
+  }
+
+  try {
+    return await listUserCourseRegistrationsAcrossHubCollectionGroup(hubId, userId, options);
+  } catch (error) {
+    console.warn("Falling back to member course registration fan-out query.", {
+      hubId: normalizeString(hubId),
+      userId: normalizeString(userId),
+      error: String(error?.message || "Unable to query member course registrations."),
+    });
+    return listUserCourseRegistrationsAcrossHubFanOut(hubId, userId);
+  }
 }
 
 export async function getCourseRegistrationDoc(hubId, courseId, registrationId) {

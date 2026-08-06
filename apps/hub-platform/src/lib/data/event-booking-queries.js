@@ -134,7 +134,7 @@ export async function countWaitlistedEventBookingAttendees(hubId, eventId) {
   }, 0);
 }
 
-export async function listEventBookingsByBooker(hubId, userId) {
+export async function listEventBookingsByBooker(hubId, userId, options = {}) {
   const normalizedHubId = normalizeString(hubId);
   const normalizedUserId = normalizeString(userId);
 
@@ -142,7 +142,9 @@ export async function listEventBookingsByBooker(hubId, userId) {
     return [];
   }
 
-  const rows = (await listUserEventBookingsAcrossHub(normalizedHubId, normalizedUserId)).filter(
+  const rows = (await listUserEventBookingsAcrossHub(normalizedHubId, normalizedUserId, {
+    limit: options.limit,
+  })).filter(
     (row) => row.hubId === normalizedHubId && row.eventId
   );
   const [eventsById, usersById] = await Promise.all([

@@ -93,7 +93,7 @@ export async function resolveCourseRegistrationSummary(hubId, course, options = 
   });
 }
 
-export async function listCourseRegistrationsByUser(hubId, userId) {
+export async function listCourseRegistrationsByUser(hubId, userId, options = {}) {
   const normalizedHubId = normalizeString(hubId);
   const normalizedUserId = normalizeString(userId);
 
@@ -101,7 +101,9 @@ export async function listCourseRegistrationsByUser(hubId, userId) {
     return [];
   }
 
-  const rows = (await listUserCourseRegistrationsAcrossHub(normalizedHubId, normalizedUserId)).filter(
+  const rows = (await listUserCourseRegistrationsAcrossHub(normalizedHubId, normalizedUserId, {
+    limit: options.limit,
+  })).filter(
     (row) => row.hubId === normalizedHubId && row.courseId
   );
   const coursesById = await getCoursesByIds(

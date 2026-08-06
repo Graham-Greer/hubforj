@@ -14,8 +14,8 @@ import styles from "../accountRoute.module.css";
 async function BookingsContent({ hub, routeMode }) {
   const memberSession = await requireCurrentMemberSessionForHub(hub, `/${hub.slug}/account/bookings`);
   const [eventBookings, courseRegistrations] = await Promise.all([
-    listEventBookingsByBooker(hub.id, memberSession.user.id),
-    listCourseRegistrationsByUser(hub.id, memberSession.user.id),
+    listEventBookingsByBooker(hub.id, memberSession.user.id, { limit: 500 }),
+    listCourseRegistrationsByUser(hub.id, memberSession.user.id, { limit: 500 }),
   ]);
   const items = buildUnifiedBookingItems({
     hub,
