@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
 import { requireHubOperatorRouteAccess } from "@/lib/auth/action-access";
-import { listHubPaymentItemsBySlug } from "@/lib/data/hub-payments";
+import { listHubProjectedPaymentItemsForExport } from "@/lib/data/hub-payments";
 import { assertHubCapability } from "@/lib/domain/package-guards";
 import {
   getFallbackRegionalMarket,
   resolveLaunchFormattingLocale,
 } from "@/lib/domain/regional-markets";
-import {
-  formatPaymentAmount,
-  getOperationalPaymentStatus,
-} from "@/components/patterns/hub-payments-workspace/hub-payments-helpers";
+import { formatPaymentAmount } from "@/components/patterns/hub-payments-workspace/hub-payments-helpers";
 
 export const runtime = "nodejs";
 
@@ -82,55 +79,24 @@ function buildCsv(items = [], locale = fallbackRegionalMarket.defaultLocale) {
     .join("\n");
 }
 
-function resolveDateFilterValue(value) {
-  const normalized = String(value || "").trim();
+function normalizePaymentStatusFilter(value) {
+  const normalizedValue = normalizeString(value);
+  const allowedValues = new Set(["paid", "unpaid", "overdue", "failed", "refunded", "partially_refunded"]);
 
-  if (!normalized) {
-    return "";
-  }
-
-  const date = new Date(normalized);
-
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  return date.toISOString().slice(0, 10);
+  return allowedValues.has(normalizedValue) ? normalizedValue : "";
 }
 
-function filterItems(items, search = "", type = "all", status = "all", dateFrom = "", dateTo = "") {
-  const normalizedSearchTerm = String(search || "").trim().toLowerCase();
+function normalizePaymentTypeFilter(value) {
+  const normalizedValue = normalizeString(value);
+  const allowedValues = new Set(["membership", "event", "course"]);
 
-  return items.filter((item) => {
-    if (
-      normalizedSearchTerm &&
-      !String(item.userName || item.userEmail || "")
-        .toLowerCase()
-        .includes(normalizedSearchTerm)
-    ) {
-      return false;
-    }
+  return allowedValues.has(normalizedValue) ? normalizedValue : "";
+}
 
-    if (type !== "all" && item.kind !== type) {
-      return false;
-    }
+function normalizeDateFilter(value) {
+  const normalizedValue = normalizeString(value);
 
-    if (status !== "all" && getOperationalPaymentStatus(item) !== status) {
-      return false;
-    }
-
-    const itemDate = resolveDateFilterValue(item.lifecycleDate || item.dueDate);
-
-    if (dateFrom && (!itemDate || itemDate < dateFrom)) {
-      return false;
-    }
-
-    if (dateTo && (!itemDate || itemDate > dateTo)) {
-      return false;
-    }
-
-    return true;
-  });
+  return /^\d{4}-\d{2}-\d{2}$/.test(normalizedValue) ? normalizedValue : "";
 }
 
 export async function GET(request, { params }) {
@@ -145,16 +111,25 @@ export async function GET(request, { params }) {
   try {
     assertHubCapability(hub, "paymentsEnabled", "Built-in payments are only available on the Growth package.");
 
-    const { items } = await listHubPaymentItemsBySlug(hubSlug);
-    const filteredItems = filterItems(
-      items,
-      request.nextUrl.searchParams.get("search") || "",
-      request.nextUrl.searchParams.get("type") || "all",
-      request.nextUrl.searchParams.get("status") || "all",
-      request.nextUrl.searchParams.get("date_from") || "",
-      request.nextUrl.searchParams.get("date_to") || ""
-    );
-    const csv = buildCsv(filteredItems, resolveLaunchFormattingLocale(hub.locale, hub.country));
+    const status = normalizePaymentStatusFilter(request.nextUrl.searchParams.get("status"));
+    const type = status ? "" : normalizePaymentTypeFilter(request.nextUrl.searchParams.get("type"));
+    const result = await listHubProjectedPaymentItemsForExport(hub, {
+      paymentStatus: status,
+      type,
+      searchTerm: normalizeString(request.nextUrl.searchParams.get("search")).slice(0, 120),
+      dateFrom: normalizeDateFilter(request.nextUrl.searchParams.get("date_from")),
+      dateTo: normalizeDateFilter(request.nextUrl.searchParams.get("date_to")),
+      limit: 10000,
+    });
+
+    if (result.truncated) {
+      return NextResponse.json(
+        { error: "This export is too large. Narrow the date range or filters and try again." },
+        { status: 422 }
+      );
+    }
+
+    const csv = buildCsv(result.items, resolveLaunchFormattingLocale(hub.locale, hub.country));
     const filename = `${normalizeString(hub.slug) || "hub"}-payments-export.csv`;
 
     return new Response(csv, {

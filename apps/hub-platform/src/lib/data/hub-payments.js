@@ -16,7 +16,11 @@ import {
   getPaymentRecordByNativeTransactionId,
   listPaymentRecordsByHub,
 } from "@/lib/data/payment-records";
-import { listPaymentItemPageByHubId, listPaymentItemsByHubId } from "@/lib/data/payment-items";
+import {
+  listPaymentItemPageByHubId,
+  listPaymentItemsByHubId,
+  listPaymentItemsForExportByHubId,
+} from "@/lib/data/payment-items";
 import {
   buildPaymentSummaryFromPaymentItems,
   getPaymentSummaryByHubId,
@@ -871,6 +875,9 @@ export async function getHubPaymentProjectionReportByHub(hub, options = {}) {
     ...mapAdminPaymentTypeFilterToPaymentItemQuery(options.type),
     userId: options.userId,
     memberId: options.memberId,
+    dateFrom: options.dateFrom,
+    dateTo: options.dateTo,
+    searchTerm: options.searchTerm,
   };
   const [page, paymentSummary] = await Promise.all([
     listPaymentItemPageByHubId(hub.id, queryOptions),
@@ -907,6 +914,35 @@ export async function getHubPaymentProjectionReportByHub(hub, options = {}) {
       nextCursor: page.nextCursor,
       hasMore: page.hasMore,
     },
+  };
+}
+
+export async function listHubProjectedPaymentItemsForExport(hub, options = {}) {
+  if (!hub?.id) {
+    return { hub: null, items: [], scanned: 0, truncated: false, limit: 0 };
+  }
+
+  const routeMode = normalizeHubRouteMode(options.routeMode);
+  const queryOptions = {
+    status: options.status,
+    paymentStatus: options.paymentStatus,
+    attentionStatus: options.attentionStatus,
+    ...mapAdminPaymentTypeFilterToPaymentItemQuery(options.type),
+    userId: options.userId,
+    memberId: options.memberId,
+    dateFrom: options.dateFrom,
+    dateTo: options.dateTo,
+    searchTerm: options.searchTerm,
+    limit: options.limit,
+  };
+  const result = await listPaymentItemsForExportByHubId(hub.id, queryOptions);
+
+  return {
+    hub,
+    items: result.items.map((item) => mapProjectedPaymentItemToPaymentItem(item, hub.slug, routeMode)),
+    scanned: result.scanned,
+    truncated: result.truncated,
+    limit: result.limit,
   };
 }
 

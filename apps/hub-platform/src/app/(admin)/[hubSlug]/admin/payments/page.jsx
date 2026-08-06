@@ -136,6 +136,16 @@ function normalizePaymentPageSize(value) {
   return allowedValues.has(parsed) ? parsed : 20;
 }
 
+function normalizePaymentSearchFilter(value) {
+  return normalizeString(value).replace(/\s+/g, " ").slice(0, 120);
+}
+
+function normalizePaymentDateFilter(value) {
+  const normalizedValue = normalizeString(value);
+
+  return /^\d{4}-\d{2}-\d{2}$/.test(normalizedValue) ? normalizedValue : "";
+}
+
 function decodeCursorStack(value) {
   const normalizedValue = normalizeString(value);
 
@@ -228,6 +238,9 @@ async function PaymentsWorkspaceLoader({ hubSlug, selectedView, success, error, 
             limit: paymentFilters.pageSize,
             paymentStatus: paymentFilters.status === "all" ? "" : paymentFilters.status,
             type: paymentFilters.type === "all" ? "" : paymentFilters.type,
+            searchTerm: paymentFilters.search,
+            dateFrom: paymentFilters.dateFrom,
+            dateTo: paymentFilters.dateTo,
           })
         : getHubPaymentReportByHub(hub, { routeMode })
       : Promise.resolve({
@@ -252,7 +265,7 @@ async function PaymentsWorkspaceLoader({ hubSlug, selectedView, success, error, 
 
   return (
     <HubPaymentsWorkspace
-      key={`${selectedView}:${typeof success === "string" ? success : ""}:${typeof error === "string" ? error : ""}`}
+      key={`${selectedView}:${typeof success === "string" ? success : ""}:${typeof error === "string" ? error : ""}:${JSON.stringify(paymentFilters)}`}
       hub={hub}
       adminBasePath={buildAdminHref(hub.slug, "/admin/payments", routeMode)}
       items={paymentReport.items}
@@ -295,6 +308,9 @@ export default async function PaymentsPage({ params, searchParams }) {
     pageSize = "20",
     cursor = "",
     cursorStack = "",
+    search = "",
+    date_from: dateFrom = "",
+    date_to: dateTo = "",
   } = resolvedSearchParams;
   const selectedView = view === "plans" ? "plans" : view === "payments" ? "payments" : "setup";
   const normalizedStatus = normalizePaymentStatusFilter(status);
@@ -305,6 +321,9 @@ export default async function PaymentsPage({ params, searchParams }) {
     pageSize: normalizePaymentPageSize(pageSize),
     cursor: normalizeString(cursor),
     cursorStack: decodeCursorStack(cursorStack),
+    search: normalizePaymentSearchFilter(search),
+    dateFrom: normalizePaymentDateFilter(dateFrom),
+    dateTo: normalizePaymentDateFilter(dateTo),
   };
 
   return (

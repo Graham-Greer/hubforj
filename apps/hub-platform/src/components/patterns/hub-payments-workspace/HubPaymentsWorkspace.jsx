@@ -92,7 +92,7 @@ export default function HubPaymentsWorkspace({
   errorMessage = "",
 }) {
   const router = useRouter();
-  const workspace = useHubPaymentsWorkspace(items);
+  const workspace = useHubPaymentsWorkspace(items, paymentFilters || {});
   const [exportError, setExportError] = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const hubFallbackCurrency = hub?.defaultCurrency || fallbackRegionalMarket.defaultCurrency;
@@ -101,6 +101,9 @@ export default function HubPaymentsWorkspace({
   const activeTypeFilter = paymentReadModelEnabled ? paymentFilters?.type || "all" : workspace.typeFilter;
   const activeStatusFilter = paymentReadModelEnabled ? paymentFilters?.status || "all" : workspace.statusFilter;
   const activePageSize = paymentReadModelEnabled ? Number(paymentFilters?.pageSize || 20) : workspace.pageSize;
+  const activeSearchTerm = workspace.searchTerm;
+  const activeDateFrom = workspace.dateFrom;
+  const activeDateTo = workspace.dateTo;
   const reportingSummary = buildVisibleReportingSummary(
     visibleItems,
     hub?.locale || fallbackRegionalMarket.defaultLocale,
@@ -118,10 +121,19 @@ export default function HubPaymentsWorkspace({
         overdueItems: Number(summary?.overdueItems || 0),
       }
     : reportingSummary;
+  const hasSearchOrDateFilter = Boolean(activeSearchTerm || activeDateFrom || activeDateTo);
+  const aggregateDetail = hasSearchOrDateFilter
+    ? "Projection total for the selected type or status. Search and date filters apply to the records below and CSV export."
+    : "";
+  const collectedRevenueDetail = aggregateDetail || "Revenue for the current filtered records.";
+  const refundedRevenueDetail = aggregateDetail || "Refunded amount for the current filtered records.";
+  const actionRequiredDetail =
+    aggregateDetail || "Unpaid, overdue, or failed items needing follow-up.";
+  const overdueItemsDetail = aggregateDetail || "Visible records currently overdue.";
   const exportParams = new URLSearchParams();
 
-  if (workspace.searchTerm) {
-    exportParams.set("search", workspace.searchTerm);
+  if (activeSearchTerm) {
+    exportParams.set("search", activeSearchTerm);
   }
   if (activeTypeFilter !== "all") {
     exportParams.set("type", activeTypeFilter);
@@ -129,11 +141,11 @@ export default function HubPaymentsWorkspace({
   if (activeStatusFilter !== "all") {
     exportParams.set("status", activeStatusFilter);
   }
-  if (workspace.dateFrom) {
-    exportParams.set("date_from", workspace.dateFrom);
+  if (activeDateFrom) {
+    exportParams.set("date_from", activeDateFrom);
   }
-  if (workspace.dateTo) {
-    exportParams.set("date_to", workspace.dateTo);
+  if (activeDateTo) {
+    exportParams.set("date_to", activeDateTo);
   }
   const paymentsBasePath = adminBasePath || `/${hub.slug}/admin/payments`;
   const exportHref = `${paymentsBasePath}/export${exportParams.toString() ? `?${exportParams.toString()}` : ""}`;
@@ -149,6 +161,9 @@ export default function HubPaymentsWorkspace({
     const nextPageSize = overrides.pageSize !== undefined ? overrides.pageSize : activePageSize;
     const nextCursor = overrides.cursor !== undefined ? overrides.cursor : paymentPageInfo?.currentCursor || "";
     const nextCursorStack = overrides.cursorStack !== undefined ? overrides.cursorStack : paymentFilters?.cursorStack || [];
+    const nextSearch = overrides.search !== undefined ? overrides.search : workspace.searchTerm;
+    const nextDateFrom = overrides.dateFrom !== undefined ? overrides.dateFrom : workspace.dateFrom;
+    const nextDateTo = overrides.dateTo !== undefined ? overrides.dateTo : workspace.dateTo;
 
     params.set("view", "payments");
 
@@ -164,6 +179,18 @@ export default function HubPaymentsWorkspace({
       params.set("pageSize", String(nextPageSize));
     }
 
+    if (nextSearch) {
+      params.set("search", nextSearch);
+    }
+
+    if (nextDateFrom) {
+      params.set("date_from", nextDateFrom);
+    }
+
+    if (nextDateTo) {
+      params.set("date_to", nextDateTo);
+    }
+
     if (nextCursor) {
       params.set("cursor", nextCursor);
     }
@@ -177,6 +204,26 @@ export default function HubPaymentsWorkspace({
 
   function navigatePayments(overrides = {}) {
     router.push(buildPaymentsHref(overrides));
+  }
+
+  function applyProjectionFilters() {
+    if (paymentReadModelEnabled) {
+      navigatePayments({ cursor: "", cursorStack: [] });
+    }
+  }
+
+  function clearProjectionFilters() {
+    if (paymentReadModelEnabled) {
+      workspace.setSearchTerm("");
+      workspace.setDateFrom("");
+      workspace.setDateTo("");
+      navigatePayments({ search: "", dateFrom: "", dateTo: "", cursor: "", cursorStack: [] });
+      return;
+    }
+
+    workspace.setSearchTerm("");
+    workspace.setDateFrom("");
+    workspace.setDateTo("");
   }
 
   async function handleExportCsv() {
@@ -269,7 +316,7 @@ export default function HubPaymentsWorkspace({
       ) : (
         <>
           <div className={styles.stats}>
-            <StatCard label="Action required" value={String(statSummary.actionRequired)} detail="Unpaid, overdue, or failed items needing follow-up." />
+            <StatCard label="Action required" value={String(statSummary.actionRequired)} detail={actionRequiredDetail} />
             <StatCard
               label="Collected revenue"
               value={
@@ -277,7 +324,7 @@ export default function HubPaymentsWorkspace({
                 summary?.collectedRevenue?.formatted ||
                 formatMoney(0, hubFallbackCurrency, hub?.locale || fallbackRegionalMarket.defaultLocale)
               }
-              detail="Visible revenue for the current filtered records."
+              detail={collectedRevenueDetail}
             />
             <StatCard
               label="Refunded"
@@ -286,12 +333,12 @@ export default function HubPaymentsWorkspace({
                 summary?.refundedRevenue?.formatted ||
                 formatMoney(0, hubFallbackCurrency, hub?.locale || fallbackRegionalMarket.defaultLocale)
               }
-              detail="Refunded amount for the current filtered records."
+              detail={refundedRevenueDetail}
             />
             <StatCard
               label="Overdue items"
               value={String(statSummary.overdueItems)}
-              detail="Visible records currently overdue."
+              detail={overdueItemsDetail}
             />
           </div>
 
@@ -326,6 +373,12 @@ export default function HubPaymentsWorkspace({
                 placeholder="Search payments"
                 value={workspace.searchTerm}
                 onChange={(event) => workspace.setSearchTerm(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    applyProjectionFilters();
+                  }
+                }}
                 className={styles.search}
               />
 
@@ -363,6 +416,16 @@ export default function HubPaymentsWorkspace({
                 <Button type="button" variant="secondary" size="sm" onClick={handleExportCsv} disabled={isExporting}>
                   {isExporting ? "Exporting..." : "Export CSV"}
                 </Button>
+                {paymentReadModelEnabled ? (
+                  <>
+                    <Button type="button" variant="secondary" size="sm" onClick={applyProjectionFilters}>
+                      Apply
+                    </Button>
+                    <Button type="button" variant="ghost" size="sm" onClick={clearProjectionFilters}>
+                      Clear
+                    </Button>
+                  </>
+                ) : null}
               </div>
             </div>
           </div>

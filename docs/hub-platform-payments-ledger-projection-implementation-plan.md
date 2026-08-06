@@ -80,7 +80,7 @@ Privacy rule:
 - Phase 2, indexes: committed in `firestore.indexes.json`; Firebase indexes have been built for the current planned payment item query shapes.
 - Phase 3, backfill: implemented through the support-only payment ledger sync action, including historical membership, native payment, event booking, and course registration normalization.
 - Phase 4, maintain on writes: implemented for `createPaymentRecord`, `upsertPaymentRecordBySource`, and `updatePaymentRecord`.
-- Phase 5, replace admin payments report reads: implemented behind `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true` with URL-driven status/type filters, cursor pagination, and an aggregate `paymentSummary` read model for summary cards. Production has been synced and verified by route testing.
+- Phase 5, replace admin payments report reads: implemented behind `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true` with URL-driven status/type/date/search filters, cursor pagination, projection-backed CSV export, and an aggregate `paymentSummary` read model for summary cards. Production has been synced and verified by route testing through the status/type/payment summary slice; date/search/export should be verified after this follow-up deploy.
 - Phase 6, replace member billing reads: implemented behind `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true`; production has been synced and verified after historical free/not-required member activity backfill.
 - Phase 7, reconciliation and repair: support-only diagnostics and safe repair mode are implemented for projection drift, orphan projection cleanup, missing native transaction back-links, missing projected member identity, and paid records/items missing actual `paidAt` timestamps. Current production diagnostics should be rerun after deploying this paid-date/member-identity hardening pass.
 
@@ -290,7 +290,9 @@ Implementation note:
 - If the aggregate document is missing during rollout, the admin payments route temporarily falls back to rebuilding the summary shape from `paymentItems` in-memory for correctness. This fallback is a migration safety net only and should not be treated as the steady-state enterprise path.
 - The membership type filter queries both `membership` and `upgradeRequest` projection types so membership upgrades remain visible in the membership view.
 - To avoid unplanned composite indexes, the read-model UI allows one indexed server filter at a time: choosing a type clears payment status, and choosing payment status clears type.
-- Search and date inputs currently filter within the returned bounded page only. Global search/date filtering remains a follow-up because it needs a deliberate indexing/export strategy.
+- Date filters are now URL-driven and applied in the projection query using the indexed `sortAt` field. The date range is inclusive for the selected calendar days.
+- Search is now URL-driven and global to the bounded projection query rather than current-page-only. Because Firestore does not support arbitrary contains search without a dedicated search index, search uses a capped projection scan over the already indexed query shape and filters normalized payment item display fields server-side. This keeps the normal no-search path fully indexed and avoids reintroducing the legacy report fan-out.
+- Search scanning is intentionally capped for operational safety. If search becomes a high-volume daily workflow, the next enterprise step is a dedicated search read model or managed search service rather than raising the scan cap indefinitely.
 - The projection-backed route maps a bounded projection page into the existing UI item shape.
 - The projection-backed report applies the same paid membership upgrade versus membership-cycle duplicate suppression used by the legacy report, so collected revenue does not double-count a paid upgrade and its matching generated membership payment row.
 - Row display must not apply revenue-summary duplicate suppression or informational-only exclusion after fetching a bounded page. Those rules belong to summary/reporting aggregates; applying them to page rows can collapse a normal page to one visible record when recent records are mostly free/not-required or duplicate-suppressed rows.
@@ -300,7 +302,9 @@ Implementation note:
 - `createPaymentRecord`, `upsertPaymentRecordBySource`, and `updatePaymentRecord` rebuild the aggregate after updating the canonical record and projected payment item.
 - The support-only `Sync payment ledger` action rebuilds the aggregate once after payment records have been projected into `paymentItems`.
 - Support diagnostics display payment summary reportable/source counts and the last summary rebuild timestamp.
-- Remaining Phase 5 work is the export/global search/date strategy. Do not reintroduce broad report assembly for those paths; add explicit query/index support or a background export job.
+- CSV export now uses projected `paymentItems` through a dedicated export helper instead of `listHubPaymentItemsBySlug` and the legacy report builder.
+- Synchronous CSV export is capped at 10,000 projected rows, and search exports are also capped at a 10,000-row source scan. If the export would exceed those bounds, the route returns a clear error asking the operator to narrow filters; the future enterprise path for larger exports is an asynchronous background export job.
+- Remaining Phase 5 hardening is production verification of date/search/export behavior and, later, a background export worker if hubs outgrow the synchronous cap.
 
 Rollout order:
 
@@ -312,6 +316,9 @@ Rollout order:
 6. Set `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true` in the target environment.
 7. Verify `/admin/payments?view=payments` uses the projection-backed report and still opens existing detail routes via `ledger_{paymentRecordId}` links.
 8. Verify summary cards remain stable while moving between cursor pages, and change only when status/type filters change.
+9. Verify date filters apply globally across cursor pages and are reflected in CSV export.
+10. Verify search applies globally against projected display fields and does not trigger the legacy broad report builder.
+11. Verify CSV export succeeds for normal filtered datasets and returns the explicit “too large” error for datasets above the synchronous export cap.
 
 ### Phase 6: Replace Member Billing Reads
 

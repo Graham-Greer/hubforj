@@ -17,12 +17,12 @@ function resolveDateFilterValue(value) {
   return date.toISOString().slice(0, 10);
 }
 
-export function useHubPaymentsWorkspace(items) {
-  const [searchTerm, setSearchTerm] = useState("");
+export function useHubPaymentsWorkspace(items, initialFilters = {}) {
+  const [searchTerm, setSearchTerm] = useState(initialFilters.search || "");
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [dateFrom, setDateFrom] = useState(initialFilters.dateFrom || "");
+  const [dateTo, setDateTo] = useState(initialFilters.dateTo || "");
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [openPlanId, setOpenPlanId] = useState(null);
