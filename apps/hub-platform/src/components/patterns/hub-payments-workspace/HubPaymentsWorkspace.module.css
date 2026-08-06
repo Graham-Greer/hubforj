@@ -145,6 +145,22 @@
   inline-size: min(100%, 28rem);
 }
 
+.searchCluster,
+.filterActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.searchCluster {
+  flex: 1 1 24rem;
+}
+
+.searchCluster .search {
+  flex: 1 1 16rem;
+}
+
 .toolbarMenus {
   display: flex;
   flex-wrap: wrap;

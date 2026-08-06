@@ -122,14 +122,6 @@ export default function HubPaymentsWorkspace({
       }
     : reportingSummary;
   const hasSearchOrDateFilter = Boolean(activeSearchTerm || activeDateFrom || activeDateTo);
-  const aggregateDetail = hasSearchOrDateFilter
-    ? "Projection total for the selected type or status. Search and date filters apply to the records below and CSV export."
-    : "";
-  const collectedRevenueDetail = aggregateDetail || "Revenue for the current filtered records.";
-  const refundedRevenueDetail = aggregateDetail || "Refunded amount for the current filtered records.";
-  const actionRequiredDetail =
-    aggregateDetail || "Unpaid, overdue, or failed items needing follow-up.";
-  const overdueItemsDetail = aggregateDetail || "Visible records currently overdue.";
   const exportParams = new URLSearchParams();
 
   if (activeSearchTerm) {
@@ -316,7 +308,7 @@ export default function HubPaymentsWorkspace({
       ) : (
         <>
           <div className={styles.stats}>
-            <StatCard label="Action required" value={String(statSummary.actionRequired)} detail={actionRequiredDetail} />
+            <StatCard label="Action required" value={String(statSummary.actionRequired)} detail="Unpaid, overdue, or failed items needing follow-up." />
             <StatCard
               label="Collected revenue"
               value={
@@ -324,7 +316,7 @@ export default function HubPaymentsWorkspace({
                 summary?.collectedRevenue?.formatted ||
                 formatMoney(0, hubFallbackCurrency, hub?.locale || fallbackRegionalMarket.defaultLocale)
               }
-              detail={collectedRevenueDetail}
+              detail="Revenue for the current filtered records."
             />
             <StatCard
               label="Refunded"
@@ -333,12 +325,12 @@ export default function HubPaymentsWorkspace({
                 summary?.refundedRevenue?.formatted ||
                 formatMoney(0, hubFallbackCurrency, hub?.locale || fallbackRegionalMarket.defaultLocale)
               }
-              detail={refundedRevenueDetail}
+              detail="Refunded amount for the current filtered records."
             />
             <StatCard
               label="Overdue items"
               value={String(statSummary.overdueItems)}
-              detail={overdueItemsDetail}
+              detail="Visible records currently overdue."
             />
           </div>
 
@@ -365,22 +357,36 @@ export default function HubPaymentsWorkspace({
                 </label>
               </div>
 
-              <SearchField
-                name="admin-payments-search"
-                label="Search payments"
-                labelVisibility="hidden"
-                size="sm"
-                placeholder="Search payments"
-                value={workspace.searchTerm}
-                onChange={(event) => workspace.setSearchTerm(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    applyProjectionFilters();
-                  }
-                }}
-                className={styles.search}
-              />
+              <div className={styles.searchCluster}>
+                <SearchField
+                  name="admin-payments-search"
+                  label="Search payments"
+                  labelVisibility="hidden"
+                  size="sm"
+                  placeholder="Search payments"
+                  value={workspace.searchTerm}
+                  onChange={(event) => workspace.setSearchTerm(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      applyProjectionFilters();
+                    }
+                  }}
+                  className={styles.search}
+                />
+                {paymentReadModelEnabled ? (
+                  <div className={styles.filterActions}>
+                    <Button type="button" variant="secondary" size="sm" onClick={applyProjectionFilters}>
+                      Apply
+                    </Button>
+                    {hasSearchOrDateFilter ? (
+                      <Button type="button" variant="ghost" size="sm" onClick={clearProjectionFilters}>
+                        Clear
+                      </Button>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
 
               <div className={styles.toolbarMenus}>
                 <CompactMenu
@@ -416,16 +422,6 @@ export default function HubPaymentsWorkspace({
                 <Button type="button" variant="secondary" size="sm" onClick={handleExportCsv} disabled={isExporting}>
                   {isExporting ? "Exporting..." : "Export CSV"}
                 </Button>
-                {paymentReadModelEnabled ? (
-                  <>
-                    <Button type="button" variant="secondary" size="sm" onClick={applyProjectionFilters}>
-                      Apply
-                    </Button>
-                    <Button type="button" variant="ghost" size="sm" onClick={clearProjectionFilters}>
-                      Clear
-                    </Button>
-                  </>
-                ) : null}
               </div>
             </div>
           </div>
