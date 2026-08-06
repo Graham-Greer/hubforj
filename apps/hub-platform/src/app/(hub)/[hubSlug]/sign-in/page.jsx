@@ -46,7 +46,7 @@ export default async function SignInPage({ params, searchParams }) {
 
             <div className={styles.footer}>
               <p className={styles.footerCopy}>Need to create an account first?</p>
-              <Button href={buildHubAuthHref(hub.slug, "join", nextPath, routeMode)} variant="ghost">
+              <Button href={buildHubAuthHref(hub.slug, "join", nextPath, routeMode)} prefetch={false} variant="ghost">
                 Go to join
               </Button>
             </div>

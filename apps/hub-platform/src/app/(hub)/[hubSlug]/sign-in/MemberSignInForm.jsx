@@ -62,7 +62,6 @@ export default function MemberSignInForm({ hubSlug, nextPath, defaultEmail = "",
         }
 
         router.replace(String(result.redirectTo || (routeMode === "host" ? "/account" : `/${hubSlug}/account`)));
-        router.refresh();
       } catch (authError) {
         setError(mapFirebaseAuthError(authError));
       }
