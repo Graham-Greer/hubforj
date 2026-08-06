@@ -80,7 +80,7 @@ Privacy rule:
 - Phase 2, indexes: committed in `firestore.indexes.json`; Firebase indexes have been built for the current planned payment item query shapes.
 - Phase 3, backfill: implemented through the support-only payment ledger sync action, including historical membership, native payment, event booking, and course registration normalization.
 - Phase 4, maintain on writes: implemented for `createPaymentRecord`, `upsertPaymentRecordBySource`, and `updatePaymentRecord`.
-- Phase 5, replace admin payments report reads: implemented behind `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true` with URL-driven status/type/date/search filters, cursor pagination, projection-backed CSV export, and an aggregate `paymentSummary` read model for summary cards. Production has been synced and verified by route testing through the status/type/payment summary slice; date/search/export should be verified after this follow-up deploy.
+- Phase 5, replace admin payments report reads: implemented behind `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true` with URL-driven status/type/date/search filters, cursor pagination, projection-backed CSV export, and an aggregate `paymentSummary` read model for summary cards. Production has been synced and route-tested, including status/type filtering, cursor pagination, date range filtering across pages, text search, and CSV export.
 - Phase 6, replace member billing reads: implemented behind `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true`; production has been synced and verified after historical free/not-required member activity backfill.
 - Phase 7, reconciliation and repair: support-only diagnostics and safe repair mode are implemented for projection drift, orphan projection cleanup, missing native transaction back-links, missing projected member identity, and paid records/items missing actual `paidAt` timestamps. Current production diagnostics should be rerun after deploying this paid-date/member-identity hardening pass.
 
@@ -304,7 +304,7 @@ Implementation note:
 - Support diagnostics display payment summary reportable/source counts and the last summary rebuild timestamp.
 - CSV export now uses projected `paymentItems` through a dedicated export helper instead of `listHubPaymentItemsBySlug` and the legacy report builder.
 - Synchronous CSV export is capped at 10,000 projected rows, and search exports are also capped at a 10,000-row source scan. If the export would exceed those bounds, the route returns a clear error asking the operator to narrow filters; the future enterprise path for larger exports is an asynchronous background export job.
-- Remaining Phase 5 hardening is production verification of date/search/export behavior and, later, a background export worker if hubs outgrow the synchronous cap.
+- Phase 5 route/search/date/export behavior has been production-verified. Remaining long-term hardening is a background export worker if hubs outgrow the synchronous cap.
 
 Rollout order:
 

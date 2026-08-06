@@ -166,6 +166,7 @@ Verification notes:
   - date filters are URL-driven and applied server-side against the indexed `sortAt` payment item field
   - search is URL-driven and global to a capped projection scan, avoiding the legacy broad payment report while preserving the fully indexed fast path when no search term is active
   - CSV export now reads from projected `paymentItems` through a dedicated export helper, respects the same URL filters as the table, and refuses oversized synchronous exports instead of silently truncating data
+  - production route testing verified status/type filtering, cursor pagination, date range filtering across page results, text search, and CSV export
   - production has been synced and verified with the read-model flag enabled; the legacy report builder now exists as rollback rather than the intended steady-state path
 - Member billing read-model:
   - `/account/billing` uses the projection-backed `listMemberPaymentItems` path when `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true`
@@ -235,6 +236,39 @@ Verification notes:
   - expected steady-state Network/server result: `/admin/members` performs one bounded `memberDirectory` page query plus one small `memberDirectorySummary` document read
   - CSV export is a dedicated authorized route and must remain outside normal page load
   - support-only reconciliation detects missing, stale, and orphaned projection rows; safe repair rebuilds the projection and summary
+- Projection operations hardening:
+  - internal route `/api/internal/projections/reconcile` is protected by `INTERNAL_AUTOMATION_SECRET`
+  - route supports `GET` and `POST` so it can be triggered manually or by scheduler/cron
+  - default mode is `dryRun=true`, `limit=1`, and all projection families enabled
+  - supported inputs are `hubSlug`, `cursor`, `limit`, `dryRun`, `includePayments`, `includeMembers`, `includeDashboard`, and `includeMedia`
+  - `limit` is capped at 10 hubs per invocation and should remain low for scheduled runs
+  - dry-run mode reports payment, member-directory, dashboard, and media-usage reconciliation summaries without writing
+  - repair mode reuses the existing payment ledger sync chain for payment items, payment summary, member directory, member activity, dashboard stats, and dashboard overview
+  - repair mode rebuilds media usage projections through the existing media usage reconciliation helper
+  - normal route rendering must never call this maintenance path
+  - recommended first production run is dry-run for one known hub, then repair for that same hub, then dry-run again
+  - scheduled operation should remain bounded and page through hubs with `nextCursor` if multi-hub maintenance is required
+  - callers must send `Authorization: Bearer <INTERNAL_AUTOMATION_SECRET>` or `x-internal-automation-secret: <INTERNAL_AUTOMATION_SECRET>`
+
+Production verification examples:
+
+- Dry-run one known hub:
+  `GET /api/internal/projections/reconcile?hubSlug=maplegrovecommunityhub&dryRun=true`
+- Repair one known hub:
+  `POST /api/internal/projections/reconcile` with body `{ "hubSlug": "maplegrovecommunityhub", "dryRun": false }`
+- Dry-run the next bounded hub page:
+  `GET /api/internal/projections/reconcile?limit=1&cursor=<nextCursor>&dryRun=true`
+- Media-only repair for a known hub:
+  `POST /api/internal/projections/reconcile` with body `{ "hubSlug": "maplegrovecommunityhub", "dryRun": false, "includePayments": false, "includeMembers": false, "includeDashboard": false, "includeMedia": true }`
+- Expected response fields:
+  - `ok`
+  - `processed`
+  - `failed`
+  - `nextCursor`
+  - `hasMore`
+  - per-hub `reports` with `totalIssues`
+  - per-hub `repairs` when `dryRun=false`
+- Vercel Cron should start with `dryRun=true` and `limit=1`. Increase cadence or paging only after production timings are known.
 
 ## Per-Slice Rollout Checklist
 
