@@ -94,6 +94,7 @@ export default function HubPaymentsWorkspace({
   const router = useRouter();
   const workspace = useHubPaymentsWorkspace(items, paymentFilters || {});
   const searchDebounceRef = useRef(null);
+  const dateDebounceRef = useRef(null);
   const [exportError, setExportError] = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const hubFallbackCurrency = hub?.defaultCurrency || fallbackRegionalMarket.defaultCurrency;
@@ -222,7 +223,13 @@ export default function HubPaymentsWorkspace({
     }
 
     if (paymentReadModelEnabled) {
-      navigatePayments({ [key]: value, cursor: "", cursorStack: [] });
+      if (dateDebounceRef.current) {
+        clearTimeout(dateDebounceRef.current);
+      }
+
+      dateDebounceRef.current = window.setTimeout(() => {
+        navigatePayments({ [key]: value, cursor: "", cursorStack: [] });
+      }, 650);
     }
   }
 
@@ -230,6 +237,9 @@ export default function HubPaymentsWorkspace({
     () => () => {
       if (searchDebounceRef.current) {
         clearTimeout(searchDebounceRef.current);
+      }
+      if (dateDebounceRef.current) {
+        clearTimeout(dateDebounceRef.current);
       }
     },
     []
