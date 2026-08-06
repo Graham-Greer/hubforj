@@ -5,7 +5,7 @@ import { MemberProfileFallback } from "@/components/patterns/member-account-fall
 import MemberProfileWorkspace from "@/components/patterns/member-profile-workspace/MemberProfileWorkspace";
 import PageHeader from "@/components/patterns/page-header/PageHeader";
 import { requireCurrentMemberSessionForHub } from "@/lib/auth/member-session";
-import { requireHubBySlug } from "@/lib/data/hubs";
+import { requireHubCoreBySlug } from "@/lib/data/hubs";
 import styles from "../accountRoute.module.css";
 
 async function ProfileContent({ hub }) {
@@ -24,7 +24,7 @@ async function ProfileContent({ hub }) {
 
 export default async function ProfilePage({ params }) {
   const { hubSlug } = await params;
-  const hub = await requireHubBySlug(hubSlug);
+  const hub = await requireHubCoreBySlug(hubSlug);
 
   return (
     <div className={styles.routeStack}>

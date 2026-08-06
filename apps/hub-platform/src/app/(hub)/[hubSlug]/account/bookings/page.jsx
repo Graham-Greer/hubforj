@@ -6,7 +6,7 @@ import PageHeader from "@/components/patterns/page-header/PageHeader";
 import { requireCurrentMemberSessionForHub } from "@/lib/auth/member-session";
 import { listCourseRegistrationsByUser } from "@/lib/data/course-registrations";
 import { listEventBookingsByBooker } from "@/lib/data/event-bookings";
-import { requireHubBySlug } from "@/lib/data/hubs";
+import { requireHubCoreBySlug } from "@/lib/data/hubs";
 import { isMemberActivityReadModelEnabled, listMemberActivityBookingSources } from "@/lib/data/member-activity";
 import { buildUnifiedBookingItems } from "@/lib/domain/member-account";
 import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
@@ -42,7 +42,7 @@ async function BookingsContent({ hub, routeMode }) {
 
 export default async function BookingsPage({ params }) {
   const { hubSlug } = await params;
-  const hubRecord = await requireHubBySlug(hubSlug);
+  const hubRecord = await requireHubCoreBySlug(hubSlug);
   const requestHeaders = await headers();
   const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(requestHeaders));
   const hub = { ...hubRecord, routeMode };

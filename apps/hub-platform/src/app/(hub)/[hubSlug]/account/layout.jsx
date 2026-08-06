@@ -3,7 +3,7 @@ import MemberAccountShell from "@/components/patterns/member-account-shell/Membe
 import SectionContainer from "@/components/sections/section-container/SectionContainer";
 import SectionShell from "@/components/sections/section-shell/SectionShell";
 import { requireCurrentMemberSessionForHub } from "@/lib/auth/member-session";
-import { requireHubBySlug } from "@/lib/data/hubs";
+import { requireHubCoreBySlug } from "@/lib/data/hubs";
 import { getRequestHostFromHeaders, resolveHubRuntimeRouteMode } from "@/lib/domain/hub-hosts";
 import { notFound } from "next/navigation";
 
@@ -12,7 +12,7 @@ export default async function AccountLayout({ children, params }) {
   let hub;
 
   try {
-    hub = await requireHubBySlug(hubSlug);
+    hub = await requireHubCoreBySlug(hubSlug);
   } catch {
     notFound();
   }

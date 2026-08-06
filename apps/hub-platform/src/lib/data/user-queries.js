@@ -5,6 +5,7 @@ try {
 }
 
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
+import { cache } from "react";
 import { getMediaAssetMetadataById, getMediaAssetsByIds } from "@/lib/data/media";
 import { normalizeString, normalizeUserRecord, sortUsers } from "./user-shared.js";
 
@@ -134,6 +135,11 @@ async function getFirestoreSuperadminByAuthUid(uid) {
   return normalizeUserRecord({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() });
 }
 
+const getCachedFirestoreUserById = cache(getFirestoreUserById);
+const getCachedFirestoreUserByAuthUid = cache(getFirestoreUserByAuthUid);
+const getCachedFirestoreGlobalUserById = cache(getFirestoreGlobalUserById);
+const getCachedFirestoreSuperadminByAuthUid = cache(getFirestoreSuperadminByAuthUid);
+
 async function getQueryCount(query) {
   const snapshot = await query.count().get();
   return Number(snapshot.data().count || 0);
@@ -225,7 +231,7 @@ export async function getUserById(hubId, userId) {
     return null;
   }
 
-  return getFirestoreUserById(normalizedHubId, normalizedUserId);
+  return getCachedFirestoreUserById(normalizedHubId, normalizedUserId);
 }
 
 export async function getUserByAuthUid(hubId, uid) {
@@ -236,7 +242,7 @@ export async function getUserByAuthUid(hubId, uid) {
     return null;
   }
 
-  return getFirestoreUserByAuthUid(normalizedHubId, normalizedUid);
+  return getCachedFirestoreUserByAuthUid(normalizedHubId, normalizedUid);
 }
 
 export async function getSuperadminById(userId) {
@@ -246,7 +252,7 @@ export async function getSuperadminById(userId) {
     return null;
   }
 
-  const user = await getFirestoreGlobalUserById(normalizedUserId);
+  const user = await getCachedFirestoreGlobalUserById(normalizedUserId);
 
   if (!user || user.role !== "superadmin") {
     return null;
@@ -262,7 +268,7 @@ export async function getSuperadminByAuthUid(uid) {
     return null;
   }
 
-  const user = await getFirestoreSuperadminByAuthUid(normalizedUid);
+  const user = await getCachedFirestoreSuperadminByAuthUid(normalizedUid);
 
   if (!user || user.role !== "superadmin") {
     return null;
