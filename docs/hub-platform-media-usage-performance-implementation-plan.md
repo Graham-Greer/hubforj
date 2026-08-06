@@ -253,8 +253,8 @@ Remaining production verification:
 
 Known tradeoff:
 
-- Existing hubs will not have complete projection coverage until assets are selected once, edited through the updated admin flows, or processed by a future reconciliation/backfill script.
-- This is intentional for the first production-safe projection release because it avoids a broad migration while preserving correct usage results through fallback scanning.
+- Existing hubs will not have complete projection coverage until assets are selected once, edited through the updated admin flows, processed by support-only **Sync media usage**, or included in the internal projection maintenance endpoint.
+- This is intentional because normal media route rendering remains bounded while support/internal maintenance owns deliberate source-graph scans.
 
 ### Phase 4: Integrate With Public Cache Invalidation
 
@@ -380,5 +380,5 @@ Rollout verification:
 - Folder deletion still updates all assets in the folder server-side. For very large folders, this remains a potential write-heavy operation and should be revisited with batched pagination or a folder archive model if folder sizes become large.
 - Selected-asset usage now prefers the `mediaUsage` projection. It falls back to targeted source queries only when the projection is missing, then repairs the projection after a complete verification.
 - Embedded admin media pickers now lazy-load bounded media pages instead of calling `listMediaAssetsByHubId`.
-- Existing hubs still need either natural admin edits, selected-asset fallback repair, or a future reconciliation/backfill run before every asset has a projection document.
-- Support-only media usage sync now provides the future reconciliation/backfill path for existing hubs; source references to missing assets remain manual correction items because the repair path must not guess which replacement media should be used.
+- Existing hubs still need either natural admin edits, selected-asset fallback repair, support-only media usage sync, or internal projection maintenance before every asset has a projection document.
+- Support-only media usage sync and `/api/internal/projections/reconcile` provide the reconciliation/backfill path for existing hubs; source references to missing assets remain manual correction items because the repair path must not guess which replacement media should be used.

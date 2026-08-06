@@ -253,10 +253,13 @@ Completed:
 - Overview projection rebuild uses source scans only inside explicit support/sync maintenance, not during the normal projected `/admin` render.
 - If the overview projection is missing or old-schema during rollout, the helper performs an explicit logged fallback that returns the same shape.
 
-Remaining:
+Operational hardening status:
 
-- Add incremental or scheduled maintenance after the projected source of truth has been verified in production.
-- Consider a multi-hub support job before operating large production fleets.
+- Bounded internal projection maintenance is now available through `/api/internal/projections/reconcile`.
+- The internal route can dry-run dashboard reconciliation for one hub or a small bounded hub page.
+- Repair mode reuses the existing payment ledger sync chain, which rebuilds dashboard stats and overview after payment summary, member directory, and member activity maintenance.
+- The route returns `nextCursor`/`hasMore` for controlled multi-hub paging.
+- The route is not yet configured as a recurring Vercel Cron job; scheduled automation should start as low-frequency dry-run only.
 
 Acceptance criteria:
 
@@ -271,7 +274,7 @@ Acceptance criteria:
 - Write reconciliation metadata.
 - Log differences before overwriting values.
 
-Status: implemented for support-only read-only reconciliation, with manual repair through the existing sync action.
+Status: implemented for support-only read-only reconciliation, manual repair through the existing sync action, and bounded internal dry-run/repair through `/api/internal/projections/reconcile`.
 
 Completed:
 
@@ -303,14 +306,14 @@ Completed:
   - stats drift
   - overview drift
 - The report is exposed only in support diagnostics on `/admin/members`.
-- The existing support-only **Sync dashboard stats** action remains the repair path and rebuilds both projection documents.
+- The existing support-only **Sync dashboard stats** action remains the admin-facing repair path and rebuilds both projection documents.
+- `/api/internal/projections/reconcile` provides the internal scheduled/manual maintenance path and can report or repair dashboard projection drift for one hub or a small bounded hub page.
 - Normal admin dashboard reads remain fast and do not run the reconciliation comparison.
 
 Remaining:
 
-- Add a scheduled reconciliation runner if operational monitoring shows manual support diagnostics is not enough.
-- Add a multi-hub reconciliation command/job before operating a large production fleet.
-- Add incremental counter maintenance on mutation paths after production parity is stable.
+- Configure low-frequency Vercel Cron dry-runs only after deciding the desired cadence and paging strategy.
+- Add queued/debounced or granular incremental projection maintenance only if production write volume shows exact rebuilds are too expensive.
 
 Acceptance criteria:
 

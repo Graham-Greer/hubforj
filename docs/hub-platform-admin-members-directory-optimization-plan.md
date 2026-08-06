@@ -313,7 +313,8 @@ Rollout order:
 
 Known tradeoffs for this slice:
 
-- Full CSV export still exports the currently loaded bounded result set. A dedicated all-results export route/background job remains Phase 5 work.
+- Full CSV export now uses the dedicated authorized `/admin/members/export` route and reads projected `memberDirectory` rows with the current server filters. It does not export only the currently displayed cursor page in read-model mode.
+- Export is capped at 10,000 projected rows. A background export worker remains future work only if production hubs exceed that synchronous export bound.
 - The optimized toolbar intentionally omits the relative `lastSeen` filter from the first read-model slice because it requires a separate stable query strategy; last-seen display data is still preserved in rows.
 - Search is normalized prefix search over stored prefixes, not fuzzy/full-text search.
 - If the flag is enabled before sync or indexes are ready, the route can show incomplete results or fail with a Firestore index error; keep the flag disabled until rollout checks pass.
