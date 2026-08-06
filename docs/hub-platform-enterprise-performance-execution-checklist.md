@@ -163,7 +163,9 @@ Verification notes:
   - support diagnostics now expose payment summary reportable/source counts and the summary rebuild timestamp
   - expected steady-state Network/server result: `/admin/payments?view=payments` performs a bounded `paymentItems` page query plus one small `paymentSummary` document read for stat cards
   - migration safety net: if `paymentSummary` is absent, the route can temporarily fall back to deriving the summary from `paymentItems`, but production rollout should run ledger sync so this fallback is not used
-  - global search/date filtering and CSV export remain separate Phase 5 follow-up work and must not fall back to broad reads as the permanent enterprise path
+  - date filters are URL-driven and applied server-side against the indexed `sortAt` payment item field
+  - search is URL-driven and global to a capped projection scan, avoiding the legacy broad payment report while preserving the fully indexed fast path when no search term is active
+  - CSV export now reads from projected `paymentItems` through a dedicated export helper, respects the same URL filters as the table, and refuses oversized synchronous exports instead of silently truncating data
   - production has been synced and verified with the read-model flag enabled; the legacy report builder now exists as rollback rather than the intended steady-state path
 - Member billing read-model:
   - `/account/billing` uses the projection-backed `listMemberPaymentItems` path when `HUB_PLATFORM_PAYMENT_ITEMS_READ_MODEL_ENABLED=true`

@@ -11,6 +11,9 @@ import { syncMemberDirectoryPaymentAttentionForUser } from "./member-directory.j
 import { getUserById } from "./user-queries.js";
 
 export const PAYMENT_ITEM_SCHEMA_VERSION = 1;
+const PAYMENT_ITEM_SEARCH_SCAN_LIMIT = 1000;
+const PAYMENT_ITEM_EXPORT_LIMIT = 10000;
+const PAYMENT_ITEM_EXPORT_CHUNK_SIZE = 200;
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -52,6 +55,126 @@ function decodePaymentItemCursor(cursor) {
   } catch {
     return null;
   }
+}
+
+function normalizeDateInput(value, boundary = "start") {
+  const normalizedValue = normalizeString(value);
+
+  if (!normalizedValue) {
+    return "";
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(normalizedValue)) {
+    return boundary === "end"
+      ? `${normalizedValue}T23:59:59.999Z`
+      : `${normalizedValue}T00:00:00.000Z`;
+  }
+
+  const date = new Date(normalizedValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return date.toISOString();
+}
+
+function normalizeSearchTerm(value) {
+  return normalizeString(value).toLowerCase().replace(/\s+/g, " ");
+}
+
+function paymentItemMatchesSearch(item, searchTerm) {
+  const normalizedSearchTerm = normalizeSearchTerm(searchTerm);
+
+  if (!normalizedSearchTerm) {
+    return true;
+  }
+
+  const haystack = [
+    item.displayName,
+    item.email,
+    item.title,
+    item.amountDisplay,
+    item.currency,
+    item.status,
+    item.paymentStatus,
+    item.type,
+    item.sourceId,
+    item.sourceParentId,
+    item.paymentRecordId,
+    item.stripeCheckoutSessionId,
+    item.stripePaymentIntentId,
+    item.nativeTransactionId,
+  ]
+    .map(normalizeSearchTerm)
+    .filter(Boolean)
+    .join(" ");
+
+  return haystack.includes(normalizedSearchTerm);
+}
+
+function applyPaymentItemFilters(query, options = {}) {
+  const status = normalizeString(options.status);
+  const paymentStatus = normalizeString(options.paymentStatus);
+  const attentionStatus = normalizeString(options.attentionStatus);
+  const type = normalizeString(options.type);
+  const typeValues = Array.isArray(options.typeValues)
+    ? options.typeValues.map(normalizeString).filter(Boolean).slice(0, 10)
+    : [];
+  const userId = normalizeString(options.userId);
+  const memberId = normalizeString(options.memberId);
+  const activeFilters = [
+    ["status", status],
+    ["paymentStatus", paymentStatus],
+    ["attentionStatus", attentionStatus],
+    ["type", type || typeValues.join("|")],
+    ["userId", userId],
+    ["memberId", memberId],
+  ].filter(([, value]) => value);
+
+  if (activeFilters.length > 1) {
+    throw new Error("Payment item queries currently support one indexed filter at a time.");
+  }
+
+  if (status) {
+    query = query.where("status", "==", status);
+  }
+
+  if (paymentStatus) {
+    query = query.where("paymentStatus", "==", paymentStatus);
+  }
+
+  if (attentionStatus) {
+    query = query.where("attentionStatus", "==", attentionStatus);
+  }
+
+  if (typeValues.length > 1) {
+    query = query.where("type", "in", typeValues);
+  } else if (type || typeValues.length === 1) {
+    const resolvedType = type || typeValues[0];
+    query = query.where("type", "==", resolvedType);
+  }
+
+  if (userId) {
+    query = query.where("userId", "==", userId);
+  }
+
+  if (memberId) {
+    query = query.where("memberId", "==", memberId);
+  }
+
+  const dateFrom = normalizeDateInput(options.dateFrom, "start");
+  const dateTo = normalizeDateInput(options.dateTo, "end");
+
+  if (dateFrom) {
+    query = query.where("sortAt", ">=", dateFrom);
+  }
+
+  if (dateTo) {
+    query = query.where("sortAt", "<=", dateTo);
+  }
+
+  return query.orderBy("sortAt", "desc").orderBy(FieldPath.documentId(), "desc");
 }
 
 export function buildPaymentItemDocumentIdFromPaymentRecord(paymentRecordId) {
@@ -308,85 +431,173 @@ export async function listPaymentItemPageByHubId(hubId, options = {}) {
   const normalizedHubId = normalizeString(hubId);
   const limit = Math.min(Math.max(parseInteger(options.limit) || 25, 1), 100);
   const cursor = decodePaymentItemCursor(options.cursor);
+  const searchTerm = normalizeSearchTerm(options.searchTerm);
+  const searchScanLimit = Math.min(
+    Math.max(parseInteger(options.searchScanLimit) || PAYMENT_ITEM_SEARCH_SCAN_LIMIT, limit + 1),
+    PAYMENT_ITEM_EXPORT_LIMIT
+  );
 
   if (!normalizedHubId) {
     return { items: [], nextCursor: "", hasMore: false };
   }
 
-  let query = getPaymentItemsCollection(normalizedHubId).where("hubId", "==", normalizedHubId);
-
-  const status = normalizeString(options.status);
-  const paymentStatus = normalizeString(options.paymentStatus);
-  const attentionStatus = normalizeString(options.attentionStatus);
-  const type = normalizeString(options.type);
-  const typeValues = Array.isArray(options.typeValues)
-    ? options.typeValues.map(normalizeString).filter(Boolean).slice(0, 10)
-    : [];
-  const userId = normalizeString(options.userId);
-  const memberId = normalizeString(options.memberId);
-  const activeFilters = [
-    ["status", status],
-    ["paymentStatus", paymentStatus],
-    ["attentionStatus", attentionStatus],
-    ["type", type || typeValues.join("|")],
-    ["userId", userId],
-    ["memberId", memberId],
-  ].filter(([, value]) => value);
-
-  if (activeFilters.length > 1) {
-    throw new Error("Payment item queries currently support one indexed filter at a time.");
-  }
-
-  if (status) {
-    query = query.where("status", "==", status);
-  }
-
-  if (paymentStatus) {
-    query = query.where("paymentStatus", "==", paymentStatus);
-  }
-
-  if (attentionStatus) {
-    query = query.where("attentionStatus", "==", attentionStatus);
-  }
-
-  if (typeValues.length > 1) {
-    query = query.where("type", "in", typeValues);
-  } else if (type || typeValues.length === 1) {
-    const resolvedType = type || typeValues[0];
-    query = query.where("type", "==", resolvedType);
-  }
-
-  if (userId) {
-    query = query.where("userId", "==", userId);
-  }
-
-  if (memberId) {
-    query = query.where("memberId", "==", memberId);
-  }
-
-  query = query.orderBy("sortAt", "desc").orderBy(FieldPath.documentId(), "desc");
+  let query = applyPaymentItemFilters(
+    getPaymentItemsCollection(normalizedHubId).where("hubId", "==", normalizedHubId),
+    options
+  );
 
   if (cursor) {
     query = query.startAfter(cursor.sortAt, cursor.id);
   }
 
-  query = query.limit(limit + 1);
+  if (!searchTerm) {
+    query = query.limit(limit + 1);
 
-  const snapshot = await query.get();
-  const docs = snapshot.docs.slice(0, limit);
-  const items = docs.map((doc) =>
-    normalizePaymentItemRecord({
-      id: doc.id,
-      hubId: normalizedHubId,
-      ...doc.data(),
-    })
-  );
+    const snapshot = await query.get();
+    const docs = snapshot.docs.slice(0, limit);
+    const items = docs.map((doc) =>
+      normalizePaymentItemRecord({
+        id: doc.id,
+        hubId: normalizedHubId,
+        ...doc.data(),
+      })
+    );
+    const lastItem = items[items.length - 1];
+
+    return {
+      items,
+      nextCursor: snapshot.docs.length > limit ? encodePaymentItemCursor(lastItem) : "",
+      hasMore: snapshot.docs.length > limit,
+    };
+  }
+
+  const chunkSize = Math.min(Math.max(limit * 4, 25), 100);
+  let scanned = 0;
+  let lastDoc = null;
+  const matchedItems = [];
+
+  while (scanned < searchScanLimit && matchedItems.length <= limit) {
+    let chunkQuery = query;
+
+    if (lastDoc) {
+      chunkQuery = chunkQuery.startAfter(
+        normalizeString(lastDoc.data()?.sortAt),
+        lastDoc.id
+      );
+    }
+
+    const snapshot = await chunkQuery.limit(Math.min(chunkSize, searchScanLimit - scanned)).get();
+
+    if (snapshot.empty) {
+      break;
+    }
+
+    for (const doc of snapshot.docs) {
+      const item = normalizePaymentItemRecord({
+        id: doc.id,
+        hubId: normalizedHubId,
+        ...doc.data(),
+      });
+
+      scanned += 1;
+      lastDoc = doc;
+
+      if (paymentItemMatchesSearch(item, searchTerm)) {
+        matchedItems.push(item);
+
+        if (matchedItems.length > limit) {
+          break;
+        }
+      }
+    }
+
+    if (snapshot.docs.length < chunkSize) {
+      break;
+    }
+  }
+
+  const items = matchedItems.slice(0, limit);
   const lastItem = items[items.length - 1];
 
   return {
     items,
-    nextCursor: snapshot.docs.length > limit ? encodePaymentItemCursor(lastItem) : "",
-    hasMore: snapshot.docs.length > limit,
+    nextCursor: matchedItems.length > limit && lastItem ? encodePaymentItemCursor(lastItem) : "",
+    hasMore: matchedItems.length > limit,
+    scanned,
+    searchScanLimit,
+  };
+}
+
+export async function listPaymentItemsForExportByHubId(hubId, options = {}) {
+  const normalizedHubId = normalizeString(hubId);
+  const maxItems = Math.min(Math.max(parseInteger(options.limit) || PAYMENT_ITEM_EXPORT_LIMIT, 1), PAYMENT_ITEM_EXPORT_LIMIT);
+  const matchLimit = maxItems + 1;
+  const searchTerm = normalizeSearchTerm(options.searchTerm);
+  const sourceScanLimit = searchTerm ? PAYMENT_ITEM_EXPORT_LIMIT : matchLimit;
+
+  if (!normalizedHubId) {
+    return { items: [], scanned: 0, truncated: false, limit: maxItems };
+  }
+
+  const query = applyPaymentItemFilters(
+    getPaymentItemsCollection(normalizedHubId).where("hubId", "==", normalizedHubId),
+    options
+  );
+  const items = [];
+  let scanned = 0;
+  let lastDoc = null;
+  let sourceExhausted = false;
+
+  while (items.length < matchLimit && scanned < sourceScanLimit) {
+    let chunkQuery = query;
+
+    if (lastDoc) {
+      chunkQuery = chunkQuery.startAfter(
+        normalizeString(lastDoc.data()?.sortAt),
+        lastDoc.id
+      );
+    }
+
+    const requestedLimit = Math.min(PAYMENT_ITEM_EXPORT_CHUNK_SIZE, sourceScanLimit - scanned);
+    const snapshot = await chunkQuery.limit(requestedLimit).get();
+
+    if (snapshot.empty) {
+      sourceExhausted = true;
+      break;
+    }
+
+    for (const doc of snapshot.docs) {
+      const item = normalizePaymentItemRecord({
+        id: doc.id,
+        hubId: normalizedHubId,
+        ...doc.data(),
+      });
+
+      scanned += 1;
+      lastDoc = doc;
+
+      if (!paymentItemMatchesSearch(item, searchTerm)) {
+        continue;
+      }
+
+      items.push(item);
+
+      if (items.length >= matchLimit) {
+        break;
+      }
+    }
+
+    if (snapshot.docs.length < requestedLimit) {
+      sourceExhausted = true;
+      break;
+    }
+  }
+
+  return {
+    items: items.slice(0, maxItems),
+    scanned,
+    truncated: items.length > maxItems || (!sourceExhausted && scanned >= sourceScanLimit),
+    limit: maxItems,
   };
 }
 
