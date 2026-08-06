@@ -5,7 +5,7 @@ try {
 }
 
 import { getFirebaseAdminAuth, getFirebaseAdminDb } from "@/lib/firebase/admin";
-import { getHubBySlug } from "@/lib/data/hubs";
+import { getHubCoreBySlug } from "@/lib/data/hubs";
 import { rebuildMemberDirectoryForUser } from "@/lib/data/member-directory";
 import { getUserByAuthUid } from "@/lib/data/users";
 import { createSignedSessionValue, sessionDurationSeconds } from "@/lib/auth/session";
@@ -33,7 +33,7 @@ export async function createHubUserSessionFromIdToken(hubSlug, idToken) {
   }
 
   const [hub, decodedToken] = await Promise.all([
-    getHubBySlug(normalizedHubSlug),
+    getHubCoreBySlug(normalizedHubSlug),
     getFirebaseAdminAuth().verifyIdToken(normalizedIdToken, true),
   ]);
   timer.log("hub-and-token-verified", {
@@ -57,16 +57,6 @@ export async function createHubUserSessionFromIdToken(hubSlug, idToken) {
   if (user.status !== "active") {
     throw new Error("This hub account is not currently active.");
   }
-
-  const now = new Date().toISOString();
-
-  await getFirebaseAdminDb().collection("users").doc(user.id).update({
-    lastSignedInAt: now,
-  });
-  timer.log("last-sign-in-updated", {
-    hubId: hub.id,
-    userId: user.id,
-  });
 
   const expiresAt = Math.floor(Date.now() / 1000) + sessionDurationSeconds;
   const sessionValue = createSignedSessionValue(
@@ -93,6 +83,27 @@ export async function createHubUserSessionFromIdToken(hubSlug, idToken) {
     expiresAt,
     sessionValue,
   };
+}
+
+export async function updateMemberLastSignedInBestEffort(hub, user) {
+  if (!hub?.id || !user?.id) {
+    return null;
+  }
+
+  try {
+    const now = new Date().toISOString();
+    await getFirebaseAdminDb().collection("users").doc(user.id).update({
+      lastSignedInAt: now,
+    });
+    return now;
+  } catch (error) {
+    console.warn("Unable to update member last sign-in timestamp after session creation.", {
+      hubId: normalizeString(hub.id),
+      userId: normalizeString(user.id),
+      error: String(error?.message || "Unable to update member last sign-in timestamp."),
+    });
+    return null;
+  }
 }
 
 export async function rebuildSignedInMemberDirectoryBestEffort(hub, user) {

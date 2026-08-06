@@ -219,6 +219,8 @@ Implementation progress:
 - Confirm members cannot access another member's bookings, registrations, billing records, or profile data.
 - Confirm admins can still view relevant member records through admin routes.
 - Confirm route handlers/server actions validate hub membership before returning account data.
+- Keep member sign-in session creation on a lightweight hub lookup and never hydrate operational hub counts before issuing the session cookie.
+- Keep non-critical member sign-in maintenance, such as `lastSignedInAt` and member-directory repair, outside the blocking session response path.
 
 Acceptance criteria:
 
@@ -235,6 +237,8 @@ Implementation progress:
   - event cancellations load the booking by parent event id and booking id, then require `booking.bookerUserId === actorId`
   - course cancellations load the registration by current actor id, then require the submitted registration id to match
 - Cross-user access remains blocked by deriving the user id from the authenticated session on member routes rather than trusting user ids from URL/search params.
+- Member session creation now uses `getHubCoreBySlug` in parallel with revoked Firebase token verification, so login preserves revoked-token validation while avoiding full hub operational count hydration.
+- `lastSignedInAt` and member-directory repair are scheduled after the session response as best-effort maintenance; failures are logged and do not prevent the member from reaching their account.
 
 ## Edge Cases
 

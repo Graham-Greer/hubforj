@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Button from "@/components/ui/button/Button";
 import FormMessage from "@/components/ui/form-message/FormMessage";
 import Input from "@/components/ui/input/Input";
+import { PUBLIC_AUTH_SESSION_EVENT } from "@/components/patterns/public-shell/publicAuthSessionEvent";
 import { getFirebaseClientAuth } from "@/lib/firebase/client";
 import styles from "./MemberSignInForm.module.css";
 
@@ -61,6 +62,11 @@ export default function MemberSignInForm({ hubSlug, nextPath, defaultEmail = "",
           return;
         }
 
+        window.dispatchEvent(new CustomEvent(PUBLIC_AUTH_SESSION_EVENT, {
+          detail: {
+            viewer: result?.viewer || null,
+          },
+        }));
         router.replace(String(result.redirectTo || (routeMode === "host" ? "/account" : `/${hubSlug}/account`)));
       } catch (authError) {
         setError(mapFirebaseAuthError(authError));
