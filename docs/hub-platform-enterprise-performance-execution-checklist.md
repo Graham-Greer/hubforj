@@ -194,6 +194,13 @@ Verification notes:
   - keep `HUB_PLATFORM_MEMBER_ACCOUNT_COLLECTION_GROUP_ENABLED=true` enabled as the safe fallback underneath the projection path
   - live member activity maintenance covers event bookings, course registrations, status/payment/attendance changes, waitlist promotion, member cancellation, and parent event/course edits
   - expected steady-state Network/server result: `/account` and `/account/bookings` read one bounded user-scoped `memberActivity` query instead of hydrating parent event/course records for each returned item
+- Member sign-in/account handoff:
+  - Firebase ID tokens continue using revoked-token verification during session creation for security-sensitive member/admin access
+  - hub lookup and token verification run in parallel where possible
+  - member-directory repair after sign-in is scheduled after the session response instead of blocking the login request
+  - successful member sign-in uses a single `router.replace` navigation and does not force a second `router.refresh`
+  - sign-in page join CTA disables prefetch so the auth route does not warm the join page before navigation
+  - expected Network/server result: one `/api/auth/member/session` response followed by one account RSC/navigation request
 - Payments reconciliation and repair:
   - support diagnostics include a safe repair action for payment reconciliation issues
   - safe repair upserts canonical `paymentRecords` into `paymentItems`, deletes orphan payment item projections, repairs missing native transaction back-links when an unambiguous payment record already exists, repairs paid records missing `paidAt` only from unambiguous source timestamps, hydrates projected member identity, and rebuilds `paymentSummary`

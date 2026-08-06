@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { resolveHubAuthRedirect } from "@/lib/auth/hub-auth-redirects";
-import { createHubUserSessionFromIdToken } from "@/lib/auth/member-auth";
+import { createHubUserSessionFromIdToken, rebuildSignedInMemberDirectoryBestEffort } from "@/lib/auth/member-auth";
 import { buildSessionCookieOptions, sessionCookieName } from "@/lib/auth/session";
 
 function normalizeString(value) {
@@ -29,6 +29,7 @@ export async function POST(request) {
     });
 
     response.cookies.set(sessionCookieName, session.sessionValue, buildSessionCookieOptions());
+    after(() => rebuildSignedInMemberDirectoryBestEffort(session.hub, session.user));
     return response;
   } catch (error) {
     return NextResponse.json(
