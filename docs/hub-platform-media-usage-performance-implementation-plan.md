@@ -273,6 +273,26 @@ Acceptance criteria:
 - Updating a public hero/image refreshes cached public content.
 - Updating unused media does not invalidate public pages unnecessarily.
 
+Implementation status:
+
+- Public media asset create/update/delete actions revalidate the admin media route and public media cache tags through `revalidatePublicMediaCache`.
+- Public site/settings actions that can change branding, homepage, page hero, or shell media references revalidate the public shell/home/events/courses/testimonials paths and public shell cache tags.
+- Event, course, testimonial, user avatar, event-series, and site-settings mutation paths maintain `mediaUsage` projection rows at the same time as source records change.
+- The support-only media usage reconciliation report provides a backstop for cache/projection drift after migrations, incidents, or legacy data changes.
+- Metadata-only asset reads remain lightweight and do not run usage verification during form rendering.
+
+Remaining verification:
+
+- Confirm public cache invalidation after changing:
+  - branding logo
+  - homepage hero media
+  - homepage info media
+  - events page hero media
+  - courses page hero media
+  - testimonials page hero media
+  - event/course/testimonial content image
+- Confirm media metadata changes that do not affect public references do not trigger unexpected broad route reads.
+
 ### Phase 5: Reconciliation And Cleanup
 
 - Add a usage reconciliation path that scans source content intentionally when requested.
@@ -284,6 +304,36 @@ Acceptance criteria:
 
 - Usage projection drift can be corrected.
 - Deleted content no longer appears as an active media reference after reconciliation.
+
+Implementation status:
+
+- Added `getHubMediaUsageReconciliationReport(hubId)` as a support-only read path for deliberate source/projection comparison.
+- The report scans active media assets, current source references, and existing `mediaUsage` projection rows intentionally during support diagnostics only.
+- The report flags:
+  - missing projection rows for active assets
+  - projection schema mismatches
+  - projected usage count mismatches
+  - projected reference mismatches
+  - orphan projection rows for missing/inactive assets
+  - source references that point to missing/inactive media assets
+- Added `rebuildHubMediaUsageProjections(hubId, actorId)` as the safe repair/backfill path.
+- The repair path writes one projection row per active asset, including explicit zero-usage rows, using bounded Firestore write batches.
+- The repair path deletes orphaned `mediaUsage` rows when the asset no longer exists or is inactive.
+- The repair path does not mutate source content when a page/event/course/testimonial/user references a missing asset; those remain visible as reconciliation issues for support/manual correction.
+- Added support-mode diagnostics and a **Sync media usage** action on `/admin/media`.
+- The diagnostics panel is hidden in embedded picker mode so content-editing media selection remains uncluttered.
+
+Rollout verification:
+
+1. Enter support mode for a production hub.
+2. Open `/admin/media`.
+3. Confirm the media usage diagnostics panel displays active asset, projection row, source reference, and open issue counts.
+4. Run **Sync media usage**.
+5. Confirm the page returns with `Media usage projections synced.`
+6. Confirm the diagnostics report no longer flags missing/stale/orphaned projection rows, except source references to genuinely missing/inactive assets.
+7. Select an asset with known usage and confirm the usage panel resolves from projection.
+8. Select an unused asset twice and confirm the second lookup is served from the explicit zero-usage projection.
+9. Confirm deleting an unused asset removes its `mediaUsage/{assetId}` row.
 
 ## Edge Cases
 
@@ -329,3 +379,4 @@ Acceptance criteria:
 - Selected-asset usage now prefers the `mediaUsage` projection. It falls back to targeted source queries only when the projection is missing, then repairs the projection after a complete verification.
 - Embedded admin media pickers now lazy-load bounded media pages instead of calling `listMediaAssetsByHubId`.
 - Existing hubs still need either natural admin edits, selected-asset fallback repair, or a future reconciliation/backfill run before every asset has a projection document.
+- Support-only media usage sync now provides the future reconciliation/backfill path for existing hubs; source references to missing assets remain manual correction items because the repair path must not guess which replacement media should be used.

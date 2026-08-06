@@ -213,6 +213,11 @@ Verification notes:
   - hub operational count hydration remains available through `requireHubBySlug` for admin/platform surfaces that need it
   - user identity lookups are request-cached so layout/page authorization checks share the same member record load
   - current membership reads use a bounded user-scoped query and request-cached plan hydration
+- Media usage projections:
+  - selected-asset usage reads prefer `hubs/{hubId}/mediaUsage/{assetId}` and fall back to targeted verification only when the projection is missing
+  - support-mode `/admin/media` diagnostics compare active assets, source references, and projection rows without blocking normal media route usage
+  - support-mode **Sync media usage** writes projection rows for every active asset, including explicit zero-usage rows, and removes orphaned projection rows
+  - source references to missing/inactive assets are reported for support/manual correction rather than automatically mutating source content
 - Payments reconciliation and repair:
   - support diagnostics include a safe repair action for payment reconciliation issues
   - safe repair upserts canonical `paymentRecords` into `paymentItems`, deletes orphan payment item projections, repairs missing native transaction back-links when an unambiguous payment record already exists, repairs paid records missing `paidAt` only from unambiguous source timestamps, hydrates projected member identity, and rebuilds `paymentSummary`
