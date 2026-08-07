@@ -361,7 +361,7 @@ Acceptance:
 
 ### Phase 0: Measurement And Safety Audit
 
-Status: not started.
+Status: implemented pending production verification.
 
 Goals:
 
@@ -445,6 +445,10 @@ Implementation notes:
 - avoid `localStorage` in first pass; module memory is enough and avoids stale cross-session issues.
 - cached state must include `capabilities`, because route journey matching depends on them.
 - in-flight fetch deduplication must be scoped by requested scope so a checklist request does not race against and get overwritten by an older route request.
+- route-scope hydration is scheduled after first render/idle with `requestIdleCallback` where available and a short timeout fallback.
+- checklist-scope hydration remains immediate on `/admin` so the checklist can render accurate completion state.
+- the provider keeps a derived backwards-compatible `loading` value while exposing separate `routeLoading` and `checklistLoading` values for future UI refinements.
+- the help launcher remains hidden until state exists in this phase. This is an intentional perceived-speed tradeoff to avoid showing onboarding controls before permissions/capabilities are known.
 
 Acceptance:
 
@@ -455,6 +459,8 @@ Acceptance:
 - route auto-tour still opens when eligible
 - query-only changes for filters/search do not trigger route-scope onboarding refetches
 - `/admin?setupChecklist=1` upgrades to checklist scope even if route scope is already cached
+- delayed route-scope hydration must not overwrite newer checklist-scope state
+- cache writes after `PATCH` must keep local journey/checklist state consistent after dismiss/restart/complete actions
 
 ### Phase 2: Checklist Scope Isolation
 
@@ -927,3 +933,42 @@ Initial production observation:
 - The overall onboarding route timing was roughly 990-1061ms.
 - This indicates that about half the current endpoint time is inside `getAdminOnboardingState`, and about half is outside it, most likely access/auth/session resolution.
 - Added more granular API access duration timing and `parallel-reads-loaded` state timing so the next log capture can separate access/auth cost from Firestore/payment/checklist reads.
+- A later `/admin` hard refresh showed `admin-onboarding-state` at roughly 512ms and `admin-onboarding-route` at roughly 1522ms.
+- Navigating from `/admin` to `/admin/events` and back to `/admin` after that hard refresh produced no onboarding logs. This confirms the mounted provider/checklist scope is reused during in-admin client navigation.
+- Network screenshots for the same journey showed RSC route fetches for `/admin/events` and back to `/admin`, but not repeated onboarding API fetches. Therefore the current onboarding performance issue is primarily hard-refresh/direct-entry cost, not ordinary in-session route-to-route navigation after the provider is loaded.
+
+### 2026-08-07 - Phase 1 Provider Scheduling And Client Cache Implemented
+
+Status: implemented, production verification pending.
+
+Completed:
+
+- Added a module-level onboarding state cache in `AdminOnboardingProvider.jsx`.
+- Added in-flight request deduplication keyed by hub slug, actor user id, and requested onboarding scope.
+- Split the provider's single loading state into:
+  - `routeLoading`
+  - `checklistLoading`
+  - derived backwards-compatible `loading`
+- Added synchronous cache hydration on provider mount when a matching scope is already available.
+- Kept `checklist` scope as satisfying `route` scope, so returning from `/admin` to ordinary admin routes can reuse the richer state.
+- Deferred missing route-scope onboarding loads until after initial render/idle.
+- Kept checklist-scope loading immediate on `/admin` and `/admin?setupChecklist=1`.
+- Updated cache after onboarding `PATCH` persistence so journey/checklist actions remain consistent without requiring a refetch.
+- Preserved checklist reveal behavior, route journey auto-open behavior, and route matching capability requirements.
+- Kept the help launcher hidden until onboarding state exists in this phase.
+
+Verification required:
+
+- Hard refresh `/admin/events`, `/admin/courses`, `/admin/payments`, and `/admin/members`; route content should not wait on route-scope onboarding hydration.
+- Confirm non-`/admin` route onboarding requests, if visible, use `?scope=route` and occur after the main route begins rendering.
+- Confirm non-`/admin` route logs show `checklist-record-counts-skipped`.
+- Hard refresh `/admin`; checklist hydration should remain immediate and should return `checklistHydrated: true`.
+- From any non-`/admin` route, select "View setup checklist"; it should route to `/admin?setupChecklist=1`, hydrate checklist scope, and reveal the checklist.
+- Navigate across ordinary admin routes after the provider has loaded; onboarding should not repeatedly refetch for every route.
+- Apply query/search/filter changes on list routes; query-only changes should not trigger repeated onboarding route-scope fetches.
+- Complete, dismiss, restart, and advance an onboarding journey; state should update immediately and remain correct on subsequent navigation.
+
+Next step:
+
+- Review production network traces and timing logs after Phase 1.
+- If hard-refresh/direct-entry onboarding still costs too much, move to Phase 2 checklist scope isolation verification and then Phase 3 onboarding summary projection.
