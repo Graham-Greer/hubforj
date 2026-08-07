@@ -19,6 +19,7 @@ function searchParamsToRequestInput(request) {
     includeMembers: searchParams.get("includeMembers"),
     includeDashboard: searchParams.get("includeDashboard"),
     includeMedia: searchParams.get("includeMedia"),
+    includeEventAttendance: searchParams.get("includeEventAttendance"),
   };
 }
 

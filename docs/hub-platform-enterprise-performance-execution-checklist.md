@@ -240,11 +240,12 @@ Verification notes:
   - internal route `/api/internal/projections/reconcile` is protected by `INTERNAL_AUTOMATION_SECRET`
   - route supports `GET` and `POST` so it can be triggered manually or by scheduler/cron
   - default mode is `dryRun=true`, `limit=1`, and all projection families enabled
-  - supported inputs are `hubSlug`, `cursor`, `limit`, `dryRun`, `includePayments`, `includeMembers`, `includeDashboard`, and `includeMedia`
+  - supported inputs are `hubSlug`, `cursor`, `limit`, `dryRun`, `includePayments`, `includeMembers`, `includeDashboard`, `includeMedia`, and `includeEventAttendance`
   - `limit` is capped at 10 hubs per invocation and should remain low for scheduled runs
-  - dry-run mode reports payment, member-directory, dashboard, and media-usage reconciliation summaries without writing
+  - dry-run mode reports payment, member-directory, dashboard, media-usage, and event-attendance reconciliation summaries without writing
   - repair mode reuses the existing payment ledger sync chain for payment items, payment summary, member directory, member activity, dashboard stats, and dashboard overview
   - repair mode rebuilds media usage projections through the existing media usage reconciliation helper
+  - repair mode rebuilds event attendance projections from attendee source rows through the event attendance reconciliation helper
   - normal route rendering must never call this maintenance path
   - recommended first production run is dry-run for one known hub, then repair for that same hub, then dry-run again
   - scheduled operation should remain bounded and page through hubs with `nextCursor` if multi-hub maintenance is required
@@ -261,6 +262,8 @@ Production verification examples:
   `GET /api/internal/projections/reconcile?limit=1&cursor=<nextCursor>&dryRun=true`
 - Media-only repair for a known hub:
   `POST /api/internal/projections/reconcile` with body `{ "hubSlug": "maplegrovecommunityhub", "dryRun": false, "includePayments": false, "includeMembers": false, "includeDashboard": false, "includeMedia": true }`
+- Event-attendance-only repair for a known hub:
+  `POST /api/internal/projections/reconcile` with body `{ "hubSlug": "maplegrovecommunityhub", "dryRun": false, "includePayments": false, "includeMembers": false, "includeDashboard": false, "includeMedia": false, "includeEventAttendance": true }`
 - Expected response fields:
   - `ok`
   - `processed`

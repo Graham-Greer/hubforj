@@ -25,7 +25,8 @@ export function AdminProgrammeListFallback({ rows = 3, filters = 3 }) {
   return (
     <section className={styles.stack} aria-busy="true" aria-label="Loading programme records">
       <div className={styles.toolbar}>
-        <SkeletonBlock variant="input" width="min(22rem, 100%)" />
+        <SkeletonBlock variant="pill" width="9rem" />
+        <SkeletonBlock className={styles.toolbarSearch} variant="input" width="100%" />
         <div className={styles.filterRow}>
           {Array.from({ length: filterCount }).map((_, index) => (
             <SkeletonBlock key={index} variant="pill" width={index === 0 ? "4rem" : "4.5rem"} />

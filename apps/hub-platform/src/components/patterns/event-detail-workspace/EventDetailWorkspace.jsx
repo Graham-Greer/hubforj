@@ -20,14 +20,23 @@ import {
 import styles from "./EventDetailWorkspace.module.css";
 
 function hasEventHappened(event) {
-  const endValue = String(event?.endAt || event?.startAt || "").trim();
+  const endValue = String(event?.endAt || event?.startAt || event?.endDate || event?.startDate || "").trim();
 
   if (!endValue) {
     return false;
   }
 
   const date = new Date(endValue);
-  return !Number.isNaN(date.getTime()) && date.getTime() < Date.now();
+
+  if (Number.isNaN(date.getTime())) {
+    return false;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  date.setHours(0, 0, 0, 0);
+
+  return date.getTime() < today.getTime();
 }
 
 export default function EventDetailWorkspace({
@@ -54,7 +63,7 @@ export default function EventDetailWorkspace({
     mode: "edit",
   }).toString()}#edit-event-details`, routeMode);
   const shouldShowVerifiedAttendance = attendanceCountVerified && hasEventHappened(event);
-  const attendanceLabel = shouldShowVerifiedAttendance ? "Attended" : "Attending";
+  const attendanceLabel = shouldShowVerifiedAttendance ? "Attended" : "Registered";
   const badges = (
     <>
       <Badge tone={getEventStatusTone(event.status)}>{getEventStatusLabel(event.status)}</Badge>

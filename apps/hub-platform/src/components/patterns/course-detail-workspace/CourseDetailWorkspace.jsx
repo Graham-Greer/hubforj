@@ -23,14 +23,23 @@ import {
 import styles from "./CourseDetailWorkspace.module.css";
 
 function hasCourseHappened(course) {
-  const endValue = String(course?.endAt || course?.startAt || "").trim();
+  const endValue = String(course?.endAt || course?.startAt || course?.endDate || course?.startDate || "").trim();
 
   if (!endValue) {
     return false;
   }
 
   const date = new Date(endValue);
-  return !Number.isNaN(date.getTime()) && date.getTime() < Date.now();
+
+  if (Number.isNaN(date.getTime())) {
+    return false;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  date.setHours(0, 0, 0, 0);
+
+  return date.getTime() < today.getTime();
 }
 
 export default function CourseDetailWorkspace({
@@ -54,7 +63,7 @@ export default function CourseDetailWorkspace({
     mode: "edit",
   }).toString()}#edit-course-details`, routeMode);
   const shouldShowVerifiedAttendance = hasCourseHappened(course);
-  const attendanceLabel = shouldShowVerifiedAttendance ? "Attended" : "Attending";
+  const attendanceLabel = shouldShowVerifiedAttendance ? "Completed" : "Enrolled";
   const badges = (
     <>
       <Badge tone={getCourseStatusTone(course.status)}>{getCourseStatusLabel(course.status)}</Badge>

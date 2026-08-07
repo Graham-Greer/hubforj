@@ -14,10 +14,10 @@ export default async function EventSeriesDetailPage({ params, searchParams }) {
   const routeMode = resolveHubRuntimeRouteMode(getRequestHostFromHeaders(headerStore));
   const eventsSearchParams = new URLSearchParams();
 
-  ["q", "status", "pricing", "visibility"].forEach((key) => {
+  ["q", "status", "pricing", "visibility", "view"].forEach((key) => {
     const value = query?.[key];
 
-    if (typeof value === "string" && value) {
+    if (typeof value === "string" && value && (key !== "view" || value === "history")) {
       eventsSearchParams.set(key, value);
     }
   });

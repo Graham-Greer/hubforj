@@ -8,6 +8,7 @@ import {
 } from "@/components/patterns/admin-route-fallbacks/AdminRouteFallbacks";
 import OfferingAdminListWorkspace from "@/components/patterns/offering-admin-list-workspace/OfferingAdminListWorkspace";
 import { deleteEventAction } from "./[eventId]/actions";
+import { isEventAttendanceSummaryProjectionCurrent } from "@/lib/data/event-bookings";
 import { listEventsByHubSlug } from "@/lib/data/events";
 import { listEventSeriesByHubSlug } from "@/lib/data/event-series";
 import { requireHubCoreBySlug } from "@/lib/data/hubs";
@@ -70,21 +71,39 @@ async function EventsWorkspace({ hub, routeMode }) {
       const summary = getPublicEventSummary(event);
       const scheduleLabel = formatEventDateRange(event, hub.locale);
       const registrationCount = Number(event.registeredAttendeeCount || 0);
+      const attendedCount = Number(event.attendancePresentCount || 0);
+      const pendingAttendanceCount = Number(event.attendancePendingCount || 0);
+      const absentCount = Number(event.attendanceAbsentCount || 0);
+      const attendanceProjectionCurrent = isEventAttendanceSummaryProjectionCurrent(event);
+      const statusBadge = { label: getEventStatusLabel(event.status), tone: getEventStatusTone(event.status) };
 
       return {
         id: event.id,
+        status: event.status,
         title: event.title,
         scheduleLabel,
+        temporalStartValue: event.startAt || event.startDate || "",
+        temporalEndValue: event.endAt || event.startAt || event.endDate || event.startDate || "",
         dateSortValue: event.startAt || event.startDate || "",
         dateFilterValue: event.startAt || event.startDate || "",
         meta: [],
         summary,
         imageUrl: event.imageAsset?.publicUrl || "",
         imageAlt: event.imageAlt || event.imageAsset?.alt || event.title,
-        badges: [
-          { label: getEventStatusLabel(event.status), tone: getEventStatusTone(event.status) },
-          { label: `${registrationCount} Attending`, tone: "accent" },
-        ],
+        badges: [statusBadge, { label: `${registrationCount} Registered`, tone: "accent" }],
+        currentBadges: [statusBadge, { label: `${registrationCount} Registered`, tone: "accent" }],
+        historyBadges: [
+          statusBadge,
+          attendanceProjectionCurrent
+            ? { label: `${attendedCount} Attended`, tone: "accent" }
+            : { label: "Attendance not synced", tone: "neutral" },
+          attendanceProjectionCurrent && pendingAttendanceCount > 0
+            ? { label: `${pendingAttendanceCount} Unmarked`, tone: "warning" }
+            : null,
+          attendanceProjectionCurrent && absentCount > 0
+            ? { label: `${absentCount} Absent`, tone: "neutral" }
+            : null,
+        ].filter(Boolean),
         searchTerms: [event.category, event.location, summary],
         filterValues: {
           status: event.status,
@@ -118,8 +137,11 @@ async function EventsWorkspace({ hub, routeMode }) {
 
     return {
       id: series.id,
+      status: series.status,
       title: series.title,
       scheduleLabel,
+      temporalStartValue: series.recurrenceStartDate || "",
+      temporalEndValue: series.recurrenceUntilDate || series.recurrenceStartDate || "",
       dateSortValue: series.recurrenceStartDate || "",
       dateFilterValue: series.recurrenceStartDate || "",
       meta: [],
@@ -163,6 +185,9 @@ async function EventsWorkspace({ hub, routeMode }) {
         deleteAction={deleteEventAction}
         deleteConfirmLabel="Delete event"
         filterDefinitions={filterDefinitions}
+        enableTemporalView
+        itemNounSingular="event"
+        itemNounPlural="events"
         emptyState={{
           eyebrow: "No events yet",
           title: "Create the first event",

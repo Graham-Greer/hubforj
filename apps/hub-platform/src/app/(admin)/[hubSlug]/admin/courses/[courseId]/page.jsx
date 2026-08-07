@@ -16,10 +16,10 @@ import { notFound } from "next/navigation";
 async function CourseDetailContent({ hubSlug, courseId, query }) {
   const coursesSearchParams = new URLSearchParams();
 
-  ["q", "status", "pricing", "format"].forEach((key) => {
+  ["q", "status", "pricing", "format", "view"].forEach((key) => {
     const value = query?.[key];
 
-    if (typeof value === "string" && value) {
+    if (typeof value === "string" && value && (key !== "view" || value === "history")) {
       coursesSearchParams.set(key, value);
     }
   });
@@ -40,7 +40,7 @@ async function CourseDetailContent({ hubSlug, courseId, query }) {
     repairProjection: entitlements.capabilities?.coursesEnabled === true,
     actorId: "course-detail-summary-repair",
   });
-  const attendanceCount = Number(registrationSummary.attendanceActiveCount || 0);
+  const attendanceCount = Number(registrationSummary.attendanceCompletedCount || 0);
   const registrationCount = Number(registrationSummary.enrolledRegistrationCount || 0);
   const hasAttendanceRegistrations = Number(registrationSummary.registrationCount || 0) > 0;
   const editForm = isEditing
