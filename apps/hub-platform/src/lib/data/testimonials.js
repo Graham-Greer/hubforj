@@ -10,6 +10,7 @@ import { createPublicContentCache, getPublicContentCacheTags } from "@/lib/cache
 import { requireHubBySlug } from "@/lib/data/hubs";
 import { getMediaAssetMetadataById, getMediaAssetsByIds, getPublicMediaAssetsByIds } from "@/lib/data/media";
 import { normalizeCreateTestimonialPayload } from "@/lib/domain/testimonials";
+import { maintainHubAdminOnboardingSummaryForSourceChange } from "./admin-onboarding-summary.js";
 import { createMediaUsageReference, removeMediaUsageReference, syncMediaUsageReferenceForAssetChange } from "./media-usage-projection.js";
 
 function normalizeString(value) {
@@ -37,6 +38,10 @@ function normalizeTestimonialRecord(testimonial) {
     createdAt: normalizeString(testimonial.createdAt),
     updatedAt: normalizeString(testimonial.updatedAt),
   };
+}
+
+async function maintainAdminOnboardingSummaryForTestimonialChange(hubId, actorId, reason = "testimonial-change") {
+  return maintainHubAdminOnboardingSummaryForSourceChange(hubId, actorId, { reason });
 }
 
 async function attachTestimonialMedia(hubId, testimonials) {
@@ -185,6 +190,7 @@ export async function createTestimonialByHubSlug(hubSlug, payload, actorId = "sy
     }),
     updatedAt: now,
   });
+  await maintainAdminOnboardingSummaryForTestimonialChange(hub.id, actorId, "testimonial-create");
   return normalizeTestimonialRecord({ id: ref.id, ...writeModel });
 }
 
@@ -250,4 +256,5 @@ export async function deleteTestimonial(hubId, testimonialId) {
       href: "",
     }),
   });
+  await maintainAdminOnboardingSummaryForTestimonialChange(normalizedHubId, "testimonial-delete", "testimonial-delete");
 }

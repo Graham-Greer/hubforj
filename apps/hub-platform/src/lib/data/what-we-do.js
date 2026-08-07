@@ -9,6 +9,7 @@ import { getFirebaseAdminDb } from "@/lib/firebase/admin";
 import { createPublicContentCache, getPublicContentCacheTags } from "@/lib/cache/public-content";
 import { requireHubBySlug } from "@/lib/data/hubs";
 import { normalizeCreateWhatWeDoPayload } from "@/lib/domain/what-we-do";
+import { maintainHubAdminOnboardingSummaryForSourceChange } from "./admin-onboarding-summary.js";
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -39,6 +40,10 @@ function sortWhatWeDoItems(rows) {
 
     return String(right.updatedAt || "").localeCompare(String(left.updatedAt || ""));
   });
+}
+
+async function maintainAdminOnboardingSummaryForWhatWeDoChange(hubId, actorId, reason = "what-we-do-change") {
+  return maintainHubAdminOnboardingSummaryForSourceChange(hubId, actorId, { reason });
 }
 
 export async function listWhatWeDoItemsByHubSlug(hubSlug) {
@@ -122,6 +127,7 @@ export async function createWhatWeDoItemByHubSlug(hubSlug, payload, actorId = "s
   };
 
   await ref.set(writeModel);
+  await maintainAdminOnboardingSummaryForWhatWeDoChange(hub.id, actorId, "what-we-do-create");
   return normalizeWhatWeDoRecord({ id: ref.id, ...writeModel });
 }
 
@@ -163,4 +169,5 @@ export async function deleteWhatWeDoItem(hubId, itemId) {
   }
 
   await ref.delete();
+  await maintainAdminOnboardingSummaryForWhatWeDoChange(normalizedHubId, "what-we-do-delete", "what-we-do-delete");
 }

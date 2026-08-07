@@ -405,7 +405,7 @@ Acceptance:
 
 ### Phase 1: Provider Scheduling And Client Cache
 
-Status: not started.
+Status: implemented and production verified.
 
 Goals:
 
@@ -464,7 +464,7 @@ Acceptance:
 
 ### Phase 2: Checklist Scope Isolation
 
-Status: not started.
+Status: verified after Phase 1; no additional code changes required in this pass.
 
 Goals:
 
@@ -497,9 +497,20 @@ Acceptance:
 - visible checklist has accurate completion state
 - checklist skeleton appears only for explicit checklist hydration, not every `/admin` hard reload if checklist is dismissed
 
+Verification notes:
+
+- `shouldHydrateChecklistForPath` returns true only when the current path equals the admin base path.
+- The onboarding API treats `scope=route` as `includeChecklist=false`.
+- Route-scope onboarding logs `checklist-record-counts-skipped`.
+- The provider sends `?scope=route` for non-`/admin` routes.
+- The provider routes "View setup checklist" to `/admin?setupChecklist=1`.
+- `AdminOnboardingChecklist` uses its checklist skeleton only when `checklistHydrating` is true.
+- `checklistHydrating` is now tied to checklist scope and explicit `setupChecklist=1`, not ordinary route-scope loading.
+- The base `/admin` page can hydrate checklist scope because the checklist is part of that page's intentional experience.
+
 ### Phase 3: Onboarding Summary Projection
 
-Status: not started.
+Status: implemented pending production backfill and verification.
 
 Goals:
 
@@ -552,6 +563,40 @@ Acceptance:
 - support/internal reconciliation can repair summary drift
 - source mutations keep projection fresh enough for normal admin expectations
 - ordinary route scope does not read the onboarding summary projection unless it is needed for route matching or help UI
+
+Implementation notes:
+
+- Added `apps/hub-platform/src/lib/data/admin-onboarding-summary.js`.
+- The projection document is stored at `hubs/{hubId}/system/adminOnboardingSummary`.
+- The projection records the checklist source facts currently required by the checklist:
+  - `whatWeDo`
+  - `testimonials`
+  - `events`
+  - `courses`
+  - `media`
+- `getAdminOnboardingState` now reads the summary projection during checklist scope and falls back to rebuilding it only when the projection is missing or stale.
+- The internal projection maintenance endpoint now supports `includeAdminOnboarding` for GET query params and POST JSON.
+- Dry-run reconciliation reports `reports.adminOnboarding`.
+- Repair/backfill writes `repairs.adminOnboarding`.
+- Source mutation maintenance is wired for:
+  - What we do create/delete
+  - Testimonials create/delete
+  - Events create/delete
+  - Event series create/update because series synchronization can create occurrence event records
+  - Courses create/delete
+  - Media asset upload/delete
+- Ordinary edits that do not change whether a collection has records do not rebuild the projection.
+- Payment setup and regional setup remain calculated from the hub/payment configuration during this phase because the observed checklist projection win is source collection existence reads; moving payment setup into the projection would require a broader consistency contract.
+
+Production rollout:
+
+- Deploy the code.
+- Run a dry-run for one hub:
+  - `GET /api/internal/projections/reconcile?hubSlug={hubSlug}&dryRun=true&includePayments=false&includeMembers=false&includeDashboard=false&includeMedia=false&includeEventAttendance=false&includeAdminOnboarding=true`
+- If `adminOnboarding.totalIssues` is non-zero, run repair with the same include flags and `dryRun=false`.
+- Hard refresh `/admin?setupChecklist=1`.
+- Confirm checklist scope logs show `summary-read-hit` after repair/backfill.
+- Confirm source reads only appear when the summary is missing/stale or during explicit reconciliation.
 
 ### Phase 4: Payload Shaping
 
@@ -910,7 +955,9 @@ Key events to review:
 - `payment-configuration-read`
 - `payment-configuration-skipped`
 - `checklist-record-counts-skipped`
-- `checklist-record-source-read`
+- `summary-read-hit`
+- `summary-read-miss`
+- `summary-source-read`
 - `checklist-record-counts-loaded`
 - `state-loaded`
 - `complete`
@@ -972,3 +1019,43 @@ Next step:
 
 - Review production network traces and timing logs after Phase 1.
 - If hard-refresh/direct-entry onboarding still costs too much, move to Phase 2 checklist scope isolation verification and then Phase 3 onboarding summary projection.
+
+Production verification:
+
+- User confirmed route-scope onboarding requests use `?scope=route`.
+- User confirmed the other Phase 1 verification steps passed.
+- Payments route hard-refresh screenshot showed the document response around 541ms.
+- Payments route hard-refresh screenshot showed the deferred `onboarding?scope=route` request around 1.21s.
+- The route-scope onboarding request is no longer a blocker for the payments route initial content.
+- Clicking "View setup checklist" from payments navigated to `/admin?setupChecklist=1` as intended.
+- Checklist reveal screenshot showed the checklist onboarding request around 1.22s and the `/admin?setupChecklist=1` RSC request around 1.12s.
+- This confirms the remaining onboarding cost is now concentrated on deliberate checklist reveal/base-admin checklist hydration rather than every ordinary admin route.
+
+Phase 1 outcome:
+
+- Passed.
+- The next performance opportunity is no longer provider scheduling; it is reducing checklist-scope server work through the Phase 3 onboarding summary projection.
+
+### 2026-08-07 - Phase 2 Verified And Phase 3 Summary Projection Implemented
+
+Status: implemented, production backfill and verification pending.
+
+Completed:
+
+- Verified Phase 2 checklist scope isolation against code and production behavior.
+- Added the `adminOnboardingSummary` projection document under `hubs/{hubId}/system/adminOnboardingSummary`.
+- Replaced checklist source existence reads during normal checklist hydration with the summary projection.
+- Preserved safe fallback repair when the summary projection is missing or stale.
+- Added reconciliation/reporting support through the internal projection maintenance endpoint with `includeAdminOnboarding`.
+- Wired create/delete source maintenance for What we do, Testimonials, Events, Courses, and Media assets.
+- Wired event series create/update maintenance because occurrence synchronization can create event records.
+- Updated production log guidance to look for `summary-read-hit`, `summary-read-miss`, and `summary-source-read`.
+
+Verification required:
+
+- Deploy the code.
+- Run dry-run reconciliation for a hub with `includeAdminOnboarding=true` and other include flags disabled.
+- Run repair with `dryRun=false` if `reports.adminOnboarding.totalIssues` is greater than zero.
+- Hard refresh `/admin?setupChecklist=1` and confirm checklist logs show `summary-read-hit`.
+- Confirm ordinary admin routes continue to use `?scope=route` and do not fetch checklist payloads.
+- Create and delete one record in a low-risk hub for each source type when practical, then rerun dry-run reconciliation to confirm the summary remains aligned.

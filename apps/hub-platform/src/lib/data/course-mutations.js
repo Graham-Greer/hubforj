@@ -16,6 +16,7 @@ import {
   resolveCoursePaymentConfiguration,
 } from "@/lib/domain/courses";
 import { normalizeCourseRecord, normalizeString } from "./course-shared.js";
+import { maintainHubAdminOnboardingSummaryForSourceChange } from "./admin-onboarding-summary.js";
 import { createMediaUsageReference, removeMediaUsageReference, syncMediaUsageReferenceForAssetChange } from "./media-usage-projection.js";
 import { rebuildCourseMemberActivity } from "./member-activity.js";
 
@@ -32,6 +33,10 @@ async function maintainDashboardProjectionsForCourseChange(hubId, actorId, reaso
     });
     return null;
   }
+}
+
+async function maintainAdminOnboardingSummaryForCourseChange(hubId, actorId, reason = "course-change") {
+  return maintainHubAdminOnboardingSummaryForSourceChange(hubId, actorId, { reason });
 }
 
 async function refreshMemberActivityForCourseChange(hubId, courseId, actorId, reason = "course-change") {
@@ -161,6 +166,7 @@ export async function createCourseByHubSlug(hubSlug, payload, actorId = "system"
     }),
     updatedAt: now,
   });
+  await maintainAdminOnboardingSummaryForCourseChange(hub.id, actorId, "course-create");
   await maintainDashboardProjectionsForCourseChange(hub.id, actorId, "course-create");
 
   return normalizeCourseRecord({ id: ref.id, ...writeModel });
@@ -295,5 +301,6 @@ export async function deleteCourseById(hubId, courseId) {
       href: "",
     }),
   });
+  await maintainAdminOnboardingSummaryForCourseChange(normalizedHubId, "course-delete", "course-delete");
   await maintainDashboardProjectionsForCourseChange(normalizedHubId, "course-delete", "course-delete");
 }

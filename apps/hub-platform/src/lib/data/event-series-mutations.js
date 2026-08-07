@@ -13,6 +13,7 @@ import { getFallbackRegionalMarket } from "@/lib/domain/regional-markets";
 import { normalizeEventSeriesRecord } from "./event-series-shared.js";
 import { listEventSeriesOccurrences } from "./event-series-queries.js";
 import { syncEventSeriesOccurrences } from "@/lib/server/event-series-generation.js";
+import { maintainHubAdminOnboardingSummaryForSourceChange } from "./admin-onboarding-summary.js";
 import { createMediaUsageReference, syncMediaUsageReferenceForAssetChange } from "./media-usage-projection.js";
 
 function normalizeString(value) {
@@ -32,6 +33,10 @@ async function maintainDashboardProjectionsForEventSeriesChange(hubId, actorId, 
     });
     return null;
   }
+}
+
+async function maintainAdminOnboardingSummaryForEventSeriesChange(hubId, actorId, reason = "event-series-change") {
+  return maintainHubAdminOnboardingSummaryForSourceChange(hubId, actorId, { reason });
 }
 
 async function assertUniqueEventSeriesSlugBase(hubId, slugBase, excludeSeriesId = "") {
@@ -147,6 +152,7 @@ export async function createEventSeriesByHubSlug(hubSlug, payload, actorId = "sy
   });
   const sync = await syncEventSeriesOccurrences(record, actorId, { now });
   const occurrences = await listEventSeriesOccurrences(hub.id, ref.id);
+  await maintainAdminOnboardingSummaryForEventSeriesChange(hub.id, actorId, "event-series-create");
   await maintainDashboardProjectionsForEventSeriesChange(hub.id, actorId, "event-series-create");
 
   return {
@@ -212,6 +218,7 @@ export async function updateEventSeriesById(hubId, seriesId, payload, actorId = 
   });
   const sync = await syncEventSeriesOccurrences(record, actorId, { now });
   const occurrences = await listEventSeriesOccurrences(normalizedHubId, normalizedSeriesId);
+  await maintainAdminOnboardingSummaryForEventSeriesChange(normalizedHubId, actorId, "event-series-update");
   await maintainDashboardProjectionsForEventSeriesChange(normalizedHubId, actorId, "event-series-update");
 
   return {
