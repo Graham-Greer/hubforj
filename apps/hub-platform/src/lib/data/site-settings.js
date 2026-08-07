@@ -10,6 +10,7 @@ import { createPublicContentCache, getPublicContentCacheTags } from "@/lib/cache
 import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
 import { requireHubBySlug, requireHubCoreById } from "@/lib/data/hubs";
 import { getMediaAssetById, getPublicMediaAssetById } from "@/lib/data/media";
+import { maintainHubAdminOnboardingSummaryForSourceChange } from "@/lib/data/admin-onboarding-summary";
 import { syncSiteSettingsMediaUsageProjection } from "@/lib/data/media-usage-projection";
 import {
   hasSectionRichTextContent,
@@ -50,6 +51,10 @@ async function syncSiteSettingsMediaUsageAfterWrite(hubId, previousDoc, options 
     nextDoc.exists ? nextDoc.data() : {},
     options
   );
+}
+
+async function maintainAdminOnboardingSummaryForSiteSettingsChange(hubId, actorId, reason = "site-settings-change") {
+  return maintainHubAdminOnboardingSummaryForSourceChange(hubId, actorId, { reason });
 }
 
 export async function getSiteSettingsByHubSlug(hubSlug) {
@@ -269,6 +274,7 @@ export async function updateBrandingSettingsByHubSlug(hubSlug, payload, actorId 
     }, { merge: true }),
   ]);
   await syncSiteSettingsMediaUsageAfterWrite(hub.id, previousSiteSettingsDoc, { updatedAt: now });
+  await maintainAdminOnboardingSummaryForSiteSettingsChange(hub.id, actorId, "branding-settings-update");
 
   return { ...next, hubId: hub.id, updatedAt: now };
 }
@@ -308,6 +314,7 @@ export async function updateSiteSettingsByHubSlug(hubSlug, payload, actorId = "s
     }, { merge: true }),
   ]);
   await syncSiteSettingsMediaUsageAfterWrite(hub.id, previousSiteSettingsDoc, { updatedAt: now });
+  await maintainAdminOnboardingSummaryForSiteSettingsChange(hub.id, actorId, "site-settings-update");
 
   return { ...next, hubId: hub.id, updatedAt: now };
 }
@@ -326,6 +333,7 @@ export async function updateHomepageSettingsByHubSlug(hubSlug, payload, actorId 
     updatedBy: actorId,
   }, { merge: true });
   await syncSiteSettingsMediaUsageAfterWrite(hub.id, previousSiteSettingsDoc, { updatedAt: now });
+  await maintainAdminOnboardingSummaryForSiteSettingsChange(hub.id, actorId, "homepage-settings-update");
 
   return { ...next, hubId: hub.id, updatedAt: now };
 }

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireHubOperatorActionAccess } from "@/lib/auth/action-access";
+import { maintainHubAdminOnboardingSummaryForSourceChange } from "@/lib/data/admin-onboarding-summary";
 import { completeHubRegionalSetupBySlug } from "@/lib/data/hubs";
 
 function revalidateRegionalSetupPaths(hubSlug) {
@@ -25,7 +26,8 @@ export async function completeRegionalSetupAction(_previousState, formData) {
 
   try {
     const { actorId } = await requireHubOperatorActionAccess(hubSlug);
-    await completeHubRegionalSetupBySlug(hubSlug, values, actorId);
+    const hub = await completeHubRegionalSetupBySlug(hubSlug, values, actorId);
+    await maintainHubAdminOnboardingSummaryForSourceChange(hub.id, actorId, { reason: "regional-setup-complete" });
   } catch (error) {
     return {
       error: String(error?.message || "Unable to complete regional setup."),

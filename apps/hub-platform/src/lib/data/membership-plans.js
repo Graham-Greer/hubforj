@@ -16,7 +16,12 @@ import {
 } from "@/lib/domain/memberships";
 import { assertHubNativePaymentsReady } from "@/lib/domain/hub-payment-configuration";
 import { assertHubCapability, hasHubCapability } from "@/lib/domain/package-guards";
+import { maintainHubAdminOnboardingSummaryForSourceChange } from "./admin-onboarding-summary.js";
 import { normalizeMembershipPlanRecord, normalizeString } from "./membership-shared.js";
+
+async function maintainAdminOnboardingSummaryForMembershipPlanChange(hubId, actorId, reason = "membership-plan-change") {
+  return maintainHubAdminOnboardingSummaryForSourceChange(hubId, actorId, { reason });
+}
 
 export async function listMembershipPlansByHub(hubId) {
   const normalizedHubId = normalizeString(hubId);
@@ -107,6 +112,7 @@ export async function createDefaultMembershipPlan(hubId, actorId = "system") {
   );
 
   await ref.set(writeModel);
+  await maintainAdminOnboardingSummaryForMembershipPlanChange(normalizedHubId, actorId, "default-membership-plan-create");
   return normalizeMembershipPlanRecord({ id: ref.id, ...writeModel });
 }
 
@@ -157,6 +163,7 @@ export async function createMembershipPlan(hubId, payload, actorId = "system") {
   };
 
   await ref.set(writeModel);
+  await maintainAdminOnboardingSummaryForMembershipPlanChange(normalizedHubId, actorId, "membership-plan-create");
   return normalizeMembershipPlanRecord({ id: ref.id, ...writeModel });
 }
 
@@ -246,6 +253,7 @@ export async function updateMembershipPlan(hubId, planId, payload, actorId = "sy
   };
 
   await ref.set(update, { merge: true });
+  await maintainAdminOnboardingSummaryForMembershipPlanChange(normalizedHubId, actorId, "membership-plan-update");
   return normalizeMembershipPlanRecord({ id: normalizedPlanId, hubId: normalizedHubId, ...existing.data(), ...update });
 }
 
@@ -290,4 +298,5 @@ export async function deleteMembershipPlan(hubId, planId) {
   }
 
   await planRef.delete();
+  await maintainAdminOnboardingSummaryForMembershipPlanChange(normalizedHubId, "membership-plan-delete", "membership-plan-delete");
 }

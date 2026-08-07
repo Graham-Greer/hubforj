@@ -5,17 +5,29 @@ try {
 }
 
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
+import { getHubCoreById } from "@/lib/data/hubs";
+import { normalizeSiteSettingsRecord } from "@/lib/domain/public-site";
+import {
+  deriveBrandingSettingsPanelStatus,
+  deriveHomepageSettingsPanelStatus,
+  deriveSiteSettingsPanelStatus,
+} from "@/lib/domain/site-settings";
 import { createPerformanceTimer } from "@/lib/observability/performance-timing";
 
-export const ADMIN_ONBOARDING_SUMMARY_SCHEMA_VERSION = 1;
+export const ADMIN_ONBOARDING_SUMMARY_SCHEMA_VERSION = 2;
 
 const RECORD_COUNT_KEYS = ["whatWeDo", "testimonials", "events", "courses", "media"];
+const SETUP_FACT_KEYS = ["siteDetails", "branding", "homepage", "accountReview", "membershipPlans"];
 const RECORD_COLLECTIONS = [
   ["whatWeDo", "whatWeDoItems"],
   ["testimonials", "testimonials"],
   ["events", "events"],
   ["courses", "courses"],
   ["media", "mediaAssets"],
+];
+
+const SETUP_FACT_COLLECTIONS = [
+  ["membershipPlans", "membershipPlans"],
 ];
 
 function normalizeString(value) {
@@ -37,6 +49,30 @@ function normalizeRecordCounts(value = {}) {
   );
 }
 
+function normalizeChecklistStatus(value) {
+  const normalized = normalizeString(value);
+
+  return normalized === "completed" || normalized === "in_progress" ? normalized : "not_started";
+}
+
+function normalizeSetupFacts(value = {}) {
+  return Object.fromEntries(
+    SETUP_FACT_KEYS.map((key) => [key, normalizeChecklistStatus(value?.[key])])
+  );
+}
+
+function mapPanelMetaToChecklistStatus(meta = {}) {
+  if (meta?.label === "Complete") {
+    return "completed";
+  }
+
+  if (meta?.label === "Partially configured") {
+    return "in_progress";
+  }
+
+  return "not_started";
+}
+
 function normalizeSummaryDoc(doc, hubId) {
   const data = doc?.exists ? doc.data() : null;
 
@@ -48,6 +84,7 @@ function normalizeSummaryDoc(doc, hubId) {
     hubId,
     schemaVersion: parseInteger(data.schemaVersion),
     recordCounts: normalizeRecordCounts(data.recordCounts),
+    setupFacts: normalizeSetupFacts(data.setupFacts),
     updatedAt: normalizeString(data.updatedAt),
     updatedBy: normalizeString(data.updatedBy),
   };
@@ -138,6 +175,48 @@ export async function buildAdminOnboardingSummaryRecordCounts(hubId, options = {
   return recordCounts;
 }
 
+async function buildAdminOnboardingSetupFacts(hubId, options = {}) {
+  const normalizedHubId = normalizeString(hubId);
+  const timer = options.timer || createPerformanceTimer("admin-onboarding-summary");
+  const startedAt = Date.now();
+
+  if (!normalizedHubId) {
+    timer.log("summary-setup-facts-skipped", { reason: "missing-hub" });
+    return normalizeSetupFacts();
+  }
+
+  const db = getFirebaseAdminDb();
+  const [hub, siteSettingsDoc, membershipPlanEntries] = await Promise.all([
+    getHubCoreById(normalizedHubId),
+    db.collection("hubs").doc(normalizedHubId).collection("siteSettings").doc("primary").get(),
+    Promise.all(
+      SETUP_FACT_COLLECTIONS.map(async ([factKey, collectionName]) => [
+        factKey,
+        (await hasHubCollectionRecords(normalizedHubId, factKey, collectionName, { timer })) ? 1 : 0,
+      ])
+    ),
+  ]);
+  const siteSettings = normalizeSiteSettingsRecord(hub || { id: normalizedHubId }, siteSettingsDoc.exists ? siteSettingsDoc.data() : {});
+  const membershipPlanCounts = Object.fromEntries(membershipPlanEntries);
+  const siteDetailsStatus = deriveSiteSettingsPanelStatus(hub, siteSettings);
+  const brandingStatus = deriveBrandingSettingsPanelStatus(hub, siteSettings);
+  const homepageStatus = deriveHomepageSettingsPanelStatus(siteSettings);
+  const setupFacts = normalizeSetupFacts({
+    siteDetails: mapPanelMetaToChecklistStatus(siteDetailsStatus),
+    branding: mapPanelMetaToChecklistStatus(brandingStatus),
+    homepage: mapPanelMetaToChecklistStatus(homepageStatus),
+    accountReview: hub?.packageTier && hub?.packageStatus ? "completed" : "not_started",
+    membershipPlans: Number(membershipPlanCounts.membershipPlans || 0) > 0 ? "completed" : "not_started",
+  });
+
+  timer.log("summary-setup-facts-built", {
+    durationMs: Date.now() - startedAt,
+    ...setupFacts,
+  });
+
+  return setupFacts;
+}
+
 export async function getAdminOnboardingSummaryByHubId(hubId) {
   const normalizedHubId = normalizeString(hubId);
 
@@ -159,10 +238,12 @@ export async function rebuildHubAdminOnboardingSummary(hubId, actorId = "system"
   const timer = options.timer || createPerformanceTimer("admin-onboarding-summary", { hubId: normalizedHubId });
   const now = normalizeString(options.updatedAt) || new Date().toISOString();
   const recordCounts = await buildAdminOnboardingSummaryRecordCounts(normalizedHubId, { timer });
+  const setupFacts = await buildAdminOnboardingSetupFacts(normalizedHubId, { timer });
   const writeModel = {
     hubId: normalizedHubId,
     schemaVersion: ADMIN_ONBOARDING_SUMMARY_SCHEMA_VERSION,
     recordCounts,
+    setupFacts,
     updatedAt: now,
     updatedBy: normalizeString(actorId) || "system",
   };
@@ -170,6 +251,7 @@ export async function rebuildHubAdminOnboardingSummary(hubId, actorId = "system"
   await getSummaryRef(normalizedHubId).set(writeModel, { merge: false });
   timer.log("summary-rebuilt", {
     ...recordCounts,
+    ...setupFacts,
     updatedAt: now,
   });
 
@@ -207,6 +289,48 @@ export async function getAdminOnboardingSummaryRecordCounts(hubId, options = {})
   return normalizeRecordCounts(rebuilt?.recordCounts);
 }
 
+export async function getAdminOnboardingSummaryFacts(hubId, options = {}) {
+  const normalizedHubId = normalizeString(hubId);
+  const timer = options.timer || createPerformanceTimer("admin-onboarding-summary", { hubId: normalizedHubId });
+  const actorId = normalizeString(options.actorId) || "admin-onboarding-summary-fallback";
+  const startedAt = Date.now();
+
+  if (!normalizedHubId) {
+    timer.log("summary-facts-read-skipped", { reason: "missing-hub" });
+    return {
+      recordCounts: normalizeRecordCounts(),
+      setupFacts: normalizeSetupFacts(),
+    };
+  }
+
+  const summary = await getAdminOnboardingSummaryByHubId(normalizedHubId);
+
+  if (isSummaryCurrent(summary)) {
+    timer.log("summary-facts-read-hit", {
+      durationMs: Date.now() - startedAt,
+      ...summary.recordCounts,
+      ...summary.setupFacts,
+    });
+    return {
+      recordCounts: summary.recordCounts,
+      setupFacts: summary.setupFacts,
+    };
+  }
+
+  timer.log("summary-facts-read-miss", {
+    durationMs: Date.now() - startedAt,
+    reason: summary ? "stale-schema-or-missing-updated-at" : "missing-summary",
+    schemaVersion: summary?.schemaVersion || 0,
+  });
+
+  const rebuilt = await rebuildHubAdminOnboardingSummary(normalizedHubId, actorId, { timer });
+
+  return {
+    recordCounts: normalizeRecordCounts(rebuilt?.recordCounts),
+    setupFacts: normalizeSetupFacts(rebuilt?.setupFacts),
+  };
+}
+
 export async function maintainHubAdminOnboardingSummaryForSourceChange(hubId, actorId = "system", options = {}) {
   try {
     return await rebuildHubAdminOnboardingSummary(hubId, actorId, options);
@@ -233,9 +357,10 @@ export async function getHubAdminOnboardingSummaryReconciliationReport(hubId, op
       "Admin onboarding summary reconciliation could not run because the hub id was missing."
     ));
   } else {
-    const [summary, sourceRecordCounts] = await Promise.all([
+    const [summary, sourceRecordCounts, sourceSetupFacts] = await Promise.all([
       getAdminOnboardingSummaryByHubId(normalizedHubId),
       buildAdminOnboardingSummaryRecordCounts(normalizedHubId),
+      buildAdminOnboardingSetupFacts(normalizedHubId),
     ]);
 
     if (!summary) {
@@ -257,6 +382,7 @@ export async function getHubAdminOnboardingSummaryReconciliationReport(hubId, op
     }
 
     const summaryRecordCounts = normalizeRecordCounts(summary?.recordCounts);
+    const summarySetupFacts = normalizeSetupFacts(summary?.setupFacts);
 
     RECORD_COUNT_KEYS.forEach((key) => {
       if (summaryRecordCounts[key] !== sourceRecordCounts[key]) {
@@ -268,6 +394,21 @@ export async function getHubAdminOnboardingSummaryReconciliationReport(hubId, op
             recordKey: key,
             actual: summaryRecordCounts[key],
             expected: sourceRecordCounts[key],
+          }
+        ));
+      }
+    });
+
+    SETUP_FACT_KEYS.forEach((key) => {
+      if (summarySetupFacts[key] !== sourceSetupFacts[key]) {
+        issues.push(createIssue(
+          "setup_fact_mismatch",
+          "Admin onboarding summary setup fact mismatch",
+          `The ${key} checklist fact is ${summarySetupFacts[key]}, but the source data resolves to ${sourceSetupFacts[key]}.`,
+          {
+            factKey: key,
+            actual: summarySetupFacts[key],
+            expected: sourceSetupFacts[key],
           }
         ));
       }

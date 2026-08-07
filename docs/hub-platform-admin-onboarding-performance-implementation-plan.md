@@ -574,6 +574,12 @@ Implementation notes:
   - `events`
   - `courses`
   - `media`
+- The projection now also records saved setup facts for checklist items that should not depend on route-tour state:
+  - `siteDetails`
+  - `branding`
+  - `homepage`
+  - `accountReview`
+  - `membershipPlans`
 - `getAdminOnboardingState` now reads the summary projection during checklist scope and falls back to rebuilding it only when the projection is missing or stale.
 - The internal projection maintenance endpoint now supports `includeAdminOnboarding` for GET query params and POST JSON.
 - Dry-run reconciliation reports `reports.adminOnboarding`.
@@ -585,8 +591,16 @@ Implementation notes:
   - Event series create/update because series synchronization can create occurrence event records
   - Courses create/delete
   - Media asset upload/delete
+- Saved setup fact maintenance is wired for:
+  - regional setup completion
+  - site details save
+  - site branding save
+  - homepage settings save
+  - membership plan create/update/delete
 - Ordinary edits that do not change whether a collection has records do not rebuild the projection.
-- Payment setup and regional setup remain calculated from the hub/payment configuration during this phase because the observed checklist projection win is source collection existence reads; moving payment setup into the projection would require a broader consistency contract.
+- Payment setup remains calculated from the live payment configuration, and regional setup remains calculated from the hub record. Moving either into the projection would require a broader consistency contract.
+- Checklist items for site details, branding, homepage/page review, account/package review, and membership plans are now fact-based. Route journey state remains available for tours and help guidance, but does not decide checklist completion for those items.
+- `adminOnboardingSummary` schema was bumped to version 2 so existing version 1 documents rebuild safely and gain setup facts.
 
 Production rollout:
 
@@ -597,6 +611,7 @@ Production rollout:
 - Hard refresh `/admin?setupChecklist=1`.
 - Confirm checklist scope logs show `summary-read-hit` after repair/backfill.
 - Confirm source reads only appear when the summary is missing/stale or during explicit reconciliation.
+- Confirm saved setup checklist items do not remain "In progress" merely because their onboarding tour was dismissed or not completed.
 
 ### Phase 4: Payload Shaping
 
@@ -1059,3 +1074,35 @@ Verification required:
 - Hard refresh `/admin?setupChecklist=1` and confirm checklist logs show `summary-read-hit`.
 - Confirm ordinary admin routes continue to use `?scope=route` and do not fetch checklist payloads.
 - Create and delete one record in a low-risk hub for each source type when practical, then rerun dry-run reconciliation to confirm the summary remains aligned.
+
+### 2026-08-07 - Checklist Completion Semantics Upgraded
+
+Status: implemented, production backfill and verification pending.
+
+Completed:
+
+- Audited the checklist configuration and confirmed several items were using route journey completion as their checklist completion signal.
+- Replaced journey-based checklist completion with fact-based completion for:
+  - site details
+  - site branding
+  - homepage/page review
+  - account and package review
+  - membership plans
+- Preserved route journey state for onboarding tours, auto-open behavior, help menu restarts, and analytics.
+- Extended `adminOnboardingSummary` with `setupFacts`.
+- Bumped `adminOnboardingSummary` schema to version 2 so existing summaries rebuild with the new setup facts.
+- Reused existing settings status derivation helpers instead of inventing new completion rules.
+- Wired setup-fact summary maintenance after regional setup, site settings, branding settings, homepage settings, and membership plan mutations.
+
+Checklist semantics after this pass:
+
+- `completed` means the saved source data satisfies the established setup rule.
+- `in_progress` means saved source data is genuinely partially configured.
+- `not_started` means required saved source data is missing.
+- Dismissing or partially viewing an onboarding tour no longer causes setup checklist items to remain "In progress".
+
+Verification required:
+
+- Rebuild the `adminOnboardingSummary` projection in production using `includeAdminOnboarding=true`.
+- Hard refresh `/admin?setupChecklist=1`.
+- Confirm site details, branding, homepage/page review, account/package review, and membership plans reflect saved setup data rather than guide/tour progress.
