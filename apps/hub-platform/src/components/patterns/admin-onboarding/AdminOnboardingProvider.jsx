@@ -25,6 +25,9 @@ import AdminOnboardingHelpLauncher from "./AdminOnboardingHelpLauncher";
 import AdminOnboardingModal from "./AdminOnboardingModal";
 
 const AdminOnboardingContext = createContext(null);
+const onboardingStateCache = new Map();
+const onboardingRequestCache = new Map();
+const onboardingCacheTtlMs = 5 * 60 * 1000;
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -46,6 +49,99 @@ function getRequiredOnboardingScope(shouldHydrateChecklist) {
 
 function hasLoadedOnboardingScope(loadedScope, requiredScope) {
   return loadedScope === "checklist" || loadedScope === requiredScope;
+}
+
+function getScopeRank(scope) {
+  return scope === "checklist" ? 2 : scope === "route" ? 1 : 0;
+}
+
+function getOnboardingCacheKey(hubSlug, actorUserId, scope) {
+  return `${normalizeString(hubSlug)}:${normalizeString(actorUserId)}:${normalizeString(scope) || "route"}`;
+}
+
+function readCachedOnboardingState(hubSlug, actorUserId, requiredScope) {
+  const normalizedRequiredScope = normalizeString(requiredScope) || "route";
+  const candidateScopes = normalizedRequiredScope === "route" ? ["checklist", "route"] : ["checklist"];
+  const now = Date.now();
+
+  for (const scope of candidateScopes) {
+    const cached = onboardingStateCache.get(getOnboardingCacheKey(hubSlug, actorUserId, scope));
+
+    if (!cached || now - cached.loadedAt > onboardingCacheTtlMs) {
+      continue;
+    }
+
+    if (hasLoadedOnboardingScope(cached.scope, normalizedRequiredScope)) {
+      return cached;
+    }
+  }
+
+  return null;
+}
+
+function writeCachedOnboardingState(hubSlug, actorUserId, scope, state) {
+  const normalizedScope = normalizeString(scope) || "route";
+
+  if (!state) {
+    return;
+  }
+
+  onboardingStateCache.set(getOnboardingCacheKey(hubSlug, actorUserId, normalizedScope), {
+    scope: normalizedScope,
+    state,
+    loadedAt: Date.now(),
+  });
+}
+
+async function fetchOnboardingState(hubSlug, actorUserId, scope) {
+  const normalizedScope = normalizeString(scope) || "route";
+  const cacheKey = getOnboardingCacheKey(hubSlug, actorUserId, normalizedScope);
+  const cached = readCachedOnboardingState(hubSlug, actorUserId, normalizedScope);
+
+  if (cached) {
+    return cached;
+  }
+
+  if (onboardingRequestCache.has(cacheKey)) {
+    return onboardingRequestCache.get(cacheKey);
+  }
+
+  const request = (async () => {
+    const scopeQuery = normalizedScope === "checklist" ? "" : "?scope=route";
+    const response = await fetch(`/api/admin/hubs/${hubSlug}/onboarding${scopeQuery}`, {
+      method: "GET",
+      cache: "no-store",
+    });
+    const payload = await response.json();
+    const state = payload?.state || null;
+
+    writeCachedOnboardingState(hubSlug, actorUserId, normalizedScope, state);
+
+    return {
+      scope: normalizedScope,
+      state,
+      loadedAt: Date.now(),
+    };
+  })().finally(() => {
+    onboardingRequestCache.delete(cacheKey);
+  });
+
+  onboardingRequestCache.set(cacheKey, request);
+  return request;
+}
+
+function scheduleRouteOnboardingLoad(callback) {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
+  if (typeof window.requestIdleCallback === "function") {
+    const handle = window.requestIdleCallback(callback, { timeout: 1200 });
+    return () => window.cancelIdleCallback?.(handle);
+  }
+
+  const handle = window.setTimeout(callback, 120);
+  return () => window.clearTimeout(handle);
 }
 
 function cloneState(nextState) {
@@ -96,8 +192,11 @@ export default function AdminOnboardingProvider({
   const adminBasePath = useMemo(() => deriveAdminBasePath(pathname, hub.slug), [hub.slug, pathname]);
   const shouldHydrateChecklist = shouldHydrateChecklistForPath(pathname, adminBasePath);
   const routeKey = `${pathname || ""}?${searchParams?.toString() || ""}`;
-  const [state, setState] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const initialRequiredScope = getRequiredOnboardingScope(shouldHydrateChecklist);
+  const initialCachedState = readCachedOnboardingState(hub.slug, actorUserId, initialRequiredScope);
+  const [state, setState] = useState(initialCachedState?.state || null);
+  const [routeLoading, setRouteLoading] = useState(!initialCachedState && initialRequiredScope === "route");
+  const [checklistLoading, setChecklistLoading] = useState(!initialCachedState && initialRequiredScope === "checklist");
   const [currentJourneyKey, setCurrentJourneyKey] = useState("");
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [currentOrigin, setCurrentOrigin] = useState("auto");
@@ -106,8 +205,10 @@ export default function AdminOnboardingProvider({
   const currentJourneyKeyRef = useRef("");
   const checklistRevealIntentRef = useRef("");
   const loadedHubSlugRef = useRef("");
-  const loadedScopeRef = useRef("");
+  const loadedScopeRef = useRef(initialCachedState?.scope || "");
+  const latestLoadRankRef = useRef(getScopeRank(initialCachedState?.scope || ""));
   const loadStateRef = useRef(async () => {});
+  const loading = routeLoading || (checklistLoading && shouldHydrateChecklist);
 
   useEffect(() => {
     currentJourneyKeyRef.current = currentJourneyKey;
@@ -115,35 +216,69 @@ export default function AdminOnboardingProvider({
 
   useEffect(() => {
     let cancelled = false;
+    const identityKey = `${hub.slug}:${actorUserId}`;
 
-    if (loadedHubSlugRef.current !== hub.slug) {
-      loadedHubSlugRef.current = hub.slug;
+    if (loadedHubSlugRef.current !== identityKey) {
+      loadedHubSlugRef.current = identityKey;
       loadedScopeRef.current = "";
+      latestLoadRankRef.current = 0;
+      const cached = readCachedOnboardingState(hub.slug, actorUserId, getRequiredOnboardingScope(shouldHydrateChecklist));
+      setState(cached?.state || null);
+      if (cached) {
+        loadedScopeRef.current = cached.scope;
+        latestLoadRankRef.current = getScopeRank(cached.scope);
+      }
     }
 
+    const applyCachedState = (requiredScope) => {
+      const cached = readCachedOnboardingState(hub.slug, actorUserId, requiredScope);
+
+      if (!cached) {
+        return false;
+      }
+
+      setState(cached.state);
+      loadedScopeRef.current = cached.scope;
+      latestLoadRankRef.current = Math.max(latestLoadRankRef.current, getScopeRank(cached.scope));
+      setRouteLoading(false);
+      if (hasLoadedOnboardingScope(cached.scope, "checklist")) {
+        setChecklistLoading(false);
+      }
+      return true;
+    };
+
     loadStateRef.current = async ({ silent = false, scope = getRequiredOnboardingScope(shouldHydrateChecklist) } = {}) => {
-      if (!silent) {
-        setLoading(true);
+      const normalizedScope = normalizeString(scope) || "route";
+      const requestedRank = getScopeRank(normalizedScope);
+
+      if (applyCachedState(normalizedScope)) {
+        return;
+      }
+
+      if (normalizedScope === "checklist") {
+        setChecklistLoading(true);
+      } else if (!silent) {
+        setRouteLoading(true);
       }
 
       try {
-        const scopeQuery = scope === "checklist" ? "" : "?scope=route";
-        const response = await fetch(`/api/admin/hubs/${hub.slug}/onboarding${scopeQuery}`, {
-          method: "GET",
-          cache: "no-store",
-        });
-        const payload = await response.json();
-        if (!cancelled) {
-          setState(payload?.state || null);
-          loadedScopeRef.current = scope;
+        const result = await fetchOnboardingState(hub.slug, actorUserId, normalizedScope);
+        if (!cancelled && requestedRank >= latestLoadRankRef.current) {
+          setState(result.state);
+          loadedScopeRef.current = result.scope;
+          latestLoadRankRef.current = requestedRank;
         }
       } catch {
         if (!cancelled && !silent) {
           setState(null);
         }
       } finally {
-        if (!cancelled && !silent) {
-          setLoading(false);
+        if (!cancelled) {
+          if (normalizedScope === "checklist") {
+            setChecklistLoading(false);
+          } else {
+            setRouteLoading(false);
+          }
         }
       }
     };
@@ -151,13 +286,29 @@ export default function AdminOnboardingProvider({
     const requiredScope = getRequiredOnboardingScope(shouldHydrateChecklist);
 
     if (!hasLoadedOnboardingScope(loadedScopeRef.current, requiredScope)) {
-      loadStateRef.current({ scope: requiredScope });
+      const loadedFromCache = applyCachedState(requiredScope);
+
+      if (!loadedFromCache) {
+        if (requiredScope === "checklist") {
+          loadStateRef.current({ scope: requiredScope });
+        } else {
+          setRouteLoading(true);
+          const cancelScheduledLoad = scheduleRouteOnboardingLoad(() => {
+            loadStateRef.current({ silent: true, scope: requiredScope });
+          });
+
+          return () => {
+            cancelled = true;
+            cancelScheduledLoad();
+          };
+        }
+      }
     }
 
     return () => {
       cancelled = true;
     };
-  }, [hub.slug, shouldHydrateChecklist]);
+  }, [actorUserId, hub.slug, shouldHydrateChecklist]);
 
   useEffect(() => {
     if (!pathname) {
@@ -166,12 +317,21 @@ export default function AdminOnboardingProvider({
 
     const requiredScope = getRequiredOnboardingScope(shouldHydrateChecklist);
 
-    if (loading || hasLoadedOnboardingScope(loadedScopeRef.current, requiredScope)) {
+    if (hasLoadedOnboardingScope(loadedScopeRef.current, requiredScope)) {
       return;
     }
 
-    loadStateRef.current({ silent: !shouldHydrateChecklist, scope: requiredScope });
-  }, [loading, pathname, shouldHydrateChecklist]);
+    if (requiredScope === "checklist") {
+      loadStateRef.current({ scope: requiredScope });
+      return;
+    }
+
+    const cancelScheduledLoad = scheduleRouteOnboardingLoad(() => {
+      loadStateRef.current({ silent: true, scope: requiredScope });
+    });
+
+    return cancelScheduledLoad;
+  }, [actorUserId, hub.slug, pathname, shouldHydrateChecklist]);
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
@@ -196,6 +356,12 @@ export default function AdminOnboardingProvider({
 
   const persistState = useCallback(async (nextState) => {
     setState(nextState);
+    writeCachedOnboardingState(
+      hub.slug,
+      actorUserId,
+      nextState?.checklistHydrated ? "checklist" : loadedScopeRef.current || "route",
+      nextState
+    );
 
     try {
       const response = await fetch(`/api/admin/hubs/${hub.slug}/onboarding`, {
@@ -206,11 +372,17 @@ export default function AdminOnboardingProvider({
       const payload = await response.json();
       if (payload?.state) {
         setState(payload.state);
+        writeCachedOnboardingState(
+          hub.slug,
+          actorUserId,
+          payload.state?.checklistHydrated ? "checklist" : loadedScopeRef.current || "route",
+          payload.state
+        );
       }
     } catch {
       // Best-effort persistence. Keep the local state so onboarding does not feel broken.
     }
-  }, [hub.slug]);
+  }, [actorUserId, hub.slug]);
 
   const openJourney = useCallback(async (journeyKey, origin = "help_menu") => {
     const journey = getJourneyDefinition(journeyKey, state);
@@ -572,7 +744,7 @@ export default function AdminOnboardingProvider({
     actorUserId,
     adminBasePath,
     checklistItems,
-    checklistHydrating: loading && shouldHydrateChecklist && setupChecklistRequested,
+    checklistHydrating: checklistLoading && shouldHydrateChecklist && setupChecklistRequested,
     currentJourney,
     currentOrigin,
     currentStep,
@@ -580,6 +752,8 @@ export default function AdminOnboardingProvider({
     dismissChecklist,
     hub,
     loading,
+    routeLoading,
+    checklistLoading,
     openJourney,
     restartJourney,
     revealChecklist,
