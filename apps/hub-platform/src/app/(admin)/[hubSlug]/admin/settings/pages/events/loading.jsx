@@ -7,7 +7,7 @@ export default function EventsPageSettingsLoading() {
   return (
     <div className={styles.layout}>
       <WorkspaceSection
-        eyebrow="Page settings"
+        eyebrow="Content"
         title="Edit events page"
         description="Manage the events route hero copy separately from the listing section so discovery stays system-led while still allowing light personalization."
         actions={<SkeletonBlock variant="button" width="11rem" />}

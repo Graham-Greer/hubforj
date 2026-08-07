@@ -34,13 +34,13 @@ export default async function CoursesPageSettingsPage({ params }) {
     <AdminFormRuntimeProvider>
       <div className={styles.layout}>
         <WorkspaceSection
-          eyebrow="Page settings"
+          eyebrow="Content"
           title="Edit courses page"
           description="Manage the courses route hero copy separately from the listing section so discovery stays system-led while still allowing light personalization."
           actions={
             <AdminDirtyAwareBackButton
               href={`/${hub.slug}/admin/settings/pages`}
-              label="Back to page settings"
+              label="Back to pages"
             />
           }
         >

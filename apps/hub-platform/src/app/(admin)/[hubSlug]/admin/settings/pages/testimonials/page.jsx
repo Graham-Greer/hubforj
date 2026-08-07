@@ -34,13 +34,13 @@ export default async function TestimonialsPageSettingsPage({ params }) {
     <AdminFormRuntimeProvider>
       <div className={styles.layout}>
         <WorkspaceSection
-          eyebrow="Page settings"
+          eyebrow="Content"
           title="Edit testimonials page"
           description="Manage the testimonials route hero separately from the published testimonial cards so the trust page stays system-led while still allowing light personalization."
           actions={
             <AdminDirtyAwareBackButton
               href={`/${hub.slug}/admin/settings/pages`}
-              label="Back to page settings"
+              label="Back to pages"
             />
           }
         >

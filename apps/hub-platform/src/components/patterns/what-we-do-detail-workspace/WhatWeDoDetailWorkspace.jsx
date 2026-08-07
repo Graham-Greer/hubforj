@@ -6,7 +6,9 @@ import WorkspaceSection from "@/components/patterns/workspace-section/WorkspaceS
 import { getWhatWeDoStatusLabel, getWhatWeDoStatusTone } from "@/lib/domain/what-we-do";
 import styles from "./WhatWeDoDetailWorkspace.module.css";
 
-export default function WhatWeDoDetailWorkspace({ hub, item, form }) {
+export default function WhatWeDoDetailWorkspace({ hub, item, form, returnContext = null }) {
+  const backHref = returnContext?.returnTo ? returnContext.href : `/${hub.slug}/admin/what-we-do`;
+
   return (
     <AdminFormRuntimeProvider>
       <div className={styles.root}>
@@ -17,7 +19,7 @@ export default function WhatWeDoDetailWorkspace({ hub, item, form }) {
           actions={
             <div className={styles.headerActions}>
               <Badge tone={getWhatWeDoStatusTone(item.status)}>{getWhatWeDoStatusLabel(item.status)}</Badge>
-              <Button href={`/${hub.slug}/admin/what-we-do`} variant="ghost">Back to What we do</Button>
+              <Button href={backHref} variant="ghost">Back to What we do</Button>
             </div>
           }
         />

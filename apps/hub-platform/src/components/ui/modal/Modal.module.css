@@ -9,6 +9,10 @@
   backdrop-filter: blur(0.5rem);
 }
 
+.backdrop[data-theme="dark"] {
+  background: rgba(3, 8, 20, 0.6);
+}
+
 .dialog {
   width: min(100%, 44rem);
   max-height: min(90vh, 52rem);
@@ -17,6 +21,12 @@
   border-radius: var(--panel-radius);
   background: var(--panel-bg);
   box-shadow: var(--shadow-lg);
+}
+
+.dialog[data-admin-theme="workspace"] {
+  border-color: var(--admin-surface-default-border);
+  background: var(--admin-surface-default-fill);
+  box-shadow: var(--admin-surface-default-shadow, var(--shadow-lg));
 }
 
 .width_md {

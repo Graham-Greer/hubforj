@@ -47,7 +47,7 @@ export const adminOnboardingJourneys = {
           spotlight: true,
         },
         body:
-          "Begin with Site settings, Branding, and Page settings so your hub identity and homepage are in place before you move into content and operations.",
+          "Begin with Site settings, Site branding, and Pages so your hub identity and public content are in place before you move into operations.",
         ctaLabel: "Next",
       },
       {
@@ -121,9 +121,9 @@ export const adminOnboardingJourneys = {
           placement: "bottom",
           spotlight: true,
         },
-        title: "Start with branding",
+        title: "Start with site branding",
         body:
-          "Use Branding to control the public identity and appearance of your hub before refining content elsewhere.",
+          "Use Site branding to control the public identity and appearance of your hub before refining content elsewhere.",
         ctaLabel: "Next",
       },
       {
@@ -202,7 +202,7 @@ export const adminOnboardingJourneys = {
           placement: "top",
           spotlight: true,
         },
-        title: "Apply your branding",
+        title: "Apply your site branding",
         body:
           "Save once your visual identity is in place, then review how it feels on the public site.",
         ctaLabel: "Finish",
@@ -502,26 +502,28 @@ export const adminOnboardingJourneys = {
     key: "what_we_do",
     priority: 70,
     autoTrigger: true,
-    routePatterns: ["/admin/what-we-do"],
+    routePatterns: ["/admin/settings/pages/home"],
+    queryKey: "section",
+    queryValue: "what-we-do",
     steps: [
       {
         id: "purpose",
         type: "text",
         target: {
-          key: "what_we_do_list",
+          key: "homepage_what_we_do_items",
           placement: "right",
           spotlight: true,
         },
         title: "Explain what your hub does",
         body:
-          "Use What we do items to describe the main services, support, or outcomes your organisation offers.",
+          "Use the homepage What we do panel to manage the main services, support, or outcomes your organisation offers.",
         ctaLabel: "Next",
       },
       {
         id: "quality",
         type: "text",
         target: {
-          key: "what_we_do_list",
+          key: "homepage_what_we_do_items",
           placement: "top",
           spotlight: true,
         },
@@ -654,14 +656,14 @@ export const adminOnboardingChecklistItems = [
   },
   {
     key: "branding",
-    label: "Complete branding",
+    label: "Complete site branding",
     href: "/admin/settings/branding",
     completionMode: "journey",
     journeyKey: "settings_branding",
   },
   {
     key: "homepage",
-    label: "Review page settings",
+    label: "Review pages",
     href: "/admin/settings/pages",
     completionMode: "journey",
     journeyKey: "settings_pages_overview",
@@ -676,7 +678,7 @@ export const adminOnboardingChecklistItems = [
   {
     key: "what_we_do",
     label: "Add What we do items",
-    href: "/admin/what-we-do",
+    href: "/admin/settings/pages/home?section=what-we-do",
     completionMode: "record",
     recordKey: "whatWeDo",
   },

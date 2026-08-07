@@ -35,9 +35,9 @@ export default async function SettingsPage({ params }) {
   return (
     <AdminRouteStack>
       <PageHeader
-        eyebrow="Site settings"
-        title="Manage site settings"
-        description="Manage site-wide identity, public defaults, and structured contact details without mixing them into page-level copy."
+        eyebrow="Settings"
+        title="Site settings"
+        description="Manage site branding, structured public details, legal pages, and setup areas that affect how the hub operates."
       />
       <Suspense fallback={<AdminSettingsOverviewFallback />}>
         <SettingsOverviewLoader hub={hub} />

@@ -46,7 +46,7 @@ export default async function SiteSettingsPage({ params }) {
         <WorkspaceSection
           eyebrow="Settings"
           title="Site details"
-          description="Update shared site defaults here so contact details, homepage hero content, and SEO settings stay consistent."
+          description="Update structured public details such as contact information, address, hours, social links, SEO defaults, and regional defaults."
           actions={
             <AdminDirtyAwareBackButton
               href={`/${hub.slug}/admin/settings`}

@@ -16,13 +16,15 @@
 
 .card {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
 .identity {
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  min-width: min(100%, 18rem);
+  flex: 1 1 22rem;
 }
 
 .cardHeader,
@@ -56,11 +58,13 @@
 
 .cardMeta {
   color: var(--color-text-secondary);
+  font: var(--font-body-sm);
 }
 
 .description {
-  color: var(--color-text-primary);
-  font: var(--font-body-lg);
+  margin-top: var(--space-2);
+  color: var(--color-text-secondary);
+  font: var(--font-body-md);
   line-height: var(--line-height-relaxed);
 }
 

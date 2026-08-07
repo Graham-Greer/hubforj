@@ -35,8 +35,8 @@ export default async function BrandingSettingsPage({ params }) {
       <div className={styles.layout}>
         <WorkspaceSection
           eyebrow="Settings"
-          title="Brand and appearance"
-          description="Update branding here to keep the public site aligned without affecting operational clarity in the admin workspace."
+          title="Site branding"
+          description="Update the public visual identity, logo, theme, template, and header call to action without affecting operational clarity in the admin workspace."
           actions={
             <AdminDirtyAwareBackButton
               href={`/${hub.slug}/admin/settings`}

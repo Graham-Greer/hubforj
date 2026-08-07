@@ -75,8 +75,8 @@ export function getHubAdminNavGroups(hubOrSlug, options = {}) {
     {
       title: "Content",
       items: [
+        buildAdminNavItem({ href: `${base}/settings/pages`, label: "Pages", shortLabel: "PG", iconName: "web", onboardingKey: "nav-page-settings" }),
         buildAdminNavItem({ href: `${base}/media`, label: "Media", shortLabel: "MD", iconName: "perm_media", onboardingKey: "nav-media" }),
-        buildAdminNavItem({ href: `${base}/what-we-do`, label: "What we do", shortLabel: "WD", iconName: "view_module", onboardingKey: "nav-what-we-do" }),
         buildAdminNavItem({ href: `${base}/testimonials`, label: "Testimonials", shortLabel: "TS", iconName: "format_quote", onboardingKey: "nav-testimonials" }),
       ],
     },
@@ -127,7 +127,6 @@ export function getHubAdminNavGroups(hubOrSlug, options = {}) {
           activeMatchPrefixes: [`${base}/settings/branding`, `${base}/settings/site`],
           onboardingKey: "nav-site-settings",
         }),
-        buildAdminNavItem({ href: `${base}/settings/pages`, label: "Page settings", shortLabel: "PS", iconName: "web", onboardingKey: "nav-page-settings" }),
         buildAdminNavItem({ href: `${base}/settings/legal`, label: "Legal pages", shortLabel: "LG", iconName: "gavel", onboardingKey: "nav-legal-pages" }),
         buildAdminNavItem({ href: `${base}/settings/account`, label: "Account settings", shortLabel: "AS", iconName: "manage_accounts", onboardingKey: "nav-account-settings" }),
       ],
