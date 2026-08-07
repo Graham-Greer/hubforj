@@ -122,6 +122,7 @@ export default function BrandingSettingsForm({ hub, initialValues, mediaAssets, 
           onAltChange={scheduleDirtyStateUpdate}
           uploadLabel="Upload logo"
           emptyTitle="Select media"
+          requiredIndicator
         />
       </AdminFormSection>
       <AdminFormSection title="Presentation" divider>
@@ -132,6 +133,8 @@ export default function BrandingSettingsForm({ hub, initialValues, mediaAssets, 
             hint="Controls the public site and member-facing surfaces. Admin workspace theme is fixed separately."
             options={themeOptions}
             defaultValue={values.themeKey}
+            required
+            requiredIndicator
           />
           <AdminSelect
             name="templateKey"
@@ -139,6 +142,8 @@ export default function BrandingSettingsForm({ hub, initialValues, mediaAssets, 
             hint="Controls the public site presentation family, not the hub-admin workspace shell."
             options={supportedTemplateOptions}
             defaultValue={values.templateKey}
+            required
+            requiredIndicator
           />
         </div>
       </AdminFormSection>
@@ -152,6 +157,8 @@ export default function BrandingSettingsForm({ hub, initialValues, mediaAssets, 
             pattern="^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$"
             spellCheck={false}
             autoCapitalize="characters"
+            required
+            requiredIndicator
           />
           <Input
             name="brandSecondaryColor"
