@@ -15,9 +15,34 @@ import {
   adminOnboardingVersion,
   getAdminOnboardingChecklistOrder,
 } from "@/lib/admin-onboarding/config";
+import { createPerformanceTimer } from "@/lib/observability/performance-timing";
 
 function normalizeString(value) {
   return String(value || "").trim();
+}
+
+function normalizeErrorMessage(error) {
+  return String(error?.message || "Unknown error.");
+}
+
+async function measureOnboardingPromise(promise, timer, event, context = {}) {
+  const startedAt = Date.now();
+
+  try {
+    const result = await promise;
+    timer.log(event, {
+      durationMs: Date.now() - startedAt,
+      ...context,
+    });
+    return result;
+  } catch (error) {
+    timer.log(`${event}-failed`, {
+      durationMs: Date.now() - startedAt,
+      error: normalizeErrorMessage(error),
+      ...context,
+    });
+    throw error;
+  }
 }
 
 function defaultJourneyState() {
@@ -97,22 +122,32 @@ function normalizePersistedState(raw, fallback) {
   return next;
 }
 
-async function getChecklistRecordCounts(hub, capabilities) {
+async function getChecklistRecordCounts(hub, capabilities, options = {}) {
+  const timer = options.timer || createPerformanceTimer("admin-onboarding-state");
+  const startedAt = Date.now();
   const [hasWhatWeDoItems, hasTestimonials, hasEvents, hasCourses, hasMediaAssets] = await Promise.all([
-    hasHubCollectionRecords(hub.id, "whatWeDoItems"),
-    hasHubCollectionRecords(hub.id, "testimonials"),
-    hasHubCollectionRecords(hub.id, "events"),
-    capabilities.coursesEnabled ? hasHubCollectionRecords(hub.id, "courses") : Promise.resolve(false),
-    hasHubCollectionRecords(hub.id, "mediaAssets"),
+    hasHubCollectionRecords(hub.id, "whatWeDoItems", { timer, recordKey: "whatWeDo" }),
+    hasHubCollectionRecords(hub.id, "testimonials", { timer, recordKey: "testimonials" }),
+    hasHubCollectionRecords(hub.id, "events", { timer, recordKey: "events" }),
+    capabilities.coursesEnabled
+      ? hasHubCollectionRecords(hub.id, "courses", { timer, recordKey: "courses" })
+      : Promise.resolve(false),
+    hasHubCollectionRecords(hub.id, "mediaAssets", { timer, recordKey: "media" }),
   ]);
-
-  return {
+  const recordCounts = {
     whatWeDo: hasWhatWeDoItems ? 1 : 0,
     testimonials: hasTestimonials ? 1 : 0,
     events: hasEvents ? 1 : 0,
     courses: hasCourses ? 1 : 0,
     media: hasMediaAssets ? 1 : 0,
   };
+
+  timer.log("checklist-record-counts-loaded", {
+    durationMs: Date.now() - startedAt,
+    ...recordCounts,
+  });
+
+  return recordCounts;
 }
 
 function buildChecklistItemsFromFacts(state, hub, capabilities, paymentSetupState, recordCounts = {}) {
@@ -186,11 +221,19 @@ function getDocRef(hubId, actorUserId) {
   return getFirebaseAdminDb().collection("hubs").doc(hubId).collection("adminOnboarding").doc(actorUserId);
 }
 
-async function hasHubCollectionRecords(hubId, collectionName) {
+async function hasHubCollectionRecords(hubId, collectionName, options = {}) {
   const normalizedHubId = normalizeString(hubId);
   const normalizedCollectionName = normalizeString(collectionName);
+  const timer = options.timer || createPerformanceTimer("admin-onboarding-state");
+  const recordKey = normalizeString(options.recordKey) || normalizedCollectionName;
+  const startedAt = Date.now();
 
   if (!normalizedHubId || !normalizedCollectionName) {
+    timer.log("checklist-record-source-skipped", {
+      recordKey,
+      collectionName: normalizedCollectionName,
+      reason: "missing-hub-or-collection",
+    });
     return false;
   }
 
@@ -200,12 +243,28 @@ async function hasHubCollectionRecords(hubId, collectionName) {
     .collection(normalizedCollectionName)
     .limit(1)
     .get();
+  const hasRecords = !snapshot.empty;
 
-  return !snapshot.empty;
+  timer.log("checklist-record-source-read", {
+    durationMs: Date.now() - startedAt,
+    recordKey,
+    collectionName: normalizedCollectionName,
+    hasRecords,
+  });
+
+  return hasRecords;
 }
 
 export async function getAdminOnboardingState(hub, actorUserId, actorRole, options = {}) {
   const includeChecklist = options.includeChecklist !== false;
+  const timer = createPerformanceTimer("admin-onboarding-state", {
+    hubId: normalizeString(hub?.id),
+    hubSlug: normalizeString(hub?.slug),
+    actorUserId: normalizeString(actorUserId),
+    actorRole: normalizeString(actorRole),
+    includeChecklist,
+  });
+  timer.log("start");
   const fallback = createDefaultAdminOnboardingState({
     hubId: hub.id,
     actorUserId,
@@ -214,20 +273,50 @@ export async function getAdminOnboardingState(hub, actorUserId, actorRole, optio
 
   const entitlements = resolveHubPackageEntitlements(hub);
   const capabilities = entitlements.capabilities || {};
+  timer.log("entitlements-resolved", {
+    packageTier: entitlements.packageTier,
+    paymentProcessingMode: entitlements.paymentProcessingMode,
+    nativePaymentsEnabled: capabilities.nativePaymentsEnabled === true,
+    coursesEnabled: capabilities.coursesEnabled === true,
+  });
   fallback.packageTier = entitlements.packageTier;
   const shouldLoadPaymentConfiguration = capabilities.nativePaymentsEnabled === true;
+  if (!shouldLoadPaymentConfiguration) {
+    timer.log("payment-configuration-skipped", { reason: "native-payments-disabled" });
+  }
+  if (!includeChecklist) {
+    timer.log("checklist-record-counts-skipped", { reason: "route-scope" });
+  }
   const [doc, paymentConfiguration, recordCounts] = await Promise.all([
-    getDocRef(hub.id, actorUserId).get(),
-    shouldLoadPaymentConfiguration ? getHubPaymentConfigurationByHubId(hub.id) : Promise.resolve(null),
-    includeChecklist ? getChecklistRecordCounts(hub, capabilities) : Promise.resolve(null),
+    measureOnboardingPromise(getDocRef(hub.id, actorUserId).get(), timer, "onboarding-doc-read"),
+    shouldLoadPaymentConfiguration
+      ? measureOnboardingPromise(
+          getHubPaymentConfigurationByHubId(hub.id),
+          timer,
+          "payment-configuration-read"
+        )
+      : Promise.resolve(null),
+    includeChecklist ? getChecklistRecordCounts(hub, capabilities, { timer }) : Promise.resolve(null),
   ]);
   const persisted = normalizePersistedState(doc.exists ? doc.data() : null, fallback);
+  timer.log("persisted-state-normalized", {
+    docExists: doc.exists,
+    checklistPersistedItemCount: Array.isArray(persisted.checklist?.items) ? persisted.checklist.items.length : 0,
+  });
   const paymentSetupState = getHubPaymentSetupState(hub, paymentConfiguration);
+  timer.log("payment-setup-state-resolved", {
+    paymentSetupStateKey: paymentSetupState?.key || "locked",
+    paymentSetupHasConnectedAccount: paymentSetupState?.configuration?.hasConnectedAccount === true,
+  });
   const checklistItems = includeChecklist
     ? buildChecklistItemsFromFacts(persisted, hub, capabilities, paymentSetupState, recordCounts)
     : persisted.checklist.items;
+  timer.log("checklist-items-built", {
+    checklistHydrated: includeChecklist,
+    checklistItemCount: Array.isArray(checklistItems) ? checklistItems.length : 0,
+  });
 
-  return {
+  const state = {
     ...persisted,
     checklist: {
       ...persisted.checklist,
@@ -240,23 +329,48 @@ export async function getAdminOnboardingState(hub, actorUserId, actorRole, optio
     paymentSetupStateKey: paymentSetupState?.key || "locked",
     paymentSetupHasConnectedAccount: paymentSetupState?.configuration?.hasConnectedAccount === true,
   };
+  timer.end({
+    checklistHydrated: state.checklistHydrated === true,
+    checklistItemCount: Array.isArray(state.checklist?.items) ? state.checklist.items.length : 0,
+  });
+
+  return state;
 }
 
 export async function saveAdminOnboardingState(hub, actorUserId, actorRole, nextState) {
+  const timer = createPerformanceTimer("admin-onboarding-save", {
+    hubId: normalizeString(hub?.id),
+    hubSlug: normalizeString(hub?.slug),
+    actorUserId: normalizeString(actorUserId),
+    actorRole: normalizeString(actorRole),
+  });
+  timer.log("start");
   const fallback = createDefaultAdminOnboardingState({
     hubId: hub.id,
     actorUserId,
     actorRole,
   });
   const normalized = normalizePersistedState(nextState, fallback);
+  timer.log("state-normalized", {
+    checklistItemCount: Array.isArray(normalized.checklist?.items) ? normalized.checklist.items.length : 0,
+  });
 
-  await getDocRef(hub.id, actorUserId).set(
-    {
-      ...normalized,
-      updatedAt: new Date().toISOString(),
-    },
-    { merge: false }
+  await measureOnboardingPromise(
+    getDocRef(hub.id, actorUserId).set(
+      {
+        ...normalized,
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: false }
+    ),
+    timer,
+    "onboarding-doc-written"
   );
 
-  return getAdminOnboardingState(hub, actorUserId, actorRole);
+  const state = await getAdminOnboardingState(hub, actorUserId, actorRole);
+  timer.end({
+    checklistHydrated: state?.checklistHydrated === true,
+    checklistItemCount: Array.isArray(state?.checklist?.items) ? state.checklist.items.length : 0,
+  });
+  return state;
 }

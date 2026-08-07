@@ -1022,6 +1022,9 @@ Verification completed:
 - Confirmed the internal projection maintenance POST body now respects JSON boolean `false` for `dryRun`.
 - Network screenshots after hard reload showed Current/History toggle changes still triggering lightweight RSC requests through `router.replace`.
 - Replaced offering-list query synchronization with `window.history.replaceState` for client-only search/filter/view state so toggling Current/History does not trigger an App Router RSC navigation.
+- Network screenshots also showed `create?_rsc` fetches caused by automatic prefetching of heavy create-form routes.
+- Disabled prefetch on Events and Courses create CTAs so create-form RSC payloads load only when the admin explicitly selects Create.
+- User verification confirmed the Current/History RSC toggle fetches and create-route prefetches are fixed.
 
 Verification pending:
 
