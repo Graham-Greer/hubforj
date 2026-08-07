@@ -907,6 +907,50 @@ Future engineers understand why routes and nav labels differ.
 
 Support can guide admins through the new journey without referencing hidden sidebar items.
 
+### Final Support Notes
+
+Use the following language when guiding admins through the updated admin IA.
+
+Content sidebar:
+
+- `Pages` is the entry point for public page configuration.
+- Home page content is managed from `Content -> Pages -> Home page`.
+- Events page content is managed from `Content -> Pages -> Events`.
+- Courses page content is managed from `Content -> Pages -> Courses`.
+- Testimonials page content is managed from `Content -> Pages -> Testimonials`.
+- Testimonials item creation and editing remains under `Content -> Testimonials`.
+
+Home page What we do journey:
+
+- What we do items are managed from the Home page editor.
+- Direct admins to `Content -> Pages -> Home page`, then the `What we do` section.
+- The Home page What we do section contains the section eyebrow, title, description, and item-management entry points.
+- Add/edit/delete item actions use the existing What we do item routes behind the scenes.
+- After creating, editing, deleting, or cancelling an item from this journey, the admin should return to the Home page What we do section.
+
+Settings sidebar:
+
+- `Site settings` opens the Settings overview.
+- `Legal pages` remains directly available in the sidebar because legal/compliance pages are important enough for permanent access.
+- `Account settings` remains directly available in the sidebar and is not duplicated as a Settings overview card.
+
+Settings overview:
+
+- `Site branding` is for public visual identity, logo, theme/template choices, and public header call to action.
+- `Site details` is for structured public details such as contact information, address, hours, social links, SEO defaults, and regional public-site defaults.
+- `Legal pages` remains an overview card because it communicates legal setup/completion state.
+- `Regional setup` appears only when incomplete.
+- `Stripe setup` appears only when relevant for the hub payment configuration.
+
+Compatibility notes:
+
+- Existing `/admin/settings/pages/*` URLs remain valid.
+- Existing `/admin/what-we-do/*` URLs remain valid.
+- What we do has been hidden from the visible sidebar, not removed from the product.
+- Route paths and visible navigation labels intentionally differ in places to preserve backwards compatibility and avoid breaking existing bookmarked/admin-linked routes.
+
+Do not tell admins to look for a top-level `What we do` sidebar item. The supported journey is through the Home page editor.
+
 ## Implementation Order
 
 Recommended order:
@@ -1141,3 +1185,59 @@ Verification notes:
 - Targeted stale-copy searches should confirm there are no user-facing Settings overview cards titled only `Branding` or `Site`.
 - Targeted whitespace validation should be run for the Phase 2B files.
 - Full lint/unit verification remains blocked in this shell by the WSL 1 Node/npm limitation noted above.
+
+### 2026-08-07 - Browser And Loading Verification
+
+Status: passed.
+
+Verified by product owner:
+
+- Sidebar IA matches the target structure.
+- Home page What we do add/edit/delete journey works from the Home page settings flow.
+- Dirty-state protection behaves correctly during the Home page item-management journey.
+- Settings overview labels are aligned to `Site branding`, `Site details`, and `Legal pages`.
+- Onboarding/checklist routing behaves as expected.
+- Loading and skeleton behavior passed for the relevant settings and Home page routes.
+- No duplicate skeletons, stale labels, or route-level loading regressions were reported.
+
+Outcome:
+
+- Phase 7 verification is complete.
+- The workstream is ready for Phase 8 access-control and entitlement verification.
+
+### 2026-08-07 - Access Control And Direct Route Verification
+
+Status: passed.
+
+Verified by product owner:
+
+- `/admin/what-we-do` remains accessible as a direct route.
+- `/admin/what-we-do/create` remains accessible as a direct route.
+- `/admin/what-we-do/[itemId]` remains accessible as a direct route.
+- Home page embedded What we do management works as expected.
+- Testimonials management works as expected.
+- Settings routes work as expected.
+
+Outcome:
+
+- Phase 8 access-control and entitlement verification is complete.
+- The IA change did not remove direct route access for existing What we do management paths.
+- The workstream is ready for Phase 9 documentation and support notes.
+
+### 2026-08-07 - Phase 9 Documentation And Support Notes
+
+Status: complete.
+
+Completed:
+
+- Added final support notes for the updated Content sidebar journey.
+- Documented the supported Home page What we do item-management journey.
+- Documented the Settings sidebar and Settings overview final state.
+- Documented the compatibility decision for existing `/admin/settings/pages/*` and `/admin/what-we-do/*` URLs.
+- Documented that What we do is hidden from the visible sidebar but remains available through existing direct routes.
+- Documented that support should guide admins through `Content -> Pages -> Home page -> What we do`, not a top-level What we do sidebar item.
+
+Outcome:
+
+- Phase 9 documentation and support notes are complete.
+- The admin content/settings IA workstream is complete pending normal deployment verification.

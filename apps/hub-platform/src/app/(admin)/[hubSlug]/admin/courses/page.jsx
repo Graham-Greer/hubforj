@@ -8,7 +8,10 @@ import {
 } from "@/components/patterns/admin-route-fallbacks/AdminRouteFallbacks";
 import OfferingAdminListWorkspace from "@/components/patterns/offering-admin-list-workspace/OfferingAdminListWorkspace";
 import { deleteCourseAction } from "./[courseId]/actions";
-import { resolveCourseRegistrationSummary } from "@/lib/data/course-registrations";
+import {
+  getCourseRegistrationSummaryFromCourse,
+  isCourseRegistrationSummaryProjectionCurrent,
+} from "@/lib/data/course-registration-shared";
 import {
   formatCourseDateRange,
   getCourseFormatLabel,
@@ -65,38 +68,49 @@ function buildAdminHref(hubSlug, pathname, routeMode) {
 
 async function CoursesWorkspace({ hub, routeMode }) {
   const courses = await listCoursesByHubSlug(hub.slug);
-  const registrationSummaries = await Promise.all(
-    courses.map(async (course) => [
-      course.id,
-      await resolveCourseRegistrationSummary(hub.id, course, {
-        actorId: "course-list-summary-repair",
-      }),
-    ])
-  );
-  const registrationSummariesByCourseId = new Map(registrationSummaries);
 
   const items = courses.map((course) => {
     const scheduleLabel = formatCourseDateRange(course, hub.locale);
     const typeLabel = getCourseTypeLabel(course);
     const levelLabel = getCourseLevelLabel(course);
     const formatLabel = getCourseFormatLabel(course.format);
-    const registrationSummary = registrationSummariesByCourseId.get(course.id) || {};
+    const registrationSummary = getCourseRegistrationSummaryFromCourse(course);
     const enrolmentCount = Number(registrationSummary.enrolledRegistrationCount || 0);
+    const completedCount = Number(registrationSummary.attendanceCompletedCount || 0);
+    const inProgressCount = Number(registrationSummary.attendanceInProgressCount || 0);
+    const unmarkedCount = Math.max(0, enrolmentCount - Number(registrationSummary.attendanceActiveCount || 0));
+    const registrationProjectionCurrent = isCourseRegistrationSummaryProjectionCurrent(course);
+    const statusBadge = { label: getCourseStatusLabel(course.status), tone: getCourseStatusTone(course.status) };
     const visibilityLabel = getCourseVisibilityLabel(course.visibility);
     const summary = course.summary || getSectionRichTextPlainText(course.description);
 
     return {
       id: course.id,
+      status: course.status,
       title: course.title,
       scheduleLabel,
+      temporalStartValue: course.startDate || "",
+      temporalEndValue: course.endDate || course.startDate || "",
+      dateSortValue: course.startDate || "",
+      dateFilterValue: course.startDate || "",
       meta: [],
       summary,
       imageUrl: course.imageAsset?.publicUrl || "",
       imageAlt: course.imageAlt || course.imageAsset?.alt || course.title,
-      badges: [
-        { label: getCourseStatusLabel(course.status), tone: getCourseStatusTone(course.status) },
-        { label: `${enrolmentCount} Attending`, tone: "accent" },
-      ],
+      badges: [statusBadge, { label: `${enrolmentCount} Enrolled`, tone: "accent" }],
+      currentBadges: [statusBadge, { label: `${enrolmentCount} Enrolled`, tone: "accent" }],
+      historyBadges: [
+        statusBadge,
+        registrationProjectionCurrent
+          ? { label: `${completedCount} Completed`, tone: "accent" }
+          : { label: "Attendance not synced", tone: "neutral" },
+        registrationProjectionCurrent && unmarkedCount > 0
+          ? { label: `${unmarkedCount} Unmarked`, tone: "warning" }
+          : null,
+        registrationProjectionCurrent && inProgressCount > 0
+          ? { label: `${inProgressCount} In progress`, tone: "neutral" }
+          : null,
+      ].filter(Boolean),
       searchTerms: [typeLabel, levelLabel, formatLabel, visibilityLabel, summary],
       filterValues: {
         status: course.status,
@@ -135,6 +149,9 @@ async function CoursesWorkspace({ hub, routeMode }) {
       deleteAction={deleteCourseAction}
       deleteConfirmLabel="Delete course"
       filterDefinitions={filterDefinitions}
+      enableTemporalView
+      itemNounSingular="course"
+      itemNounPlural="courses"
       emptyState={{
         eyebrow: "Courses",
         title: "No courses yet",

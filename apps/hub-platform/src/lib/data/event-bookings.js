@@ -21,6 +21,19 @@ export {
   listWaitlistedEventBookings,
 } from "./event-booking-queries.js";
 export {
+  EVENT_ATTENDANCE_SUMMARY_SCHEMA_VERSION,
+  applyEventAttendanceCounterDelta,
+  calculateEventAttendanceSummaryFromSource,
+  getEventAttendanceCounterDelta,
+  getEventAttendanceSummaryFromEvent,
+  getHubEventAttendanceReconciliationReport,
+  isEventAttendanceSummaryProjectionCurrent,
+  rebuildHubEventAttendanceSummaryProjections,
+  repairEventAttendanceSummaryProjection,
+  summarizeEventAttendanceCounterRows,
+  updateEventAttendanceSummaryProjection,
+} from "./event-attendance-summary.js";
+export {
   cancelEventBookingAttendee,
   createEventBookingForMember,
   promoteWaitlistedEventBookings,

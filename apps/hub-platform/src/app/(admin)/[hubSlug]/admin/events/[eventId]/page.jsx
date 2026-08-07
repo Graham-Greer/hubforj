@@ -4,6 +4,7 @@ import EventDetailWorkspace from "@/components/patterns/event-detail-workspace/E
 import { AdminProgrammeDetailFallback } from "@/components/patterns/admin-route-fallbacks/AdminRouteFallbacks";
 import EditEventForm from "./EditEventForm";
 import { countActiveUpcomingPublishedEventsByHub, getEventById } from "@/lib/data/events";
+import { isEventAttendanceSummaryProjectionCurrent } from "@/lib/data/event-bookings";
 import { requireHubBySlug } from "@/lib/data/hubs";
 import { isActiveUpcomingPublishedEvent } from "@/lib/domain/events";
 import { resolveHubPackageEntitlements } from "@/lib/domain/hub-package";
@@ -17,10 +18,10 @@ import { notFound } from "next/navigation";
 async function EventDetailContent({ hubSlug, eventId, query }) {
   const eventsSearchParams = new URLSearchParams();
 
-  ["q", "status", "pricing", "visibility"].forEach((key) => {
+  ["q", "status", "pricing", "visibility", "view"].forEach((key) => {
     const value = query?.[key];
 
-    if (typeof value === "string" && value) {
+    if (typeof value === "string" && value && (key !== "view" || value === "history")) {
       eventsSearchParams.set(key, value);
     }
   });
@@ -67,6 +68,8 @@ async function EventDetailContent({ hubSlug, eventId, query }) {
   }
 
   const registrationCount = Number(event.registeredAttendeeCount || 0);
+  const attendanceCount = Number(event.attendancePresentCount || 0);
+  const attendanceCountVerified = isEventAttendanceSummaryProjectionCurrent(event);
   const hasAttendanceRegistrations =
     registrationCount + Number(event.waitlistedAttendeeCount || 0) + Number(event.cancelledAttendeeCount || 0) > 0;
   const editForm = isEditing
@@ -99,8 +102,9 @@ async function EventDetailContent({ hubSlug, eventId, query }) {
       eventsQuery={eventsQuery}
       isEditing={isEditing}
       routeMode={routeMode}
+      attendanceCount={attendanceCount}
       registrationCount={registrationCount}
-      attendanceCountVerified={false}
+      attendanceCountVerified={attendanceCountVerified}
       canExportAttendanceReport={entitlements.capabilities?.reportingEnabled === true}
       hasAttendanceRegistrations={hasAttendanceRegistrations}
       seriesWorkspaceHref={event.seriesId ? buildHubRuntimeHref(hub.slug, `/admin/events/series/${event.seriesId}`, routeMode) : ""}

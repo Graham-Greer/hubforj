@@ -20,6 +20,7 @@ import {
 import { canHubUseGroupBookings } from "@/lib/domain/event-bookings";
 import { assertHubNativePaymentsReady } from "@/lib/domain/hub-payment-configuration";
 import { normalizeEventRecord, normalizeString } from "./event-shared.js";
+import { EVENT_ATTENDANCE_SUMMARY_SCHEMA_VERSION } from "./event-attendance-summary.js";
 import { createMediaUsageReference, removeMediaUsageReference, syncMediaUsageReferenceForAssetChange } from "./media-usage-projection.js";
 import { rebuildEventMemberActivity } from "./member-activity.js";
 
@@ -203,6 +204,13 @@ export async function createEventByHubSlug(hubSlug, payload, actorId = "system")
     waitlistedAttendeeCount: 0,
     cancelledAttendeeCount: 0,
     activeBookingCount: 0,
+    attendancePresentCount: 0,
+    attendanceAbsentCount: 0,
+    attendancePendingCount: 0,
+    attendanceMarkedCount: 0,
+    attendanceSummarySchemaVersion: EVENT_ATTENDANCE_SUMMARY_SCHEMA_VERSION,
+    attendanceSummaryUpdatedAt: now,
+    attendanceSummaryUpdatedBy: actorId,
     visibility: next.visibility,
     allowWaitlist: next.allowWaitlist,
     category: next.category,

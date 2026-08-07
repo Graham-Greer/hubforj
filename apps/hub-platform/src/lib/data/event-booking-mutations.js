@@ -32,6 +32,12 @@ import {
   normalizeEventBookingRecord,
   normalizeString,
 } from "./event-booking-shared.js";
+import {
+  applyEventAttendanceCounterDelta,
+  getEventAttendanceCounterDelta,
+  isEventAttendanceSummaryProjectionCurrent,
+  repairEventAttendanceSummaryProjection,
+} from "./event-attendance-summary.js";
 import { getPaymentRecordBySource, upsertPaymentRecordBySource } from "./payment-records.js";
 import { upsertEventBookingMemberActivity } from "./member-activity.js";
 import { getFallbackRegionalMarket } from "@/lib/domain/regional-markets";
@@ -39,6 +45,29 @@ import { getFallbackRegionalMarket } from "@/lib/domain/regional-markets";
 function normalizeInteger(value, fallback = 0) {
   const next = Number.parseInt(String(value || ""), 10);
   return Number.isFinite(next) ? next : fallback;
+}
+
+function buildEventAttendanceCounterUpdate(event, previousAttendees = [], nextAttendees = [], actorId = "system", updatedAt = "") {
+  return applyEventAttendanceCounterDelta(
+    event,
+    getEventAttendanceCounterDelta(previousAttendees, nextAttendees),
+    {
+      actorId,
+      updatedAt,
+      markProjectionCurrent: isEventAttendanceSummaryProjectionCurrent(event),
+    }
+  );
+}
+
+async function repairEventAttendanceSummaryAfterLegacyMutation(hubId, eventId, shouldRepair, actorId = "system") {
+  if (!shouldRepair) {
+    return null;
+  }
+
+  return repairEventAttendanceSummaryProjection(hubId, eventId, {
+    actorId: normalizeString(actorId) || "system",
+    updatedAt: new Date().toISOString(),
+  });
 }
 
 function normalizeMoneyDisplayFromMinor(amountMinor, currency = getFallbackRegionalMarket().defaultCurrency) {
@@ -401,6 +430,7 @@ async function promoteOneWaitlistedEventBooking(hubId, eventId, bookingId, actor
   const bookingRef = getEventBookingDocRef(normalizedHubId, normalizedEventId, normalizedBookingId);
   const now = new Date().toISOString();
   let outcome = { promoted: false, blockedByCapacity: false, booking: null };
+  let shouldRepairEventAttendanceSummary = false;
 
   await db.runTransaction(async (transaction) => {
     const [eventDoc, bookingDoc, attendeeSnapshot] = await Promise.all([
@@ -414,6 +444,7 @@ async function promoteOneWaitlistedEventBooking(hubId, eventId, bookingId, actor
     }
 
     const event = { id: eventDoc.id, hubId: normalizedHubId, ...eventDoc.data() };
+    shouldRepairEventAttendanceSummary = !isEventAttendanceSummaryProjectionCurrent(event);
     const booking = normalizeEventBookingRecord({
       id: bookingDoc.id,
       hubId: normalizedHubId,
@@ -446,6 +477,16 @@ async function promoteOneWaitlistedEventBooking(hubId, eventId, bookingId, actor
       outcome = { promoted: false, blockedByCapacity: true, booking };
       return;
     }
+
+    const nextAttendees = attendees.map((attendee) =>
+      attendee.status === "waitlisted"
+        ? {
+            ...attendee,
+            status: "registered",
+            updatedAt: now,
+          }
+        : attendee
+    );
 
     for (const attendee of attendees) {
       if (attendee.status !== "waitlisted") {
@@ -486,6 +527,7 @@ async function promoteOneWaitlistedEventBooking(hubId, eventId, bookingId, actor
       registeredAttendeeCount: registeredAttendeeCount + requestedAttendeeCount,
       waitlistedAttendeeCount: Math.max(0, normalizeInteger(event.waitlistedAttendeeCount, 0) - requestedAttendeeCount),
       activeBookingCount: normalizeInteger(event.activeBookingCount, 0) + 1,
+      ...buildEventAttendanceCounterUpdate(event, attendees, nextAttendees, actorId, now),
       updatedAt: now,
     });
 
@@ -502,6 +544,13 @@ async function promoteOneWaitlistedEventBooking(hubId, eventId, bookingId, actor
       }),
     };
   });
+
+  await repairEventAttendanceSummaryAfterLegacyMutation(
+    normalizedHubId,
+    normalizedEventId,
+    shouldRepairEventAttendanceSummary,
+    actorId
+  );
 
   if (outcome?.booking) {
     await maintainMemberActivityForEventBookingChange(
@@ -563,6 +612,7 @@ export async function createEventBookingForMember(
   const sentinelRef = getEventBookingBookerSentinelRef(normalizedHubId, normalizedEventId, normalizedBookerUserId);
   const now = new Date().toISOString();
   let createdBookingStatus = "active";
+  let shouldRepairEventAttendanceSummary = false;
 
   await db.runTransaction(async (transaction) => {
     const [eventDoc, sentinelDoc] = await Promise.all([
@@ -575,6 +625,7 @@ export async function createEventBookingForMember(
     }
 
     const currentEvent = { id: eventDoc.id, hubId: normalizedHubId, ...eventDoc.data() };
+    shouldRepairEventAttendanceSummary = !isEventAttendanceSummaryProjectionCurrent(currentEvent);
     const registeredAttendeeCount = normalizeInteger(currentEvent.registeredAttendeeCount, 0);
     const waitlistedAttendeeCount = normalizeInteger(currentEvent.waitlistedAttendeeCount, 0);
     const cancelledAttendeeCount = normalizeInteger(currentEvent.cancelledAttendeeCount, 0);
@@ -600,6 +651,11 @@ export async function createEventBookingForMember(
     const paymentStatus = resolveInitialEventBookingPaymentStatus(currentEvent);
     const activeAttendeeCount = bookingStatus === "active" ? requestedAttendeeCount : 0;
     const bookingWaitlistedAttendeeCount = bookingStatus === "waitlisted" ? requestedAttendeeCount : 0;
+    const attendanceCounterAttendees = requestedAttendees.map((attendee) => ({
+      ...attendee,
+      status: bookingStatus === "waitlisted" ? "waitlisted" : "registered",
+      attendanceStatus: "pending",
+    }));
     const writeModel = {
       hubId: normalizedHubId,
       eventId: normalizedEventId,
@@ -682,9 +738,16 @@ export async function createEventBookingForMember(
       waitlistedAttendeeCount: waitlistedAttendeeCount + bookingWaitlistedAttendeeCount,
       cancelledAttendeeCount,
       activeBookingCount: activeBookingCount + (bookingStatus === "active" ? 1 : 0),
+      ...buildEventAttendanceCounterUpdate(currentEvent, [], attendanceCounterAttendees, actorId, now),
       updatedAt: now,
     });
   });
+  await repairEventAttendanceSummaryAfterLegacyMutation(
+    normalizedHubId,
+    normalizedEventId,
+    shouldRepairEventAttendanceSummary,
+    actorId
+  );
   const createdBooking = normalizeEventBookingRecord({
     id: bookingId,
     hubId: normalizedHubId,
@@ -840,6 +903,7 @@ export async function updateEventBookingStatus(
   const bookingRef = getEventBookingDocRef(normalizedHubId, normalizedEventId, normalizedBookingId);
   const now = new Date().toISOString();
   let result = null;
+  let shouldRepairEventAttendanceSummary = false;
 
   await db.runTransaction(async (transaction) => {
     const [eventDoc, bookingDoc, attendeeSnapshot] = await Promise.all([
@@ -857,6 +921,7 @@ export async function updateEventBookingStatus(
     }
 
     const event = { id: eventDoc.id, hubId: normalizedHubId, ...eventDoc.data() };
+    shouldRepairEventAttendanceSummary = !isEventAttendanceSummaryProjectionCurrent(event);
     const booking = normalizeEventBookingRecord({
       id: bookingDoc.id,
       hubId: normalizedHubId,
@@ -968,6 +1033,7 @@ export async function updateEventBookingStatus(
         0,
         normalizeInteger(event.activeBookingCount, 0) + (bookingWasActive === bookingWillBeActive ? 0 : bookingWillBeActive ? 1 : -1)
       ),
+      ...buildEventAttendanceCounterUpdate(event, attendees, transformedAttendees, actorId, now),
       updatedAt: now,
     });
 
@@ -984,6 +1050,12 @@ export async function updateEventBookingStatus(
       cancelledByUserId: computedBookingStatus === "cancelled" ? normalizeString(actorId) : "",
     });
   });
+  await repairEventAttendanceSummaryAfterLegacyMutation(
+    normalizedHubId,
+    normalizedEventId,
+    shouldRepairEventAttendanceSummary,
+    actorId
+  );
 
   await maintainDashboardProjectionsForEventBookingChange(
     normalizedHubId,
@@ -1031,6 +1103,7 @@ export async function updateEventBookingAttendeeStatus(
   const attendeeRef = getEventBookingAttendeeDocRef(normalizedHubId, normalizedEventId, normalizedBookingId, normalizedAttendeeId);
   const now = new Date().toISOString();
   let result = null;
+  let shouldRepairEventAttendanceSummary = false;
 
   await db.runTransaction(async (transaction) => {
     const [eventDoc, bookingDoc, attendeeDoc, attendeeSnapshot] = await Promise.all([
@@ -1053,6 +1126,7 @@ export async function updateEventBookingAttendeeStatus(
     }
 
     const event = { id: eventDoc.id, hubId: normalizedHubId, ...eventDoc.data() };
+    shouldRepairEventAttendanceSummary = !isEventAttendanceSummaryProjectionCurrent(event);
     const booking = normalizeEventBookingRecord({
       id: bookingDoc.id,
       hubId: normalizedHubId,
@@ -1165,6 +1239,7 @@ export async function updateEventBookingAttendeeStatus(
         0,
         normalizeInteger(event.activeBookingCount, 0) + (bookingWasActive === bookingWillBeActive ? 0 : bookingWillBeActive ? 1 : -1)
       ),
+      ...buildEventAttendanceCounterUpdate(event, allAttendees, nextAttendees, actorId, now),
       updatedAt: now,
     });
 
@@ -1184,6 +1259,12 @@ export async function updateEventBookingAttendeeStatus(
       attendee: normalizeEventBookingAttendeeRecord(updatedAttendee),
     };
   });
+  await repairEventAttendanceSummaryAfterLegacyMutation(
+    normalizedHubId,
+    normalizedEventId,
+    shouldRepairEventAttendanceSummary,
+    actorId
+  );
 
   await maintainDashboardProjectionsForEventBookingChange(
     normalizedHubId,
@@ -1225,44 +1306,75 @@ export async function updateEventBookingAttendeeAttendanceStatus(
     throw new Error("Unsupported attendance status.");
   }
 
+  const db = getFirebaseAdminDb();
+  const eventRef = db.collection("hubs").doc(normalizedHubId).collection("events").doc(normalizedEventId);
   const attendeeRef = getEventBookingAttendeeDocRef(
     normalizedHubId,
     normalizedEventId,
     normalizedBookingId,
     normalizedAttendeeId
   );
-  const attendeeDoc = await attendeeRef.get();
-
-  if (!attendeeDoc.exists) {
-    throw new Error("Attendee not found.");
-  }
-
-  const attendee = normalizeEventBookingAttendeeRecord({
-    id: attendeeDoc.id,
-    hubId: normalizedHubId,
-    eventId: normalizedEventId,
-    bookingId: normalizedBookingId,
-    ...attendeeDoc.data(),
-  });
-
-  if (attendee.status !== "registered") {
-    throw new Error("Only registered attendees can have attendance updated.");
-  }
-
   const now = new Date().toISOString();
+  let result = null;
+  let shouldRepairEventAttendanceSummary = false;
 
-  await attendeeRef.update({
-    attendanceStatus: normalizedAttendanceStatus,
-    attendanceMarkedAt: now,
-    updatedAt: now,
+  await db.runTransaction(async (transaction) => {
+    const [eventDoc, attendeeDoc] = await Promise.all([
+      transaction.get(eventRef),
+      transaction.get(attendeeRef),
+    ]);
+
+    if (!eventDoc.exists) {
+      throw new Error("Event not found.");
+    }
+
+    if (!attendeeDoc.exists) {
+      throw new Error("Attendee not found.");
+    }
+
+    const event = { id: eventDoc.id, hubId: normalizedHubId, ...eventDoc.data() };
+    const attendee = normalizeEventBookingAttendeeRecord({
+      id: attendeeDoc.id,
+      hubId: normalizedHubId,
+      eventId: normalizedEventId,
+      bookingId: normalizedBookingId,
+      ...attendeeDoc.data(),
+    });
+
+    if (attendee.status !== "registered") {
+      throw new Error("Only registered attendees can have attendance updated.");
+    }
+
+    shouldRepairEventAttendanceSummary = !isEventAttendanceSummaryProjectionCurrent(event);
+    const updatedAttendee = normalizeEventBookingAttendeeRecord({
+      ...attendee,
+      attendanceStatus: normalizedAttendanceStatus,
+      attendanceMarkedAt: normalizedAttendanceStatus === "pending" ? "" : now,
+      updatedAt: now,
+    });
+
+    transaction.update(attendeeRef, {
+      attendanceStatus: updatedAttendee.attendanceStatus,
+      attendanceMarkedAt: updatedAttendee.attendanceMarkedAt,
+      updatedAt: updatedAttendee.updatedAt,
+    });
+
+    transaction.update(eventRef, {
+      ...buildEventAttendanceCounterUpdate(event, [attendee], [updatedAttendee], actorId, now),
+      updatedAt: now,
+    });
+
+    result = updatedAttendee;
   });
 
-  return normalizeEventBookingAttendeeRecord({
-    ...attendee,
-    attendanceStatus: normalizedAttendanceStatus,
-    attendanceMarkedAt: now,
-    updatedAt: now,
-  });
+  await repairEventAttendanceSummaryAfterLegacyMutation(
+    normalizedHubId,
+    normalizedEventId,
+    shouldRepairEventAttendanceSummary,
+    actorId
+  );
+
+  return result;
 }
 
 export async function cancelEventBookingAttendee(
@@ -1287,6 +1399,7 @@ export async function cancelEventBookingAttendee(
   const attendeeRef = getEventBookingAttendeeDocRef(normalizedHubId, normalizedEventId, normalizedBookingId, normalizedAttendeeId);
   const now = new Date().toISOString();
   let result = null;
+  let shouldRepairEventAttendanceSummary = false;
 
   await db.runTransaction(async (transaction) => {
     const [eventDoc, bookingDoc, attendeeDoc, attendeeSnapshot] = await Promise.all([
@@ -1309,6 +1422,7 @@ export async function cancelEventBookingAttendee(
     }
 
     const event = { id: eventDoc.id, hubId: normalizedHubId, ...eventDoc.data() };
+    shouldRepairEventAttendanceSummary = !isEventAttendanceSummaryProjectionCurrent(event);
     const booking = normalizeEventBookingRecord({
       id: bookingDoc.id,
       hubId: normalizedHubId,
@@ -1429,6 +1543,7 @@ export async function cancelEventBookingAttendee(
         0,
         normalizeInteger(event.activeBookingCount, 0) + (bookingWasActive && !bookingWillBeActive ? -1 : 0)
       ),
+      ...buildEventAttendanceCounterUpdate(event, allAttendees, nextAttendees, actorId, now),
       updatedAt: now,
     });
 
@@ -1438,6 +1553,12 @@ export async function cancelEventBookingAttendee(
       refundState,
     };
   });
+  await repairEventAttendanceSummaryAfterLegacyMutation(
+    normalizedHubId,
+    normalizedEventId,
+    shouldRepairEventAttendanceSummary,
+    actorId
+  );
 
   if (result && normalizeInteger(result.booking?.activeAttendeeCount, 0) >= 0) {
     await promoteWaitlistedEventBookings(normalizedHubId, normalizedEventId, actorId);

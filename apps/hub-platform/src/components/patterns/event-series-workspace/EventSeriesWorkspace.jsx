@@ -116,7 +116,11 @@ export default function EventSeriesWorkspace({
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const eventsListHref = buildHubRuntimeHref(hub.slug, `/admin/events${occurrencesQuery ? `?${occurrencesQuery}` : ""}`, routeMode);
-  const editHref = buildHubRuntimeHref(hub.slug, `/admin/events/series/${series.id}?mode=edit`, routeMode);
+  const editSearchParams = new URLSearchParams(
+    occurrencesQuery ? Object.fromEntries(new URLSearchParams(occurrencesQuery)) : {}
+  );
+  editSearchParams.set("mode", "edit");
+  const editHref = buildHubRuntimeHref(hub.slug, `/admin/events/series/${series.id}?${editSearchParams.toString()}`, routeMode);
   const recurrenceSummary = getRecurrenceSummary(series);
   const upcomingOccurrences = occurrences.filter((occurrence) => occurrence.status !== "cancelled").length;
   const preservedOccurrences = occurrences.filter((occurrence) => occurrence.isSeriesPreserved).length;

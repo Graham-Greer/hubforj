@@ -10,6 +10,10 @@ import { getHubPaymentReconciliationReport } from "@/lib/data/payment-reconcilia
 import { getHubMemberDirectoryReconciliationReport } from "@/lib/data/member-directory";
 import { getHubAdminDashboardProjectionReconciliationReport } from "@/lib/data/hub-dashboard-stats";
 import {
+  getHubEventAttendanceReconciliationReport,
+  rebuildHubEventAttendanceSummaryProjections,
+} from "@/lib/data/event-bookings";
+import {
   getHubMediaUsageReconciliationReport,
   rebuildHubMediaUsageProjections,
 } from "@/lib/data/media-usage-projection";
@@ -72,6 +76,7 @@ export function normalizeProjectionMaintenanceRequest(input = {}) {
     includeMembers: normalizeBoolean(input.includeMembers, true),
     includeDashboard: normalizeBoolean(input.includeDashboard, true),
     includeMedia: normalizeBoolean(input.includeMedia, true),
+    includeEventAttendance: normalizeBoolean(input.includeEventAttendance, true),
   };
 }
 
@@ -103,17 +108,19 @@ export async function runProjectionMaintenance(input = {}) {
 
     try {
       if (options.dryRun) {
-        const [paymentReport, memberDirectoryReport, dashboardReport, mediaReport] = await Promise.all([
+        const [paymentReport, memberDirectoryReport, dashboardReport, mediaReport, eventAttendanceReport] = await Promise.all([
           options.includePayments ? getHubPaymentReconciliationReport(hub.id, { issueLimit: 25 }) : Promise.resolve(null),
           options.includeMembers ? getHubMemberDirectoryReconciliationReport(hub.id, { issueLimit: 25 }) : Promise.resolve(null),
           options.includeDashboard ? getHubAdminDashboardProjectionReconciliationReport(hub, { issueLimit: 25 }) : Promise.resolve(null),
           options.includeMedia ? getHubMediaUsageReconciliationReport(hub.id) : Promise.resolve(null),
+          options.includeEventAttendance ? getHubEventAttendanceReconciliationReport(hub.id, { issueLimit: 25 }) : Promise.resolve(null),
         ]);
 
         if (paymentReport) hubResult.reports.payments = summarizeReport(paymentReport);
         if (memberDirectoryReport) hubResult.reports.memberDirectory = summarizeReport(memberDirectoryReport);
         if (dashboardReport) hubResult.reports.dashboard = summarizeReport(dashboardReport);
         if (mediaReport) hubResult.reports.mediaUsage = summarizeReport(mediaReport);
+        if (eventAttendanceReport) hubResult.reports.eventAttendance = summarizeReport(eventAttendanceReport);
       } else {
         if (options.includePayments || options.includeMembers || options.includeDashboard) {
           hubResult.repairs.paymentLedger = summarizeLedgerSync(
@@ -125,17 +132,23 @@ export async function runProjectionMaintenance(input = {}) {
           hubResult.repairs.mediaUsage = await rebuildHubMediaUsageProjections(hub.id, actorId);
         }
 
-        const [paymentReport, memberDirectoryReport, dashboardReport, mediaReport] = await Promise.all([
+        if (options.includeEventAttendance) {
+          hubResult.repairs.eventAttendance = await rebuildHubEventAttendanceSummaryProjections(hub.id, actorId);
+        }
+
+        const [paymentReport, memberDirectoryReport, dashboardReport, mediaReport, eventAttendanceReport] = await Promise.all([
           options.includePayments ? getHubPaymentReconciliationReport(hub.id, { issueLimit: 25 }) : Promise.resolve(null),
           options.includeMembers ? getHubMemberDirectoryReconciliationReport(hub.id, { issueLimit: 25 }) : Promise.resolve(null),
           options.includeDashboard ? getHubAdminDashboardProjectionReconciliationReport(hub, { issueLimit: 25 }) : Promise.resolve(null),
           options.includeMedia ? getHubMediaUsageReconciliationReport(hub.id) : Promise.resolve(null),
+          options.includeEventAttendance ? getHubEventAttendanceReconciliationReport(hub.id, { issueLimit: 25 }) : Promise.resolve(null),
         ]);
 
         if (paymentReport) hubResult.reports.payments = summarizeReport(paymentReport);
         if (memberDirectoryReport) hubResult.reports.memberDirectory = summarizeReport(memberDirectoryReport);
         if (dashboardReport) hubResult.reports.dashboard = summarizeReport(dashboardReport);
         if (mediaReport) hubResult.reports.mediaUsage = summarizeReport(mediaReport);
+        if (eventAttendanceReport) hubResult.reports.eventAttendance = summarizeReport(eventAttendanceReport);
       }
     } catch (error) {
       hubResult.status = "failed";
