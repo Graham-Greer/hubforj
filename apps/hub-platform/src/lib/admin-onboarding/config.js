@@ -663,7 +663,7 @@ export const adminOnboardingChecklistItems = [
   },
   {
     key: "homepage",
-    label: "Review pages",
+    label: "Complete page content",
     href: "/admin/settings/pages",
     completionMode: "setup_fact",
     factKey: "homepage",
