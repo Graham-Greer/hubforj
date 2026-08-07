@@ -100,10 +100,8 @@ export function deriveBrandingSettingsPanelStatus(hub = {}, siteSettings = {}) {
     hasValue(siteSettings.themeKey || hub.themeKey || hub.theme) &&
     hasValue(hub.templateKey || hub.template) &&
     hasValue(siteSettings.branding?.primary) &&
-    hasValue(siteSettings.branding?.secondary);
-  const optionalComplete =
-    hasValue(siteSettings.logoAssetId) &&
-    normalizeBrandingHeaderCtaKey(siteSettings.header?.primaryCtaKey) !== "none";
+    hasValue(siteSettings.logoAssetId);
+  const optionalComplete = hasValue(siteSettings.branding?.secondary);
 
   if (!requiredComplete) {
     return getSettingsPanelStatusMeta("needs_attention");
@@ -303,15 +301,34 @@ function normalizePageHero(page = {}) {
 }
 
 export function normalizeBrandingSettingsPayload(payload) {
+  const rawThemeKey = normalizeString(payload.themeKey);
+  const rawTemplateKey = normalizeString(payload.templateKey);
   const themeKey = normalizeTheme(payload.themeKey);
   const templateKey = normalizeTemplate(payload.templateKey);
   const logoAssetId = normalizeString(payload.logoAssetId);
   const logoAlt = normalizeString(payload.logoAlt);
   const headerCtaKey = normalizeBrandingHeaderCtaKey(payload.headerCtaKey);
+  const primaryBrandColor = normalizeString(payload.brandPrimaryColor);
   const brandingColors = {
-    primary: normalizeHexColor(payload.brandPrimaryColor) || defaultBrandingColors.primary,
+    primary: normalizeHexColor(primaryBrandColor) || defaultBrandingColors.primary,
     secondary: normalizeHexColor(payload.brandSecondaryColor) || defaultBrandingColors.secondary,
   };
+
+  if (!logoAssetId) {
+    throw new Error("Public logo is required.");
+  }
+
+  if (!rawThemeKey) {
+    throw new Error("Public theme is required.");
+  }
+
+  if (!rawTemplateKey) {
+    throw new Error("Public template is required.");
+  }
+
+  if (!primaryBrandColor) {
+    throw new Error("Primary brand color is required.");
+  }
 
   return {
     themeKey,

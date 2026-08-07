@@ -600,6 +600,7 @@ Implementation notes:
 - Ordinary edits that do not change whether a collection has records do not rebuild the projection.
 - Payment setup remains calculated from the live payment configuration, and regional setup remains calculated from the hub record. Moving either into the projection would require a broader consistency contract.
 - Checklist items for site details, branding, homepage/page review, account/package review, and membership plans are now fact-based. Route journey state remains available for tours and help guidance, but does not decide checklist completion for those items.
+- Site branding completion requires logo, theme, template, and primary brand color. Header CTA and secondary brand color are optional enhancements and do not block checklist completion.
 - `adminOnboardingSummary` schema was bumped to version 2 so existing version 1 documents rebuild safely and gain setup facts.
 
 Production rollout:
