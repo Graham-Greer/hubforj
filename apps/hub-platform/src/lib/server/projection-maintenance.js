@@ -19,10 +19,14 @@ import {
 } from "@/lib/data/media-usage-projection";
 
 function normalizeString(value) {
-  return String(value || "").trim();
+  return value === null || value === undefined ? "" : String(value).trim();
 }
 
 function normalizeBoolean(value, fallback = false) {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
   const normalizedValue = normalizeString(value).toLowerCase();
 
   if (["1", "true", "yes"].includes(normalizedValue)) {
