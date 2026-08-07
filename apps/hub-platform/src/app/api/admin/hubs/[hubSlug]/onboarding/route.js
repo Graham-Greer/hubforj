@@ -10,13 +10,15 @@ export async function GET(request, { params }) {
   const timer = createPerformanceTimer("admin-onboarding-route", {
     method: "GET",
     hubSlug,
-    scope: scope || "checklist",
+    requestScope: scope || "checklist",
     includeChecklist,
   });
   timer.log("start");
 
+  const accessStartedAt = Date.now();
   const { hub, access, errorResponse } = await requireHubOperatorRouteAccess(request, hubSlug, { coreHub: true });
   timer.log("access-resolved", {
+    durationMs: Date.now() - accessStartedAt,
     hubId: hub?.id || "",
     actorId: access?.actorId || "",
     actorRole: access?.actorRole || "",
@@ -48,8 +50,10 @@ export async function PATCH(request, { params }) {
   });
   timer.log("start");
 
+  const accessStartedAt = Date.now();
   const { hub, access, errorResponse } = await requireHubOperatorRouteAccess(request, hubSlug, { coreHub: true });
   timer.log("access-resolved", {
+    durationMs: Date.now() - accessStartedAt,
     hubId: hub?.id || "",
     actorId: access?.actorId || "",
     actorRole: access?.actorRole || "",

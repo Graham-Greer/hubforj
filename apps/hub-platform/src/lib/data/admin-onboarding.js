@@ -287,6 +287,7 @@ export async function getAdminOnboardingState(hub, actorUserId, actorRole, optio
   if (!includeChecklist) {
     timer.log("checklist-record-counts-skipped", { reason: "route-scope" });
   }
+  const parallelReadsStartedAt = Date.now();
   const [doc, paymentConfiguration, recordCounts] = await Promise.all([
     measureOnboardingPromise(getDocRef(hub.id, actorUserId).get(), timer, "onboarding-doc-read"),
     shouldLoadPaymentConfiguration
@@ -298,6 +299,11 @@ export async function getAdminOnboardingState(hub, actorUserId, actorRole, optio
       : Promise.resolve(null),
     includeChecklist ? getChecklistRecordCounts(hub, capabilities, { timer }) : Promise.resolve(null),
   ]);
+  timer.log("parallel-reads-loaded", {
+    durationMs: Date.now() - parallelReadsStartedAt,
+    paymentConfigurationLoaded: Boolean(paymentConfiguration),
+    checklistRecordCountsLoaded: Boolean(recordCounts),
+  });
   const persisted = normalizePersistedState(doc.exists ? doc.data() : null, fallback);
   timer.log("persisted-state-normalized", {
     docExists: doc.exists,

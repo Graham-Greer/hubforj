@@ -920,3 +920,10 @@ Verification pending:
   - payment configuration
   - checklist record counts
 - Use the timings to decide whether Phase 1 provider scheduling/cache or Phase 3 checklist projection should be prioritized first.
+
+Initial production observation:
+
+- `/admin` hard refresh and revisit both showed checklist-scope `admin-onboarding-state` completing in roughly 496-497ms.
+- The overall onboarding route timing was roughly 990-1061ms.
+- This indicates that about half the current endpoint time is inside `getAdminOnboardingState`, and about half is outside it, most likely access/auth/session resolution.
+- Added more granular API access duration timing and `parallel-reads-loaded` state timing so the next log capture can separate access/auth cost from Firestore/payment/checklist reads.
