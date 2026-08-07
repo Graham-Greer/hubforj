@@ -14,8 +14,13 @@ import {
   normalizeMediaUploadInput,
 } from "@/lib/domain/media";
 import { folderCollection, mediaCollection, normalizeString } from "./media-shared.js";
+import { maintainHubAdminOnboardingSummaryForSourceChange } from "./admin-onboarding-summary.js";
 import { getMediaAssetById } from "./media-queries.js";
 import { deleteMediaUsageProjectionForAsset } from "./media-usage-projection.js";
+
+async function maintainAdminOnboardingSummaryForMediaChange(hubId, actorId, reason = "media-change") {
+  return maintainHubAdminOnboardingSummaryForSourceChange(hubId, actorId, { reason });
+}
 
 export async function updateMediaAssetForHub(hubId, assetId, payload, actorId = "system") {
   const normalizedHubId = normalizeString(hubId);
@@ -78,6 +83,7 @@ export async function deleteMediaAssetForHub(hubId, assetId) {
   await getFirebaseAdminStorage().bucket(bucketName).file(asset.storagePath).delete({ ignoreNotFound: true });
   await mediaCollection(normalizedHubId).doc(normalizedAssetId).delete();
   await deleteMediaUsageProjectionForAsset(normalizedHubId, normalizedAssetId);
+  await maintainAdminOnboardingSummaryForMediaChange(normalizedHubId, "media-delete", "media-delete");
 }
 
 export async function uploadMediaAssetForHub(hubId, payload, actorId = "system") {
@@ -136,5 +142,6 @@ export async function uploadMediaAssetForHub(hubId, payload, actorId = "system")
   };
 
   await mediaCollection(normalizedHubId).doc(assetId).set(record);
+  await maintainAdminOnboardingSummaryForMediaChange(normalizedHubId, actorId, "media-upload");
   return normalizeMediaAssetRecord({ id: assetId, ...record });
 }

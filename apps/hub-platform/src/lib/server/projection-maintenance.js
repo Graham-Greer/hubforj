@@ -17,6 +17,10 @@ import {
   getHubMediaUsageReconciliationReport,
   rebuildHubMediaUsageProjections,
 } from "@/lib/data/media-usage-projection";
+import {
+  getHubAdminOnboardingSummaryReconciliationReport,
+  rebuildHubAdminOnboardingSummary,
+} from "@/lib/data/admin-onboarding-summary";
 
 function normalizeString(value) {
   return value === null || value === undefined ? "" : String(value).trim();
@@ -81,6 +85,7 @@ export function normalizeProjectionMaintenanceRequest(input = {}) {
     includeDashboard: normalizeBoolean(input.includeDashboard, true),
     includeMedia: normalizeBoolean(input.includeMedia, true),
     includeEventAttendance: normalizeBoolean(input.includeEventAttendance, true),
+    includeAdminOnboarding: normalizeBoolean(input.includeAdminOnboarding, true),
   };
 }
 
@@ -112,12 +117,20 @@ export async function runProjectionMaintenance(input = {}) {
 
     try {
       if (options.dryRun) {
-        const [paymentReport, memberDirectoryReport, dashboardReport, mediaReport, eventAttendanceReport] = await Promise.all([
+        const [
+          paymentReport,
+          memberDirectoryReport,
+          dashboardReport,
+          mediaReport,
+          eventAttendanceReport,
+          adminOnboardingReport,
+        ] = await Promise.all([
           options.includePayments ? getHubPaymentReconciliationReport(hub.id, { issueLimit: 25 }) : Promise.resolve(null),
           options.includeMembers ? getHubMemberDirectoryReconciliationReport(hub.id, { issueLimit: 25 }) : Promise.resolve(null),
           options.includeDashboard ? getHubAdminDashboardProjectionReconciliationReport(hub, { issueLimit: 25 }) : Promise.resolve(null),
           options.includeMedia ? getHubMediaUsageReconciliationReport(hub.id) : Promise.resolve(null),
           options.includeEventAttendance ? getHubEventAttendanceReconciliationReport(hub.id, { issueLimit: 25 }) : Promise.resolve(null),
+          options.includeAdminOnboarding ? getHubAdminOnboardingSummaryReconciliationReport(hub.id, { issueLimit: 25 }) : Promise.resolve(null),
         ]);
 
         if (paymentReport) hubResult.reports.payments = summarizeReport(paymentReport);
@@ -125,6 +138,7 @@ export async function runProjectionMaintenance(input = {}) {
         if (dashboardReport) hubResult.reports.dashboard = summarizeReport(dashboardReport);
         if (mediaReport) hubResult.reports.mediaUsage = summarizeReport(mediaReport);
         if (eventAttendanceReport) hubResult.reports.eventAttendance = summarizeReport(eventAttendanceReport);
+        if (adminOnboardingReport) hubResult.reports.adminOnboarding = summarizeReport(adminOnboardingReport);
       } else {
         if (options.includePayments || options.includeMembers || options.includeDashboard) {
           hubResult.repairs.paymentLedger = summarizeLedgerSync(
@@ -140,12 +154,24 @@ export async function runProjectionMaintenance(input = {}) {
           hubResult.repairs.eventAttendance = await rebuildHubEventAttendanceSummaryProjections(hub.id, actorId);
         }
 
-        const [paymentReport, memberDirectoryReport, dashboardReport, mediaReport, eventAttendanceReport] = await Promise.all([
+        if (options.includeAdminOnboarding) {
+          hubResult.repairs.adminOnboarding = await rebuildHubAdminOnboardingSummary(hub.id, actorId);
+        }
+
+        const [
+          paymentReport,
+          memberDirectoryReport,
+          dashboardReport,
+          mediaReport,
+          eventAttendanceReport,
+          adminOnboardingReport,
+        ] = await Promise.all([
           options.includePayments ? getHubPaymentReconciliationReport(hub.id, { issueLimit: 25 }) : Promise.resolve(null),
           options.includeMembers ? getHubMemberDirectoryReconciliationReport(hub.id, { issueLimit: 25 }) : Promise.resolve(null),
           options.includeDashboard ? getHubAdminDashboardProjectionReconciliationReport(hub, { issueLimit: 25 }) : Promise.resolve(null),
           options.includeMedia ? getHubMediaUsageReconciliationReport(hub.id) : Promise.resolve(null),
           options.includeEventAttendance ? getHubEventAttendanceReconciliationReport(hub.id, { issueLimit: 25 }) : Promise.resolve(null),
+          options.includeAdminOnboarding ? getHubAdminOnboardingSummaryReconciliationReport(hub.id, { issueLimit: 25 }) : Promise.resolve(null),
         ]);
 
         if (paymentReport) hubResult.reports.payments = summarizeReport(paymentReport);
@@ -153,6 +179,7 @@ export async function runProjectionMaintenance(input = {}) {
         if (dashboardReport) hubResult.reports.dashboard = summarizeReport(dashboardReport);
         if (mediaReport) hubResult.reports.mediaUsage = summarizeReport(mediaReport);
         if (eventAttendanceReport) hubResult.reports.eventAttendance = summarizeReport(eventAttendanceReport);
+        if (adminOnboardingReport) hubResult.reports.adminOnboarding = summarizeReport(adminOnboardingReport);
       }
     } catch (error) {
       hubResult.status = "failed";

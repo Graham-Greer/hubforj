@@ -5,6 +5,7 @@ try {
 }
 
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
+import { getAdminOnboardingSummaryRecordCounts } from "@/lib/data/admin-onboarding-summary";
 import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
 import { getHubPaymentSetupState } from "@/lib/domain/hub-payment-configuration";
 import { resolveHubPackageEntitlements } from "@/lib/domain/hub-package";
@@ -122,25 +123,13 @@ function normalizePersistedState(raw, fallback) {
   return next;
 }
 
-async function getChecklistRecordCounts(hub, capabilities, options = {}) {
+async function getChecklistRecordCounts(hub, options = {}) {
   const timer = options.timer || createPerformanceTimer("admin-onboarding-state");
   const startedAt = Date.now();
-  const [hasWhatWeDoItems, hasTestimonials, hasEvents, hasCourses, hasMediaAssets] = await Promise.all([
-    hasHubCollectionRecords(hub.id, "whatWeDoItems", { timer, recordKey: "whatWeDo" }),
-    hasHubCollectionRecords(hub.id, "testimonials", { timer, recordKey: "testimonials" }),
-    hasHubCollectionRecords(hub.id, "events", { timer, recordKey: "events" }),
-    capabilities.coursesEnabled
-      ? hasHubCollectionRecords(hub.id, "courses", { timer, recordKey: "courses" })
-      : Promise.resolve(false),
-    hasHubCollectionRecords(hub.id, "mediaAssets", { timer, recordKey: "media" }),
-  ]);
-  const recordCounts = {
-    whatWeDo: hasWhatWeDoItems ? 1 : 0,
-    testimonials: hasTestimonials ? 1 : 0,
-    events: hasEvents ? 1 : 0,
-    courses: hasCourses ? 1 : 0,
-    media: hasMediaAssets ? 1 : 0,
-  };
+  const recordCounts = await getAdminOnboardingSummaryRecordCounts(hub.id, {
+    actorId: options.actorId,
+    timer,
+  });
 
   timer.log("checklist-record-counts-loaded", {
     durationMs: Date.now() - startedAt,
@@ -221,40 +210,6 @@ function getDocRef(hubId, actorUserId) {
   return getFirebaseAdminDb().collection("hubs").doc(hubId).collection("adminOnboarding").doc(actorUserId);
 }
 
-async function hasHubCollectionRecords(hubId, collectionName, options = {}) {
-  const normalizedHubId = normalizeString(hubId);
-  const normalizedCollectionName = normalizeString(collectionName);
-  const timer = options.timer || createPerformanceTimer("admin-onboarding-state");
-  const recordKey = normalizeString(options.recordKey) || normalizedCollectionName;
-  const startedAt = Date.now();
-
-  if (!normalizedHubId || !normalizedCollectionName) {
-    timer.log("checklist-record-source-skipped", {
-      recordKey,
-      collectionName: normalizedCollectionName,
-      reason: "missing-hub-or-collection",
-    });
-    return false;
-  }
-
-  const snapshot = await getFirebaseAdminDb()
-    .collection("hubs")
-    .doc(normalizedHubId)
-    .collection(normalizedCollectionName)
-    .limit(1)
-    .get();
-  const hasRecords = !snapshot.empty;
-
-  timer.log("checklist-record-source-read", {
-    durationMs: Date.now() - startedAt,
-    recordKey,
-    collectionName: normalizedCollectionName,
-    hasRecords,
-  });
-
-  return hasRecords;
-}
-
 export async function getAdminOnboardingState(hub, actorUserId, actorRole, options = {}) {
   const includeChecklist = options.includeChecklist !== false;
   const timer = createPerformanceTimer("admin-onboarding-state", {
@@ -297,7 +252,7 @@ export async function getAdminOnboardingState(hub, actorUserId, actorRole, optio
           "payment-configuration-read"
         )
       : Promise.resolve(null),
-    includeChecklist ? getChecklistRecordCounts(hub, capabilities, { timer }) : Promise.resolve(null),
+    includeChecklist ? getChecklistRecordCounts(hub, { timer, actorId: actorUserId }) : Promise.resolve(null),
   ]);
   timer.log("parallel-reads-loaded", {
     durationMs: Date.now() - parallelReadsStartedAt,

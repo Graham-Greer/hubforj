@@ -21,6 +21,7 @@ import { canHubUseGroupBookings } from "@/lib/domain/event-bookings";
 import { assertHubNativePaymentsReady } from "@/lib/domain/hub-payment-configuration";
 import { normalizeEventRecord, normalizeString } from "./event-shared.js";
 import { EVENT_ATTENDANCE_SUMMARY_SCHEMA_VERSION } from "./event-attendance-summary.js";
+import { maintainHubAdminOnboardingSummaryForSourceChange } from "./admin-onboarding-summary.js";
 import { createMediaUsageReference, removeMediaUsageReference, syncMediaUsageReferenceForAssetChange } from "./media-usage-projection.js";
 import { rebuildEventMemberActivity } from "./member-activity.js";
 
@@ -37,6 +38,10 @@ async function maintainDashboardProjectionsForEventChange(hubId, actorId, reason
     });
     return null;
   }
+}
+
+async function maintainAdminOnboardingSummaryForEventChange(hubId, actorId, reason = "event-change") {
+  return maintainHubAdminOnboardingSummaryForSourceChange(hubId, actorId, { reason });
 }
 
 async function refreshMemberActivityForEventChange(hubId, eventId, actorId, reason = "event-change") {
@@ -234,6 +239,7 @@ export async function createEventByHubSlug(hubSlug, payload, actorId = "system")
     }),
     updatedAt: now,
   });
+  await maintainAdminOnboardingSummaryForEventChange(hub.id, actorId, "event-create");
   await maintainDashboardProjectionsForEventChange(hub.id, actorId, "event-create");
 
   return normalizeEventRecord({ id: ref.id, ...writeModel });
@@ -365,5 +371,6 @@ export async function deleteEventById(hubId, eventId) {
       href: "",
     }),
   });
+  await maintainAdminOnboardingSummaryForEventChange(normalizedHubId, "event-delete", "event-delete");
   await maintainDashboardProjectionsForEventChange(normalizedHubId, "event-delete", "event-delete");
 }
