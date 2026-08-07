@@ -142,7 +142,7 @@ async function CoursesWorkspace({ hub, routeMode }) {
       eyebrow="Courses"
       title="Manage courses"
       description="Review published and draft courses, filter the list quickly, and open the one you need to edit or manage."
-      actions={<Button href={buildAdminHref(hub.slug, "/admin/courses/create", routeMode)} data-onboarding="courses-create-button">Create course</Button>}
+      actions={<Button href={buildAdminHref(hub.slug, "/admin/courses/create", routeMode)} prefetch={false} data-onboarding="courses-create-button">Create course</Button>}
       items={items}
       showHeader={false}
       onboardingKey="courses-list"
@@ -175,7 +175,7 @@ export default async function CoursesPage({ params }) {
         eyebrow="Courses"
         title="Manage courses"
         description="Review published and draft courses, filter the list quickly, and open the one you need to edit or manage."
-        actions={<Button href={buildAdminHref(hub.slug, "/admin/courses/create", routeMode)} data-onboarding="courses-create-button">Create course</Button>}
+        actions={<Button href={buildAdminHref(hub.slug, "/admin/courses/create", routeMode)} prefetch={false} data-onboarding="courses-create-button">Create course</Button>}
       />
       <Suspense fallback={<AdminProgrammeListFallback rows={2} filters={3} />}>
         <CoursesWorkspace hub={hub} routeMode={routeMode} />

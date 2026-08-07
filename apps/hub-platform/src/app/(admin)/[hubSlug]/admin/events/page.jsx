@@ -178,7 +178,7 @@ async function EventsWorkspace({ hub, routeMode }) {
         eyebrow="Events"
         title="Manage events"
         description="Review upcoming and draft events, filter the list quickly, and open the one you need to edit, publish, or manage."
-        actions={<Button href={buildAdminHref(hub.slug, "/admin/events/create", routeMode)} data-onboarding="events-create-button">Create event</Button>}
+        actions={<Button href={buildAdminHref(hub.slug, "/admin/events/create", routeMode)} prefetch={false} data-onboarding="events-create-button">Create event</Button>}
         items={items}
         showHeader={false}
         onboardingKey="events-list"
@@ -212,7 +212,7 @@ export default async function EventsPage({ params }) {
         eyebrow="Events"
         title="Manage events"
         description="Review upcoming and draft events, filter the list quickly, and open the one you need to edit, publish, or manage."
-        actions={<Button href={buildAdminHref(hub.slug, "/admin/events/create", routeMode)} data-onboarding="events-create-button">Create event</Button>}
+        actions={<Button href={buildAdminHref(hub.slug, "/admin/events/create", routeMode)} prefetch={false} data-onboarding="events-create-button">Create event</Button>}
       />
       <Suspense fallback={<AdminProgrammeListFallback rows={3} filters={3} />}>
         <EventsWorkspace hub={hub} routeMode={routeMode} />
