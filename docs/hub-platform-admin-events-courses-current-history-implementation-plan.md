@@ -1017,13 +1017,14 @@ Completed:
 Verification completed:
 
 - Targeted `git diff --check` passed for all files touched by this implementation pass.
+- Production repair was run for `maplegrovecommunityhub` after deploying the projection maintenance boolean-normalization fix.
+- Historical Events cards changed from `Attendance not synced` to projected attendance outcome badges after repair and hard refresh.
+- Confirmed the internal projection maintenance POST body now respects JSON boolean `false` for `dryRun`.
+- Network screenshots after hard reload showed Current/History toggle changes still triggering lightweight RSC requests through `router.replace`.
+- Replaced offering-list query synchronization with `window.history.replaceState` for client-only search/filter/view state so toggling Current/History does not trigger an App Router RSC navigation.
 
 Verification pending:
 
-- Run the internal projection maintenance endpoint in production or staging:
-  - dry run first with `includeEventAttendance=true`
-  - repair if historical event attendance projections are missing/stale
-  - rerun dry run and confirm event attendance issues are clear or understood
 - Browser test `/admin/events`:
   - default Current view
   - History view

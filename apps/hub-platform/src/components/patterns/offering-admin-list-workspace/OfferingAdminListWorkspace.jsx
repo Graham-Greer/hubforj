@@ -208,7 +208,6 @@ export default function OfferingAdminListWorkspace({
   showHeader = true,
 }) {
   const pathname = usePathname();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const allowedTemporalViews = useMemo(
     () => temporalViewOptions.map((option) => option.value),
@@ -241,10 +240,10 @@ export default function OfferingAdminListWorkspace({
       }
     );
     const nextHref = `${pathname}${nextQuery}`;
-    const currentHref = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
+    const currentHref = `${window.location.pathname}${window.location.search}`;
 
     if (nextHref !== currentHref) {
-      router.replace(nextHref, { scroll: false });
+      window.history.replaceState(window.history.state, "", nextHref);
     }
   }, [
     activeFilters,
@@ -256,8 +255,6 @@ export default function OfferingAdminListWorkspace({
     filterDefinitions,
     normalizedDefaultTemporalView,
     pathname,
-    router,
-    searchParams,
     temporalViewParam,
   ]);
 
