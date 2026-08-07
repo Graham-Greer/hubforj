@@ -40,6 +40,43 @@
   gap: var(--space-4);
 }
 
+.relatedGroup {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.relatedHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.relatedTitle {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.relatedTitle {
+  font: var(--font-body-md-strong);
+}
+
+.relatedDescription,
+.relatedEmpty {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.relatedDescription {
+  max-width: 46rem;
+  font: var(--font-body-sm);
+}
+
+.relatedEmpty {
+  font: var(--font-body-sm);
+}
+
 .actionField {
   display: grid;
   gap: var(--space-3);

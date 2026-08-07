@@ -33,7 +33,8 @@ function createFormSnapshot(form) {
   return createFormSnapshotFromKeys(form, fieldKeys);
 }
 
-export default function EditWhatWeDoForm({ hub, item, initialSuccessMessage = "" }) {
+export default function EditWhatWeDoForm({ hub, item, initialSuccessMessage = "", returnContext = null }) {
+  const cancelHref = returnContext?.returnTo ? returnContext.href : `/${hub.slug}/admin/what-we-do`;
   const initialState = {
     ...initialUpdateWhatWeDoFormState,
     success: initialSuccessMessage,
@@ -87,6 +88,8 @@ export default function EditWhatWeDoForm({ hub, item, initialSuccessMessage = ""
       <input type="hidden" name="hubId" value={hub.id} />
       <input type="hidden" name="hubSlug" value={hub.slug} />
       <input type="hidden" name="itemId" value={item.id} />
+      {returnContext?.returnTo ? <input type="hidden" name="returnTo" value={returnContext.returnTo} /> : null}
+      {returnContext?.returnSection ? <input type="hidden" name="returnSection" value={returnContext.returnSection} /> : null}
       <div className={styles.grid}>
         <Input
           name="title"
@@ -122,12 +125,12 @@ export default function EditWhatWeDoForm({ hub, item, initialSuccessMessage = ""
         <div className={styles.footerActionStart}>
           {isDirty ? (
             <AdminDiscardChangesButton
-              href={`/${hub.slug}/admin/what-we-do`}
+              href={cancelHref}
               label="Cancel"
               variant="secondary"
             />
           ) : (
-            <Button href={`/${hub.slug}/admin/what-we-do`} variant="secondary">
+            <Button href={cancelHref} variant="secondary">
               Cancel
             </Button>
           )}

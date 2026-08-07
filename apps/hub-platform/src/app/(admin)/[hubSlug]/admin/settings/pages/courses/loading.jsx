@@ -7,7 +7,7 @@ export default function CoursesPageSettingsLoading() {
   return (
     <div className={styles.layout}>
       <WorkspaceSection
-        eyebrow="Page settings"
+        eyebrow="Content"
         title="Edit courses page"
         description="Manage the courses route hero copy separately from the listing section so discovery stays system-led while still allowing light personalization."
         actions={<SkeletonBlock variant="button" width="11rem" />}

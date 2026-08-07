@@ -66,10 +66,10 @@ export async function updateBrandingSettingsAction(_previousState, formData) {
     revalidateSettingsPaths(hubSlug);
     revalidateSettingsHubCaches(hub);
   } catch (error) {
-    return { error: String(error?.message || "Unable to update branding settings."), success: "", values };
+    return { error: String(error?.message || "Unable to update site branding."), success: "", values };
   }
 
-  return { error: "", success: "Branding settings updated.", values };
+  return { error: "", success: "Site branding updated.", values };
 }
 
 export async function updateSiteSettingsAction(_previousState, formData) {
@@ -111,10 +111,10 @@ export async function updateSiteSettingsAction(_previousState, formData) {
     revalidateSettingsPaths(hubSlug);
     revalidateSettingsHubCaches(hub);
   } catch (error) {
-    return { error: String(error?.message || "Unable to update site settings."), success: "", values };
+    return { error: String(error?.message || "Unable to update site details."), success: "", values };
   }
 
-  return { error: "", success: "Site settings updated.", values };
+  return { error: "", success: "Site details updated.", values };
 }
 
 export async function updateHomepageSettingsAction(_previousState, formData) {

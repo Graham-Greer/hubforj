@@ -59,9 +59,9 @@ export default function SettingsOverview({
     <div className={styles.root}>
       {showHeader ? (
         <PageHeader
-          eyebrow="Site settings"
-          title="Manage site settings"
-          description="Manage site-wide identity, public defaults, and structured contact details without mixing them into page-level copy."
+          eyebrow="Settings"
+          title="Site settings"
+          description="Manage site branding, structured public details, legal pages, and setup areas that affect how the hub operates."
         />
       ) : null}
 
@@ -85,20 +85,20 @@ export default function SettingsOverview({
         ) : null}
         <SettingsPanelCard
           onboardingKey="branding-settings-card"
-          title="Branding"
-          body="Manage hub identity, public site name, tagline, and the public theme/template choices."
+          title="Site branding"
+          body="Manage logo, public visual identity, theme/template choices, and the public header call to action."
           meta={`${siteSettings.siteName} • ${siteSettings.themeKey}`}
           href={`/${hub.slug}/admin/settings/branding`}
-          actionLabel="Edit brand settings"
+          actionLabel="Edit site branding"
           status={brandingStatus}
         />
         <SettingsPanelCard
           onboardingKey="site-settings-card"
-          title="Site"
-          body="Update contact details, address, hours, social links, and SEO defaults as structured public-site configuration."
+          title="Site details"
+          body="Update contact details, address, hours, social links, SEO defaults, and regional public-site defaults."
           meta={siteSettings.contactEmail || "Contact details not configured"}
           href={`/${hub.slug}/admin/settings/site`}
-          actionLabel="Edit site settings"
+          actionLabel="Edit site details"
           status={siteStatus}
         />
         {shouldShowStripeSetupCard ? (

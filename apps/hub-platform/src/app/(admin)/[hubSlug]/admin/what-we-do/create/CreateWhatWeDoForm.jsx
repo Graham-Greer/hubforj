@@ -31,7 +31,7 @@ function createFormSnapshot(form) {
   return createFormSnapshotFromKeys(form, fieldKeys);
 }
 
-export default function CreateWhatWeDoForm({ hubSlug }) {
+export default function CreateWhatWeDoForm({ hubSlug, returnContext = null }) {
   const [state, formAction] = useActionState(createWhatWeDoAction, initialCreateWhatWeDoFormState);
   const feedbackRef = useRef(null);
   const values = {
@@ -54,6 +54,8 @@ export default function CreateWhatWeDoForm({ hubSlug }) {
   return (
     <form ref={formRef} className={styles.form} action={formAction} onInput={updateDirtyState} onChange={updateDirtyState}>
       <input type="hidden" name="hubSlug" value={hubSlug} />
+      {returnContext?.returnTo ? <input type="hidden" name="returnTo" value={returnContext.returnTo} /> : null}
+      {returnContext?.returnSection ? <input type="hidden" name="returnSection" value={returnContext.returnSection} /> : null}
       <div className={styles.grid}>
         <Input
           name="title"

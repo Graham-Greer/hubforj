@@ -92,7 +92,7 @@ export default function BrandingSettingsForm({ hub, initialValues, mediaAssets, 
     router.push(`/${hub.slug}/admin/settings`);
   }, [hub.slug, router, state?.success]);
 
-  const submitIdleLabel = state?.success && !isDirty ? "Branding saved" : "Save branding";
+  const submitIdleLabel = state?.success && !isDirty ? "Site branding saved" : "Save site branding";
 
   return (
     <form
@@ -179,7 +179,7 @@ export default function BrandingSettingsForm({ hub, initialValues, mediaAssets, 
         <AdminDiscardChangesButton href={`/${hub.slug}/admin/settings`} />
         <SubmitButton
           idleLabel={submitIdleLabel}
-          pendingLabel="Saving branding"
+          pendingLabel="Saving site branding"
           disabled={!isDirty}
           onboardingKey="branding-settings-save"
         />

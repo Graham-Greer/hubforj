@@ -7,7 +7,7 @@ export default function HomepageSettingsLoading() {
   return (
     <div className={styles.layout}>
       <WorkspaceSection
-        eyebrow="Page settings"
+        eyebrow="Content"
         title="Edit homepage"
         description="Edit the homepage hero separately so headline, supporting copy, and primary actions stay focused and easy to review."
         actions={<SkeletonBlock variant="button" width="11rem" />}

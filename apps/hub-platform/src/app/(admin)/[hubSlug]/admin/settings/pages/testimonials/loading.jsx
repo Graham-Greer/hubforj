@@ -7,7 +7,7 @@ export default function TestimonialsPageSettingsLoading() {
   return (
     <div className={styles.layout}>
       <WorkspaceSection
-        eyebrow="Page settings"
+        eyebrow="Content"
         title="Edit testimonials page"
         description="Manage the testimonials route hero separately from the published testimonial cards so the trust page stays system-led while still allowing light personalization."
         actions={<SkeletonBlock variant="button" width="11rem" />}

@@ -154,7 +154,7 @@ export default function SiteSettingsForm({ hub, initialValues, countryLocked = f
     setSelectedAddressCountry(nextRegionalSelection.addressCountry);
   }
 
-  const submitIdleLabel = state?.success && !isDirty ? "Site settings saved" : "Save site settings";
+  const submitIdleLabel = state?.success && !isDirty ? "Site details saved" : "Save site details";
 
   return (
     <form ref={formRef} className={styles.form} action={formAction} onInput={updateDirtyState} onChange={updateDirtyState} data-onboarding="site-settings-form">
@@ -285,7 +285,7 @@ export default function SiteSettingsForm({ hub, initialValues, countryLocked = f
         <AdminDiscardChangesButton href={`/${hub.slug}/admin/settings`} />
         <SubmitButton
           idleLabel={submitIdleLabel}
-          pendingLabel="Saving site settings"
+          pendingLabel="Saving site details"
           disabled={!isDirty}
           onboardingKey="site-settings-save"
         />

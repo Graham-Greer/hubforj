@@ -17,6 +17,7 @@ export const adminOnboardingTargetSelectors = {
   homepage_section_tabs: '[data-onboarding="homepage-section-tabs"]',
   homepage_hero_panel: '[data-onboarding="homepage-hero-panel"]',
   homepage_hero_actions: '[data-onboarding="homepage-hero-actions"]',
+  homepage_what_we_do_items: '[data-onboarding="homepage-what-we-do-items"]',
   media_workspace: '[data-onboarding="media-workspace"]',
   media_add_assets_button: '[data-onboarding="media-add-assets-button"]',
   media_add_folder_button: '[data-onboarding="media-add-folder-button"]',

@@ -3,12 +3,14 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import ActionLinkField from "../ActionLinkField";
+import AdminDirtyAwareActionLink from "@/components/patterns/admin-form-runtime/AdminDirtyAwareActionLink";
 import AdminDiscardChangesButton from "@/components/patterns/admin-form-runtime/AdminDiscardChangesButton";
 import PageHeroFieldGroup from "../PageHeroFieldGroup";
 import AdminFormFooter from "@/components/patterns/admin-form-footer/AdminFormFooter";
 import AdminFormSection from "@/components/patterns/admin-form-section/AdminFormSection";
 import FormSectionTabs from "@/components/patterns/form-section-tabs/FormSectionTabs";
 import SectionRichTextField from "@/components/patterns/section-rich-text-field/SectionRichTextField";
+import WhatWeDoAdminList from "@/components/patterns/what-we-do-admin-list/WhatWeDoAdminList";
 import Input from "@/components/ui/input/Input";
 import SubmitButton from "@/components/ui/submit-button/SubmitButton";
 import Textarea from "@/components/ui/textarea/Textarea";
@@ -68,9 +70,41 @@ function createFormSnapshot(form) {
   return createFormSnapshotFromKeys(form, fieldKeys);
 }
 
-export default function HomepageSettingsForm({ hub, initialValues, mediaAssets = [], mediaFolders = [] }) {
+function normalizeSectionId(sectionId) {
+  const normalizedSectionId = String(sectionId || "").trim();
+  return homepageSections.some((section) => section.id === normalizedSectionId)
+    ? normalizedSectionId
+    : homepageSections[0].id;
+}
+
+function buildReturnQuery(returnContext) {
+  if (!returnContext?.returnTo) {
+    return "";
+  }
+
+  const params = new URLSearchParams();
+  params.set("returnTo", returnContext.returnTo);
+
+  if (returnContext.returnSection) {
+    params.set("returnSection", returnContext.returnSection);
+  }
+
+  return `?${params.toString()}`;
+}
+
+export default function HomepageSettingsForm({
+  hub,
+  initialValues,
+  mediaAssets = [],
+  mediaFolders = [],
+  initialSection = "",
+  whatWeDoItems = [],
+  whatWeDoReturnContext = null,
+  deleteWhatWeDoAction = null,
+}) {
   const router = useRouter();
-  const [activeSectionId, setActiveSectionId] = useState(homepageSections[0].id);
+  const [activeSectionId, setActiveSectionId] = useState(normalizeSectionId(initialSection));
+  const whatWeDoReturnQuery = buildReturnQuery(whatWeDoReturnContext);
   const initialState = {
     ...initialHomepageSettingsState,
     values: {
@@ -127,9 +161,15 @@ export default function HomepageSettingsForm({ hub, initialValues, mediaAssets =
       return;
     }
 
+    if (initialSection) {
+      router.replace(`/${hub.slug}/admin/settings/pages/home?section=${encodeURIComponent(activeSectionId)}`);
+      router.refresh();
+      return;
+    }
+
     router.push(`/${hub.slug}/admin/settings/pages`);
     router.refresh();
-  }, [hub.slug, router, state?.success]);
+  }, [activeSectionId, hub.slug, initialSection, router, state?.success]);
 
   const submitIdleLabel = state?.success && !isDirty ? "Content saved" : "Save content";
 
@@ -272,6 +312,36 @@ export default function HomepageSettingsForm({ hub, initialValues, mediaAssets =
             hint="Optional supporting copy that introduces this structured grid section."
             defaultValue={values.whatWeDoDescription}
           />
+          <div className={styles.relatedGroup} data-onboarding="homepage-what-we-do-items">
+            <div className={styles.relatedHeader}>
+              <div>
+                <h3 className={styles.relatedTitle}>Items</h3>
+                <p className={styles.relatedDescription}>
+                  Add concise cards for the main things your community offers. Aim for 3 to 6 published items for a clean homepage section.
+                </p>
+              </div>
+              <AdminDirtyAwareActionLink
+                href={`/${hub.slug}/admin/what-we-do/create${whatWeDoReturnQuery}`}
+                title="Leave homepage editing?"
+                description="Your unsaved homepage changes will be lost if you leave to add a What we do item."
+                confirmLabel="Add item"
+              >
+                Add item
+              </AdminDirtyAwareActionLink>
+            </div>
+            {whatWeDoItems.length ? (
+              <WhatWeDoAdminList
+                hub={hub}
+                items={whatWeDoItems}
+                deleteWhatWeDoAction={deleteWhatWeDoAction}
+                showHeader={false}
+                showStats={false}
+                returnContext={whatWeDoReturnContext}
+              />
+            ) : (
+              <p className={styles.relatedEmpty}>No What we do items have been added yet.</p>
+            )}
+          </div>
         </AdminFormSection>
       </section>
 
@@ -304,6 +374,25 @@ export default function HomepageSettingsForm({ hub, initialValues, mediaAssets =
             hint="Optional supporting copy that introduces the testimonials section."
             defaultValue={values.testimonialsDescription}
           />
+          <div className={styles.relatedPanel}>
+            <div className={styles.relatedHeader}>
+              <div>
+                <h3 className={styles.relatedTitle}>Testimonial records</h3>
+                <p className={styles.relatedDescription}>
+                  The homepage uses your existing published testimonials. Manage those records separately so they can also support the testimonials page.
+                </p>
+              </div>
+              <AdminDirtyAwareActionLink
+                href={`/${hub.slug}/admin/testimonials`}
+                variant="secondary"
+                title="Leave homepage editing?"
+                description="Your unsaved homepage changes will be lost if you leave to manage testimonials."
+                confirmLabel="Manage testimonials"
+              >
+                Manage testimonials
+              </AdminDirtyAwareActionLink>
+            </div>
+          </div>
         </AdminFormSection>
       </section>
 
