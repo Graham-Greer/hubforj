@@ -5,7 +5,7 @@ try {
 }
 
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
-import { getAdminOnboardingSummaryRecordCounts } from "@/lib/data/admin-onboarding-summary";
+import { getAdminOnboardingSummaryFacts } from "@/lib/data/admin-onboarding-summary";
 import { getHubPaymentConfigurationByHubId } from "@/lib/data/hub-payment-configurations";
 import { getHubPaymentSetupState } from "@/lib/domain/hub-payment-configuration";
 import { resolveHubPackageEntitlements } from "@/lib/domain/hub-package";
@@ -126,20 +126,24 @@ function normalizePersistedState(raw, fallback) {
 async function getChecklistRecordCounts(hub, options = {}) {
   const timer = options.timer || createPerformanceTimer("admin-onboarding-state");
   const startedAt = Date.now();
-  const recordCounts = await getAdminOnboardingSummaryRecordCounts(hub.id, {
+  const facts = await getAdminOnboardingSummaryFacts(hub.id, {
     actorId: options.actorId,
     timer,
   });
+  const recordCounts = facts.recordCounts || {};
 
   timer.log("checklist-record-counts-loaded", {
     durationMs: Date.now() - startedAt,
     ...recordCounts,
+    ...(facts.setupFacts || {}),
   });
 
-  return recordCounts;
+  return facts;
 }
 
-function buildChecklistItemsFromFacts(state, hub, capabilities, paymentSetupState, recordCounts = {}) {
+function buildChecklistItemsFromFacts(state, hub, capabilities, paymentSetupState, facts = {}) {
+  const recordCounts = facts.recordCounts || facts || {};
+  const setupFacts = facts.setupFacts || {};
   const checklistOrder = getAdminOnboardingChecklistOrder(state?.packageTier);
   const orderedChecklistItems = [...adminOnboardingChecklistItems].sort((left, right) => {
     const leftIndex = checklistOrder.indexOf(left.key);
@@ -179,6 +183,12 @@ function buildChecklistItemsFromFacts(state, hub, capabilities, paymentSetupStat
       if (item.completionMode === "record") {
         const hasRecords = Number(recordCounts[item.recordKey] || 0) > 0;
         status = hasRecords ? "completed" : "not_started";
+      }
+
+      if (item.completionMode === "setup_fact") {
+        status = ["completed", "in_progress"].includes(normalizeString(setupFacts[item.factKey]))
+          ? normalizeString(setupFacts[item.factKey])
+          : "not_started";
       }
 
       if (item.completionMode === "regional_setup") {
