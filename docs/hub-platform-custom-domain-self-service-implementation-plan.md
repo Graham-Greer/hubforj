@@ -2505,7 +2505,7 @@ Production verification completed:
 
 ### Phase 4C: Package Downgrade Entitlement Enforcement
 
-Status: implemented locally, pending runtime test execution in an environment with Node available and controlled production verification.
+Status: implemented and production-verified for effective Growth downgrade entitlement loss, automatic custom-domain disconnect, hosted-domain fallback, and Vercel project-domain cleanup.
 
 Current state:
 
@@ -2556,6 +2556,16 @@ Implementation target:
   - `customDomainDisconnectTriggered`
   - `customDomainDisconnectStatus`
   - `customDomainDisconnectError`
+
+Production verification completed:
+
+- A Growth hub with a connected custom domain was downgraded to Starter through the product-site/package-authority flow.
+- The custom-domain entitlement change was detected when the lower tier became effective.
+- The disconnect processor ran automatically from the package-authority path.
+- Internal custom-domain mappings were removed.
+- Vercel removed the project-domain entry.
+- The hub remained available on the HubForJ-hosted subdomain.
+- Product-site scheduled-change UX was tightened so a customer keeping the current paid tier can cancel the scheduled change instead of seeing the tier treated as simply current while a cancellation remains pending.
 
 Lifecycle event requirements:
 
@@ -2613,3 +2623,83 @@ Testing requirements:
   - confirm hosted subdomain continues working
   - confirm Vercel project-domain entry is removed or cleanup error is recorded
   - confirm Account settings shows custom-domain locked on lower package
+
+### Phase 6A: Unified Custom-Domain Reconciliation Reporting And Repair
+
+Status: implemented locally, pending runtime test execution in an environment with Node available and controlled production dry-run/repair verification.
+
+Implemented:
+
+- Added custom-domain reconciliation to the unified internal projection maintenance endpoint:
+  - `GET /api/internal/projections/reconcile?...&includeCustomDomains=true`
+  - `POST /api/internal/projections/reconcile` with `includeCustomDomains`
+- `includeCustomDomains` defaults to `true`, matching the other reconciliation families.
+- Dry-run reports now include:
+  - `reports.customDomains.totalIssues`
+  - `reports.customDomains.generatedAt`
+  - `reports.customDomains.summary`
+- Repair mode now includes:
+  - `repairs.customDomains`
+
+Dry-run checks:
+
+- connected custom domain has an active claim
+- connected claim points to the same hub id and slug
+- connected claim is marked `connected`
+- connected domain has canonical and companion runtime mappings
+- runtime mappings point to the same hub id and slug
+- runtime mappings have the expected canonical host, redirect host, match type, and connected status
+- inactive/non-connected custom-domain state does not leave stale runtime mappings
+- inactive/non-connected custom-domain state does not leave an active claim for the same hub
+- pending/verifying/activation-ready custom-domain state keeps an active pending claim
+- connected provider state is checked through the Vercel readiness adapter when Vercel automation is enabled
+- connected Firestore state is flagged if Vercel readiness is not complete
+- due `disconnect_scheduled` records are flagged so lifecycle maintenance can process them
+
+Repair behavior:
+
+- Runs the existing custom-domain lifecycle batch first:
+  - due disconnects
+  - pending verification checks
+  - activation checks
+- Re-reads hub state directly from Firestore after lifecycle repair to avoid request-cache staleness.
+- Reconciles Firestore claims:
+  - configured/pending/connected states get a claim upserted for the same hub
+  - connected states mark the claim as `connected`
+  - inactive states release the claim if it belongs to the hub
+- Reconciles runtime mappings:
+  - connected states rebuild canonical and companion mappings from the hub record
+  - non-connected states delete canonical and companion mappings
+- Does not directly add or remove Vercel project domains from the reconciliation repair layer.
+- Vercel mutation remains inside existing lifecycle and disconnect processors to avoid surprising provider-side changes from a generic repair action.
+
+Operational policy:
+
+- Dry-run remains the default.
+- Repair is explicit through `dryRun=false`.
+- Provider readiness issues are reported, but provider mutations are not performed unless an existing lifecycle phase is legitimately due.
+- The first implementation is intentionally per-hub and bounded by the existing projection-maintenance paging model.
+
+Recommended production verification:
+
+1. Run a dry-run for a known connected test hub:
+   - `includePayments=false`
+   - `includeMembers=false`
+   - `includeDashboard=false`
+   - `includeMedia=false`
+   - `includeEventAttendance=false`
+   - `includeAdminOnboarding=false`
+   - `includeCustomDomains=true`
+2. Confirm `reports.customDomains.totalIssues` is `0`.
+3. Run the same request with `dryRun=false`.
+4. Confirm `repairs.customDomains.status` is `reconciled`.
+5. Confirm the follow-up custom-domain report has `0` issues.
+6. Confirm the custom domain and HubForJ-hosted fallback still resolve.
+7. Confirm reconnect/disconnect still behave as previously verified.
+
+Not included in this slice:
+
+- Broad orphan Vercel project-domain scan across domains not tied to the current hub page.
+- Scheduled job configuration in Vercel/cron.
+- Runtime middleware cache/KV optimization.
+- Admin-facing custom-domain UI redesign.

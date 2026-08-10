@@ -21,6 +21,7 @@ function searchParamsToRequestInput(request) {
     includeMedia: searchParams.get("includeMedia"),
     includeEventAttendance: searchParams.get("includeEventAttendance"),
     includeAdminOnboarding: searchParams.get("includeAdminOnboarding"),
+    includeCustomDomains: searchParams.get("includeCustomDomains"),
   };
 }
 
