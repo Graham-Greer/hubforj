@@ -10,6 +10,7 @@ import {
   classifyVercelDomainError,
   getVercelDomainConfig,
   getVercelProjectDomain,
+  removeVercelProjectDomain,
 } from "@/lib/server/vercel-domains";
 
 function normalizeString(value) {
@@ -149,6 +150,65 @@ export async function checkCustomDomainVercelReadiness(hostname, { now = new Dat
       dnsRoutingStatus: "not_checked",
       certificateStatus: "pending",
       failureReason: classification.message,
+      lastLifecycleError: classification.message,
+      providerErrorCategory: classification.category,
+      providerErrorRetryable: classification.retryable,
+    };
+  }
+}
+
+export async function removeCustomDomainFromVercel(hostname, { now = new Date().toISOString() } = {}) {
+  const normalizedHostname = normalizeString(hostname).toLowerCase();
+  const config = getCustomDomainVercelConfig();
+
+  if (!config.enabled) {
+    return {
+      ok: true,
+      skipped: true,
+      removed: false,
+      vercelProjectId: config.projectId,
+      removedAt: "",
+      lastLifecycleRunAt: now,
+      lastLifecycleError: config.projectId
+        ? "Vercel custom-domain automation is configured but not enabled."
+        : "Vercel custom-domain automation is not configured.",
+    };
+  }
+
+  try {
+    await removeVercelProjectDomain(normalizedHostname);
+
+    return {
+      ok: true,
+      skipped: false,
+      removed: true,
+      vercelProjectId: config.projectId,
+      removedAt: now,
+      lastLifecycleRunAt: now,
+      lastLifecycleError: "",
+    };
+  } catch (error) {
+    const classification = classifyVercelDomainError(error);
+
+    if (classification.category === "not_found") {
+      return {
+        ok: true,
+        skipped: false,
+        removed: true,
+        vercelProjectId: config.projectId,
+        removedAt: now,
+        lastLifecycleRunAt: now,
+        lastLifecycleError: "",
+      };
+    }
+
+    return {
+      ok: false,
+      skipped: false,
+      removed: false,
+      vercelProjectId: config.projectId,
+      removedAt: "",
+      lastLifecycleRunAt: now,
       lastLifecycleError: classification.message,
       providerErrorCategory: classification.category,
       providerErrorRetryable: classification.retryable,

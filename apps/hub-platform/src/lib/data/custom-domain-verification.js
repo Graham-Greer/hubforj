@@ -10,7 +10,7 @@ import {
   upsertCustomDomainClaimForHub,
 } from "@/lib/data/custom-domain-claims";
 import { getCustomDomainVercelConfig } from "@/lib/domain/custom-domain-vercel-config";
-import { checkCustomDomainVercelReadiness } from "@/lib/domain/custom-domain-vercel";
+import { checkCustomDomainVercelReadiness, removeCustomDomainFromVercel } from "@/lib/domain/custom-domain-vercel";
 import { verifyCustomDomainDnsTxt } from "@/lib/domain/custom-domain-verification";
 import { getCustomDomainRuntimeBlockedReason, isCustomDomainRuntimeEnabled } from "@/lib/domain/custom-domain-activation";
 import { deleteCustomDomainMappingByHostname, writeCustomDomainMappingForHub } from "@/lib/data/custom-domain-mappings";
@@ -480,13 +480,33 @@ export async function processHubCustomDomainDisconnectRecord(hubRecord, actorId 
   });
 
   await deleteCustomDomainMappingByHostname(hostname);
+  const cleanup = await removeCustomDomainFromVercel(hostname, { now });
+
+  const cleanupCustomDomain = {
+    ...nextCustomDomain,
+    vercelVerificationStatus: cleanup.removed
+      ? "removed"
+      : normalizeString(customDomain.vercelVerificationStatus || nextCustomDomain.vercelVerificationStatus),
+    vercelVerificationLastCheckedAt: cleanup.removed
+      ? now
+      : normalizeString(customDomain.vercelVerificationLastCheckedAt || nextCustomDomain.vercelVerificationLastCheckedAt),
+    lastLifecycleRunAt: normalizeString(cleanup.lastLifecycleRunAt) || now,
+    lastLifecycleError: normalizeString(cleanup.lastLifecycleError),
+  };
+
+  await getFirebaseAdminDb().collection("hubs").doc(hubId).update({
+    customDomain: cleanupCustomDomain,
+    updatedAt: now,
+    updatedBy: actorId,
+  });
 
   return {
     hubId,
     processed: true,
     disconnected: true,
     hostname,
-    status: nextCustomDomain.status,
+    status: cleanupCustomDomain.status,
+    cleanup,
   };
 }
 
