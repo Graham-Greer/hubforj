@@ -17,7 +17,11 @@ import { buildDefaultMembershipPlanWriteModel } from "@/lib/data/membership-plan
 import { getPlatformRootDomain, isReservedHubSlug } from "@/lib/domain/custom-domain-runtime-config";
 import { buildCustomDomainVerificationHostname } from "@/lib/domain/custom-domain-verification";
 import { provisionCustomDomainWithVercel } from "@/lib/domain/custom-domain-vercel";
-import { processHubCustomDomainVerificationRecord } from "@/lib/data/custom-domain-verification";
+import {
+  processHubCustomDomainDisconnectRecord,
+  processHubCustomDomainVerificationRecord,
+  scheduleHubCustomDomainDisconnectRecord,
+} from "@/lib/data/custom-domain-verification";
 import { normalizeUpdateHubPackageAuthorityPayload } from "@/lib/domain/hub-package-contracts";
 import { assertValidCustomDomainHostname, normalizePlatformSubdomainLabel } from "@/lib/domain/hub-domains";
 import { resolveHubPackageEntitlements } from "@/lib/domain/hub-package";
@@ -251,6 +255,92 @@ function buildHubPackageAuthorityWriteModel(currentHub, normalizedPayload, actor
   };
 }
 
+function isCustomDomainConfiguredForEntitlementEnforcement(customDomain = {}) {
+  const hostname = normalizeString(customDomain.hostname);
+  const status = normalizeString(customDomain.status);
+
+  return Boolean(hostname && status !== "disconnected");
+}
+
+function resolveEffectiveCustomDomainEntitlement(entitlements = {}) {
+  return (
+    entitlements?.capabilities?.customDomainEnabled === true &&
+    normalizeString(entitlements.packageStatus) !== "cancelled"
+  );
+}
+
+async function enforceCustomDomainPackageEntitlement({
+  currentHub,
+  nextHub,
+  previousEntitlements,
+  nextEntitlements,
+  actorId,
+  now,
+} = {}) {
+  const previousEnabled = resolveEffectiveCustomDomainEntitlement(previousEntitlements);
+  const nextEnabled = resolveEffectiveCustomDomainEntitlement(nextEntitlements);
+  const metadata = {
+    customDomainEntitlementChanged: previousEnabled !== nextEnabled,
+    customDomainDisconnectTriggered: false,
+    customDomainDisconnectStatus: "",
+    customDomainDisconnectError: "",
+  };
+
+  if (!previousEnabled || nextEnabled || !isCustomDomainConfiguredForEntitlementEnforcement(currentHub?.customDomain)) {
+    return metadata;
+  }
+
+  metadata.customDomainDisconnectTriggered = true;
+
+  try {
+    await scheduleHubCustomDomainDisconnectRecord(nextHub, {
+      actorId,
+      disconnectAt: now,
+      reason: "package_downgrade",
+    });
+    const result = await processHubCustomDomainDisconnectRecord(
+      {
+        ...nextHub,
+        customDomain: {
+          ...(nextHub.customDomain || {}),
+          status: "disconnect_scheduled",
+          disconnectAt: now,
+          disconnectReason: "package_downgrade",
+        },
+      },
+      actorId
+    );
+
+    metadata.customDomainDisconnectStatus = normalizeString(result?.status || result?.reason);
+    metadata.customDomainDisconnectError = normalizeString(result?.cleanup?.lastLifecycleError);
+    await writeCustomDomainLifecycleEvent(getFirebaseAdminDb(), nextHub.id, {
+      type: "custom_domain_disconnected_package_downgrade",
+      hostname: normalizeString(currentHub?.customDomain?.hostname),
+      actorUserId: actorId,
+      actorType: actorId === "system" ? "system" : "automation",
+      createdAt: now,
+      beforeStatus: normalizeString(currentHub?.customDomain?.status),
+      afterStatus: metadata.customDomainDisconnectStatus,
+      details: {
+        previousPackageTier: normalizeString(currentHub?.packageTier),
+        previousPackageStatus: normalizeString(currentHub?.packageStatus),
+        previousPackageSource: normalizeString(currentHub?.packageSource),
+        nextPackageTier: normalizeString(nextHub?.packageTier),
+        nextPackageStatus: normalizeString(nextHub?.packageStatus),
+        nextPackageSource: normalizeString(nextHub?.packageSource),
+        previousCustomDomainEnabled: previousEnabled,
+        nextCustomDomainEnabled: nextEnabled,
+      },
+      error: metadata.customDomainDisconnectError,
+    });
+  } catch (error) {
+    metadata.customDomainDisconnectStatus = "failed";
+    metadata.customDomainDisconnectError = String(error?.message || "Unable to enforce custom-domain entitlement.");
+  }
+
+  return metadata;
+}
+
 export async function updateHubPackageAuthorityById(hubId, payload, actorId = "system") {
   const normalizedHubId = normalizeString(hubId);
 
@@ -272,14 +362,29 @@ export async function updateHubPackageAuthorityById(hubId, payload, actorId = "s
     id: doc.id,
     ...doc.data(),
   };
+  const previousEntitlements = resolveHubPackageEntitlements(currentHub);
   const writeModel = buildHubPackageAuthorityWriteModel(currentHub, normalizedPayload, actorId, now);
+  const nextHub = {
+    ...currentHub,
+    ...writeModel,
+  };
+  const nextEntitlements = resolveHubPackageEntitlements(nextHub);
 
   await ref.update(writeModel);
+  const entitlementEnforcement = await enforceCustomDomainPackageEntitlement({
+    currentHub,
+    nextHub,
+    previousEntitlements,
+    nextEntitlements,
+    actorId,
+    now,
+  });
 
   return {
     id: doc.id,
     ...currentHub,
     ...writeModel,
+    ...entitlementEnforcement,
   };
 }
 

@@ -2294,7 +2294,7 @@ Expected first-pass result:
 
 ### Phase 3A: Request Flow Provisioning Foundation
 
-Status: implemented locally, pending runtime test execution in an environment with Node available and controlled production verification.
+Status: implemented locally and production-verified for controlled custom-domain provisioning.
 
 Completed:
 
@@ -2457,7 +2457,7 @@ Additional production verification completed:
 
 ### Phase 4B: Immediate Manual Disconnect And Provider Cleanup
 
-Status: implemented locally, pending runtime test execution in an environment with Node available and controlled production verification.
+Status: implemented and production-verified for reconnect, immediate manual disconnect, hosted-domain redirect, and Vercel project-domain removal.
 
 Completed:
 
@@ -2493,3 +2493,123 @@ Production verification:
   - custom-domain claim is released
   - hub falls back to the HubForJ-hosted subdomain
   - Vercel project-domain entry is removed or marked already removed
+
+Production verification completed:
+
+- Reconnected the controlled test domain after disconnect.
+- Manual disconnect processed without requiring a separate lifecycle endpoint call.
+- Admin was redirected to the HubForJ-hosted admin settings URL.
+- Custom domain stopped resolving to the hub.
+- Vercel removed the project-domain entry.
+- Hub remained available on the HubForJ-hosted subdomain.
+
+### Phase 4C: Package Downgrade Entitlement Enforcement
+
+Status: implemented locally, pending runtime test execution in an environment with Node available and controlled production verification.
+
+Current state:
+
+- Product-site billing/webhook flows sync package state to the hub platform through:
+  - `apps/product-site/src/lib/server/hub-package-authority.js`
+  - `apps/hub-platform/src/app/api/internal/update-package-authority/route.js`
+  - `apps/hub-platform/src/lib/data/hub-mutations.js:updateHubPackageAuthorityById`
+- `updateHubPackageAuthorityById` now compares previous and next effective package entitlements after the package authority write.
+- If custom-domain entitlement is lost, the same immediate disconnect processor used by manual disconnect is triggered.
+
+Enterprise policy:
+
+- Scheduled downgrade:
+  - Do not disconnect the custom domain at the moment the downgrade is merely scheduled.
+  - Keep the custom domain active until the lower package becomes effective.
+  - Product/account UI should warn that the custom domain will disconnect when Growth ends.
+- Effective downgrade:
+  - When package authority changes from custom-domain-entitled to not custom-domain-entitled, automatically run the same immediate disconnect flow.
+  - The hub must remain available on the HubForJ-hosted subdomain.
+- Payment status grace:
+  - `active` Growth: custom domain allowed.
+  - `trialing` Growth: custom domain allowed if trial policy allows Growth capabilities.
+  - `past_due` Growth: recommended to keep the custom domain during billing grace.
+  - `cancelled`, effective lower tier, or explicit entitlement override `customDomainEnabled: false`: disconnect.
+- Operator override:
+  - `packageOverrides.customDomainEnabled === true` may preserve custom-domain capability even on a lower tier.
+  - `packageOverrides.customDomainEnabled === false` must disconnect even if the package tier would otherwise allow it.
+
+Implementation target:
+
+- `updateHubPackageAuthorityById` compares previous and next effective entitlements:
+  - `previousEntitlements.capabilities.customDomainEnabled`
+  - `nextEntitlements.capabilities.customDomainEnabled`
+- Effective entitlement treats `packageStatus: "cancelled"` as not entitled even if the package tier is still `growth`.
+- Effective entitlement preserves `past_due` Growth as entitled during billing grace.
+- If previous was enabled and next is disabled, and a custom domain is configured in a routable or pending state, entitlement disconnect is triggered.
+- The same safety path as manual disconnect is used:
+  - schedule disconnect with reason `package_downgrade`
+  - immediately process disconnect
+  - release `customDomainClaims/{hostname}`
+  - clear `customDomains`
+  - remove `customDomainMappings`
+  - attempt Vercel project-domain removal
+  - preserve any provider cleanup error in lifecycle metadata
+- The package-authority path does not redirect, because the caller is an internal package-authority API/webhook path.
+- Package update responses include custom-domain enforcement metadata for support diagnostics:
+  - `customDomainEntitlementChanged`
+  - `customDomainDisconnectTriggered`
+  - `customDomainDisconnectStatus`
+  - `customDomainDisconnectError`
+
+Lifecycle event requirements:
+
+- Writes best-effort lifecycle/audit metadata for:
+  - `custom_domain_disconnected_package_downgrade`
+  - previous package tier/status/source
+  - next package tier/status/source
+  - previous entitlement state
+  - next entitlement state
+  - actor `internal-product-site-billing` or operator actor where relevant
+- If provider cleanup fails:
+  - keep internal mapping removed
+  - keep claim released
+  - store provider cleanup failure in `customDomain.lastLifecycleError`
+  - include retryability metadata where available
+
+Edge cases:
+
+- No custom domain configured:
+  - no-op.
+- Custom domain already `disconnected`:
+  - no-op.
+- Custom domain pending verification/provisioning:
+  - release claim and remove Vercel project-domain entry if it was added.
+- Custom domain `disconnect_scheduled`:
+  - process immediately if entitlement is now lost.
+- Custom domain cleanup fails at Vercel:
+  - package update should still succeed because hub routing safety has been enforced internally.
+  - support diagnostics should show cleanup failure.
+- Package update fails after disconnect:
+  - avoid this ordering; package authority write should happen first, followed by entitlement enforcement, because the downgrade must remain the source of truth.
+- Immediate upgrade back to Growth:
+  - admin should be able to reconnect custom domain through the normal setup flow.
+  - do not automatically reconnect a previously disconnected domain without explicit owner action.
+
+Testing requirements:
+
+- Source/unit tests:
+  - package authority source compares previous and next custom-domain entitlement.
+  - package downgrade disconnect uses reason `package_downgrade`.
+  - package downgrade path calls the immediate custom-domain disconnect processor.
+  - package authority API returns custom-domain enforcement metadata.
+  - full behavior cases should be covered by integration tests or targeted emulator tests when available:
+    - downgrade from Growth to Starter triggers custom-domain disconnect.
+    - downgrade from Growth to Free triggers custom-domain disconnect.
+    - Growth `past_due` does not immediately disconnect.
+    - `packageOverrides.customDomainEnabled === true` prevents disconnect.
+    - `packageOverrides.customDomainEnabled === false` triggers disconnect.
+    - no custom domain remains no-op.
+    - provider cleanup failure does not fail package authority update.
+- Production verification:
+  - connect test domain
+  - use package-authority endpoint or product-site downgrade path to make the lower package effective
+  - confirm custom domain disconnects
+  - confirm hosted subdomain continues working
+  - confirm Vercel project-domain entry is removed or cleanup error is recorded
+  - confirm Account settings shows custom-domain locked on lower package
