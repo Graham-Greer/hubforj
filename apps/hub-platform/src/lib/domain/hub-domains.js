@@ -309,7 +309,8 @@ export function normalizeHubCustomDomain(hub = {}) {
     isConnected: status === "connected" && Boolean(hostname),
     isPending: status === "pending_verification" || status === "verifying",
     isVerificationFailed: status === "verification_failed",
-    isReadyForActivation: status === "verifying" && Boolean(normalizeString(storedDomain.verifiedAt)),
+    isReadyForActivation:
+      (status === "verifying" || status === "activation_ready") && Boolean(normalizeString(storedDomain.verifiedAt)),
     isDisconnectScheduled: status === "disconnect_scheduled",
     platformSubdomain,
     platformHostedHref,
