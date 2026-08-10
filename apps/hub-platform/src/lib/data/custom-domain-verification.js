@@ -9,6 +9,8 @@ import {
   releaseCustomDomainClaimForHub,
   upsertCustomDomainClaimForHub,
 } from "@/lib/data/custom-domain-claims";
+import { getCustomDomainVercelConfig } from "@/lib/domain/custom-domain-vercel-config";
+import { checkCustomDomainVercelReadiness } from "@/lib/domain/custom-domain-vercel";
 import { verifyCustomDomainDnsTxt } from "@/lib/domain/custom-domain-verification";
 import { getCustomDomainRuntimeBlockedReason, isCustomDomainRuntimeEnabled } from "@/lib/domain/custom-domain-activation";
 import { deleteCustomDomainMappingByHostname, writeCustomDomainMappingForHub } from "@/lib/data/custom-domain-mappings";
@@ -20,6 +22,43 @@ function normalizeString(value) {
 
 function buildVerificationFailureReason() {
   return "The expected TXT verification record was not found yet. DNS propagation may still be in progress.";
+}
+
+function buildActivationBlockedReason({ readiness, runtimeEnabled, autoActivateEnabled }) {
+  if (!readiness.externalReady) {
+    if (readiness.dnsRoutingStatus === "misconfigured") {
+      return readiness.dnsRoutingFailureReason || "DNS routing is not pointing to Vercel yet.";
+    }
+
+    if (readiness.vercelVerificationStatus !== "verified") {
+      return "The domain is not verified by the hosting provider yet.";
+    }
+
+    if (readiness.certificateStatus !== "ready") {
+      return "The secure connection is still being prepared.";
+    }
+
+    return "Custom-domain readiness checks are still pending.";
+  }
+
+  if (!runtimeEnabled) {
+    return getCustomDomainRuntimeBlockedReason();
+  }
+
+  if (!autoActivateEnabled) {
+    return "Custom-domain readiness is complete, but automatic activation is not enabled in this environment yet.";
+  }
+
+  return "";
+}
+
+function hasStoredExternalReadiness(customDomain) {
+  return Boolean(
+    normalizeString(customDomain.verifiedAt) &&
+    normalizeString(customDomain.dnsRoutingStatus) === "ready" &&
+    normalizeString(customDomain.vercelVerificationStatus) === "verified" &&
+    normalizeString(customDomain.certificateStatus) === "ready"
+  );
 }
 
 export async function processHubCustomDomainVerificationRecord(hubRecord, actorId = "system") {
@@ -38,15 +77,58 @@ export async function processHubCustomDomainVerificationRecord(hubRecord, actorI
 
   const now = new Date().toISOString();
   const result = await verifyCustomDomainDnsTxt({ hostname, token });
+  const runtimeEnabled = isCustomDomainRuntimeEnabled();
+  const vercelConfig = getCustomDomainVercelConfig();
+  const readiness = result.matched
+    ? await checkCustomDomainVercelReadiness(hostname, { now })
+    : {
+        ok: true,
+        skipped: true,
+        externalReady: false,
+        dnsRoutingStatus: normalizeString(customDomain.dnsRoutingStatus),
+        dnsRoutingLastCheckedAt: normalizeString(customDomain.dnsRoutingLastCheckedAt),
+        dnsRoutingFailureReason: normalizeString(customDomain.dnsRoutingFailureReason),
+        vercelProjectId: normalizeString(customDomain.vercelProjectId),
+        vercelDomainId: normalizeString(customDomain.vercelDomainId),
+        vercelVerificationStatus: normalizeString(customDomain.vercelVerificationStatus),
+        vercelVerificationLastCheckedAt: normalizeString(customDomain.vercelVerificationLastCheckedAt),
+        certificateStatus: normalizeString(customDomain.certificateStatus),
+        certificateLastCheckedAt: normalizeString(customDomain.certificateLastCheckedAt),
+        lastLifecycleRunAt: now,
+        lastLifecycleError: "",
+      };
+  const autoActivateEnabled = vercelConfig.autoActivateEnabled === true;
+  const shouldActivate = result.matched && readiness.externalReady && runtimeEnabled && autoActivateEnabled;
+  const nextStatus = !result.matched
+    ? "verification_failed"
+    : shouldActivate
+      ? "verifying"
+      : readiness.externalReady
+        ? "activation_ready"
+        : "verifying";
   const nextCustomDomain = {
     ...sanitizeStoredCustomDomainRecord(customDomain),
-    status: result.matched ? "verifying" : "verification_failed",
+    status: nextStatus,
     verificationHost: result.verificationHostname || normalizeString(customDomain.verificationHost),
     verifiedAt: result.matched ? now : normalizeString(customDomain.verifiedAt),
     activationReadyAt: result.matched ? now : normalizeString(customDomain.activationReadyAt),
     lastCheckedAt: now,
-    failureReason: result.matched ? "" : buildVerificationFailureReason(),
-    activationBlockedReason: result.matched && !isCustomDomainRuntimeEnabled() ? getCustomDomainRuntimeBlockedReason() : "",
+    failureReason: result.matched ? normalizeString(readiness.failureReason) : buildVerificationFailureReason(),
+    activationBlockedReason: result.matched
+      ? buildActivationBlockedReason({ readiness, runtimeEnabled, autoActivateEnabled })
+      : "",
+    dnsRoutingStatus: normalizeString(readiness.dnsRoutingStatus),
+    dnsRoutingLastCheckedAt: normalizeString(readiness.dnsRoutingLastCheckedAt) || (result.matched ? now : ""),
+    dnsRoutingFailureReason: normalizeString(readiness.dnsRoutingFailureReason),
+    vercelProjectId: normalizeString(readiness.vercelProjectId || customDomain.vercelProjectId),
+    vercelDomainId: normalizeString(readiness.vercelDomainId || customDomain.vercelDomainId),
+    vercelVerificationStatus: normalizeString(readiness.vercelVerificationStatus),
+    vercelVerificationLastCheckedAt:
+      normalizeString(readiness.vercelVerificationLastCheckedAt) || (result.matched ? now : ""),
+    certificateStatus: normalizeString(readiness.certificateStatus),
+    certificateLastCheckedAt: normalizeString(readiness.certificateLastCheckedAt) || (result.matched ? now : ""),
+    lastLifecycleRunAt: normalizeString(readiness.lastLifecycleRunAt) || now,
+    lastLifecycleError: normalizeString(readiness.lastLifecycleError),
     updatedByUserId: actorId,
   };
 
@@ -58,12 +140,36 @@ export async function processHubCustomDomainVerificationRecord(hubRecord, actorI
 
   await deleteCustomDomainMappingByHostname(hostname);
 
+  if (shouldActivate) {
+    const activationResult = await processHubCustomDomainActivationRecord(
+      {
+        ...hubRecord,
+        customDomain: nextCustomDomain,
+      },
+      actorId
+    );
+
+    return {
+      hubId,
+      processed: true,
+      matched: result.matched,
+      status: activationResult.status || nextCustomDomain.status,
+      hostname,
+      readiness,
+      activated: activationResult.activated === true,
+      activationBlocked: activationResult.blocked === true,
+    };
+  }
+
   return {
     hubId,
     processed: true,
     matched: result.matched,
     status: nextCustomDomain.status,
     hostname,
+    readiness,
+    activated: false,
+    activationBlocked: Boolean(nextCustomDomain.activationBlockedReason),
   };
 }
 
@@ -81,7 +187,12 @@ export async function runPendingCustomDomainVerificationBatch({
     .map((doc) => ({ id: doc.id, ...doc.data() }))
     .filter((hub) => {
       const status = normalizeString(hub?.customDomain?.status);
-      return status === "pending_verification" || status === "verifying" || status === "verification_failed";
+      return (
+        status === "pending_verification" ||
+        status === "verifying" ||
+        status === "verification_failed" ||
+        status === "activation_ready"
+      );
     });
 
   const results = [];
@@ -105,7 +216,7 @@ export async function processHubCustomDomainActivationRecord(hubRecord, actorId 
   const hostname = normalizeString(customDomain.hostname);
   const status = normalizeString(customDomain.status);
 
-  if (!hubId || !hostname || status !== "verifying") {
+  if (!hubId || !hostname || (status !== "verifying" && status !== "activation_ready")) {
     return {
       hubId,
       processed: false,
@@ -114,6 +225,33 @@ export async function processHubCustomDomainActivationRecord(hubRecord, actorId 
   }
 
   const now = new Date().toISOString();
+  const autoActivateEnabled = getCustomDomainVercelConfig().autoActivateEnabled === true;
+
+  if (!hasStoredExternalReadiness(customDomain)) {
+    const nextCustomDomain = {
+      ...sanitizeStoredCustomDomainRecord(customDomain),
+      activationBlockedReason: "Custom-domain readiness checks are not complete yet.",
+      updatedByUserId: actorId,
+    };
+
+    await getFirebaseAdminDb().collection("hubs").doc(hubId).update({
+      customDomain: nextCustomDomain,
+      updatedAt: now,
+      updatedBy: actorId,
+    });
+
+    await deleteCustomDomainMappingByHostname(hostname);
+
+    return {
+      hubId,
+      processed: true,
+      activated: false,
+      status: nextCustomDomain.status,
+      hostname,
+      blocked: true,
+      reason: "external_readiness_incomplete",
+    };
+  }
 
   if (!isCustomDomainRuntimeEnabled()) {
     const nextCustomDomain = {
@@ -141,10 +279,37 @@ export async function processHubCustomDomainActivationRecord(hubRecord, actorId 
     };
   }
 
+  if (!autoActivateEnabled) {
+    const nextCustomDomain = {
+      ...sanitizeStoredCustomDomainRecord(customDomain),
+      activationReadyAt: normalizeString(customDomain.activationReadyAt) || now,
+      activationBlockedReason: "Custom-domain readiness is complete, but automatic activation is not enabled in this environment yet.",
+      updatedByUserId: actorId,
+    };
+
+    await getFirebaseAdminDb().collection("hubs").doc(hubId).update({
+      customDomain: nextCustomDomain,
+      updatedAt: now,
+      updatedBy: actorId,
+    });
+
+    await deleteCustomDomainMappingByHostname(hostname);
+
+    return {
+      hubId,
+      processed: true,
+      activated: false,
+      status: nextCustomDomain.status,
+      hostname,
+      blocked: true,
+    };
+  }
+
   const nextCustomDomain = {
     ...sanitizeStoredCustomDomainRecord(customDomain),
     status: "connected",
     connectedAt: now,
+    connectedByUserId: actorId,
     activationBlockedReason: "",
     updatedByUserId: actorId,
   };
@@ -199,7 +364,10 @@ export async function runReadyCustomDomainActivationBatch({
 
   const candidates = snapshot.docs
     .map((doc) => ({ id: doc.id, ...doc.data() }))
-    .filter((hub) => normalizeString(hub?.customDomain?.status) === "verifying");
+    .filter((hub) => {
+      const status = normalizeString(hub?.customDomain?.status);
+      return status === "verifying" || status === "activation_ready";
+    });
 
   const results = [];
 

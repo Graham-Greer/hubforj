@@ -2363,3 +2363,71 @@ Operational rollout:
 - Confirm the domain appears in the Vercel project.
 - Confirm the hub document records `status: "pending_verification"` with Vercel/DNS readiness fields.
 - Keep `CUSTOM_DOMAIN_RUNTIME_ENABLED=false` and `HUB_PLATFORM_CUSTOM_DOMAIN_AUTO_ACTIVATE_ENABLED=false` until Phase 4 is implemented and verified.
+
+### Phase 4A: Full Readiness Check On "Check Again"
+
+Status: implemented locally, pending runtime test execution in an environment with Node available and controlled production verification.
+
+Completed:
+
+- Upgraded the existing "Check again" path instead of introducing a parallel custom-domain verification route.
+- Added `checkCustomDomainVercelReadiness` to the server-only Vercel domain service.
+- "Check again" now evaluates:
+  - TXT ownership verification
+  - Vercel project-domain verification
+  - Vercel domain config
+  - DNS routing readiness
+  - certificate readiness placeholder state
+  - runtime activation flag
+  - auto-activation flag
+- Persists refreshed readiness fields on every successful TXT check:
+  - `dnsRoutingStatus`
+  - `dnsRoutingLastCheckedAt`
+  - `dnsRoutingFailureReason`
+  - `vercelProjectId`
+  - `vercelDomainId`
+  - `vercelVerificationStatus`
+  - `vercelVerificationLastCheckedAt`
+  - `certificateStatus`
+  - `certificateLastCheckedAt`
+  - `lastLifecycleRunAt`
+  - `lastLifecycleError`
+- Moves a domain to `activation_ready` when:
+  - TXT ownership is verified
+  - Vercel verification is `verified`
+  - DNS routing is `ready`
+  - certificate status is `ready`
+  - runtime activation or auto-activation is still disabled
+- Preserves safe behavior when external readiness is incomplete:
+  - domain remains `verifying`
+  - precise `activationBlockedReason` explains the pending condition
+  - internal mappings are removed/kept absent
+- Allows the activation processor to accept both `verifying` and `activation_ready`.
+- Hardens the activation processor so it still requires stored external readiness before writing mappings.
+- Keeps activation blocked when auto-activation is disabled, even if runtime routing is enabled later.
+- Auto-activation remains gated by both:
+  - `CUSTOM_DOMAIN_RUNTIME_ENABLED=true`
+  - `HUB_PLATFORM_CUSTOM_DOMAIN_AUTO_ACTIVATE_ENABLED=true`
+- Updated Account settings UI/copy for `activation_ready`.
+- Updated the server action success message for activation-ready and connected outcomes.
+- Added source guards for the full readiness path.
+
+Not included in this slice:
+
+- Enabling runtime routing.
+- Enabling auto-activation.
+- Removing Vercel project domains during disconnect.
+- Registrar-specific guided setup UI.
+- Runtime custom-domain mapping cache/projection.
+
+Production verification:
+
+- With `HUB_PLATFORM_CUSTOM_DOMAIN_VERCEL_ENABLED=true`, `CUSTOM_DOMAIN_RUNTIME_ENABLED=false`, and `HUB_PLATFORM_CUSTOM_DOMAIN_AUTO_ACTIVATE_ENABLED=false`, click "Check again" for a domain whose Vercel config reports `misconfigured: false`.
+- Expected hub state:
+  - `customDomain.status = "activation_ready"`
+  - `customDomain.dnsRoutingStatus = "ready"`
+  - `customDomain.vercelVerificationStatus = "verified"`
+  - `customDomain.certificateStatus = "ready"`
+  - `customDomain.activationBlockedReason` explains that runtime/auto activation is not enabled.
+- Expected route behavior:
+  - the custom domain should still not serve the hub until runtime activation is deliberately enabled.

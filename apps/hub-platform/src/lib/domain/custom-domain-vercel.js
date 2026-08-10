@@ -62,6 +62,23 @@ function buildProvisioningBase(config, now) {
   };
 }
 
+function buildReadinessBase(config, now) {
+  return {
+    vercelEnabled: config.enabled,
+    vercelProjectId: config.projectId,
+    vercelDomainId: "",
+    vercelVerificationStatus: "not_checked",
+    vercelVerificationLastCheckedAt: now,
+    dnsRoutingStatus: "not_checked",
+    dnsRoutingLastCheckedAt: now,
+    dnsRoutingFailureReason: "",
+    certificateStatus: "",
+    certificateLastCheckedAt: now,
+    lastLifecycleRunAt: now,
+    lastLifecycleError: "",
+  };
+}
+
 async function addOrConfirmProjectDomain(hostname) {
   try {
     return await addVercelProjectDomain(hostname);
@@ -77,6 +94,65 @@ async function addOrConfirmProjectDomain(hostname) {
     } catch {
       throw error;
     }
+  }
+}
+
+export async function checkCustomDomainVercelReadiness(hostname, { now = new Date().toISOString() } = {}) {
+  const normalizedHostname = normalizeString(hostname).toLowerCase();
+  const config = getCustomDomainVercelConfig();
+  const base = buildReadinessBase(config, now);
+
+  if (!config.enabled) {
+    return {
+      ok: true,
+      skipped: true,
+      externalReady: false,
+      ...base,
+      lastLifecycleError: config.projectId
+        ? "Vercel custom-domain automation is configured but not enabled."
+        : "Vercel custom-domain automation is not configured.",
+    };
+  }
+
+  try {
+    const domainStatus = await getVercelProjectDomain(normalizedHostname);
+    const domainConfig = await getVercelDomainConfig(normalizedHostname);
+    const dnsRoutingStatus = resolveDnsRoutingStatus(domainConfig);
+    const vercelVerificationStatus = resolveVercelVerificationStatus(domainStatus);
+    const certificateStatus = domainStatus.verified && dnsRoutingStatus === "ready" ? "ready" : "pending";
+
+    return {
+      ok: true,
+      skipped: false,
+      externalReady:
+        vercelVerificationStatus === "verified" &&
+        dnsRoutingStatus === "ready" &&
+        certificateStatus === "ready",
+      ...base,
+      vercelDomainId: normalizeString(domainStatus.id || domainStatus.name),
+      vercelVerificationStatus,
+      dnsRoutingStatus,
+      dnsRoutingFailureReason: normalizeBoolean(domainConfig?.misconfigured)
+        ? "DNS records are not pointing to Vercel yet."
+        : "",
+      certificateStatus,
+    };
+  } catch (error) {
+    const classification = classifyVercelDomainError(error);
+
+    return {
+      ok: false,
+      skipped: false,
+      externalReady: false,
+      ...base,
+      vercelVerificationStatus: "failed",
+      dnsRoutingStatus: "not_checked",
+      certificateStatus: "pending",
+      failureReason: classification.message,
+      lastLifecycleError: classification.message,
+      providerErrorCategory: classification.category,
+      providerErrorRetryable: classification.retryable,
+    };
   }
 }
 

@@ -278,9 +278,13 @@ export async function checkCustomDomainVerificationAction(_previousState, formDa
 
     return {
       error: "",
-      success: result.matched
-        ? "DNS verification record detected. Connection activation is the next step."
-        : "Verification record not found yet. DNS propagation may still be in progress.",
+      success: result.activated
+        ? "Custom domain connected."
+        : result.status === "activation_ready"
+          ? "Custom domain checks are complete. Activation is pending for this environment."
+          : result.matched
+            ? "DNS verification record detected. Connection activation is the next step."
+            : "Verification record not found yet. DNS propagation may still be in progress.",
     };
   } catch (error) {
     return {

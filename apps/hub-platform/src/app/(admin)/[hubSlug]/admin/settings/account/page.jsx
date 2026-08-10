@@ -85,6 +85,10 @@ function buildDomainStatusDescription({ canManageCustomDomain, domainStatus, dom
     return domainState?.failureReason || "HubForJ could not prepare this domain just now. Try again in a moment.";
   }
 
+  if (domainStatus === "activation_ready") {
+    return domainState?.activationBlockedReason || "Custom-domain checks are complete. Activation is pending.";
+  }
+
   if (domainStatus === "pending_verification") {
     return "Your custom domain has been added and is waiting for DNS verification.";
   }
@@ -117,6 +121,10 @@ function buildDomainSetupTitle(domainStatus) {
     return "Verification is pending";
   }
 
+  if (domainStatus === "activation_ready") {
+    return "Ready to connect";
+  }
+
   if (domainStatus === "verification_failed") {
     return "Update custom-domain setup";
   }
@@ -139,6 +147,10 @@ function buildDomainSetupDescription(domainStatus) {
 
   if (domainStatus === "pending_verification") {
     return "The hostname is stored and waiting for DNS verification.";
+  }
+
+  if (domainStatus === "activation_ready") {
+    return "All external domain checks have passed. Final activation is controlled by the platform environment.";
   }
 
   if (domainStatus === "verification_failed") {
@@ -169,13 +181,14 @@ async function AccountSettingsContent({ hubSlug }) {
   const isDisconnectScheduled = domainStatus === "disconnect_scheduled";
   const isDisconnected = domainStatus === "disconnected";
   const isPendingVerification = domainStatus === "pending_verification";
+  const isActivationReady = domainStatus === "activation_ready";
   const isVerifying = domainStatus === "verifying";
   const isVerificationFailed = domainStatus === "verification_failed";
   const showVerificationPanel =
     canManageCustomDomain &&
     !isDisconnected &&
     Boolean(domainState?.verificationMethod) &&
-    (isPendingVerification || isVerifying || isVerificationFailed);
+    (isPendingVerification || isVerifying || isVerificationFailed || isActivationReady);
   const showSetupForm = canManageCustomDomain && !isConnected && !isDisconnectScheduled;
   const showDisconnectForm = canManageCustomDomain && isConnected;
   const visibleCustomDomainValue = domainState?.hostname || "Not connected";
