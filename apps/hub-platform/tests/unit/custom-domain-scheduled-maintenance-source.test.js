@@ -52,5 +52,5 @@ test("hub-platform Vercel cron schedule points at custom-domain maintenance rout
   const source = readHubPlatformSource("vercel.json");
 
   assert.match(source, /"path": "\/api\/cron\/custom-domains"/);
-  assert.match(source, /"schedule": "\*\/5 \* \* \* \*"/);
+  assert.match(source, /"schedule": "0 3 \* \* \*"/);
 });
