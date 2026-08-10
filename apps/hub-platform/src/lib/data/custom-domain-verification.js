@@ -61,6 +61,37 @@ function hasStoredExternalReadiness(customDomain) {
   );
 }
 
+async function listCustomDomainLifecycleCandidates({
+  hubSlug = "",
+  limit = 25,
+  statuses = [],
+} = {}) {
+  const db = getFirebaseAdminDb();
+  const normalizedHubSlug = normalizeString(hubSlug);
+  const boundedLimit = Math.min(Math.max(Number.parseInt(String(limit || ""), 10) || 25, 1), 100);
+  const statusList = Array.from(new Set(statuses.map((status) => normalizeString(status)).filter(Boolean))).slice(0, 30);
+
+  if (normalizedHubSlug) {
+    const snapshot = await db.collection("hubs").where("slug", "==", normalizedHubSlug).limit(1).get();
+
+    return snapshot.docs
+      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .filter((hub) => statusList.includes(normalizeString(hub?.customDomain?.status)));
+  }
+
+  if (!statusList.length) {
+    return [];
+  }
+
+  const snapshot = await db
+    .collection("hubs")
+    .where("customDomain.status", "in", statusList)
+    .limit(boundedLimit)
+    .get();
+
+  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+}
+
 export async function processHubCustomDomainVerificationRecord(hubRecord, actorId = "system") {
   const hubId = normalizeString(hubRecord?.id);
   const customDomain = sanitizeStoredCustomDomainRecord(hubRecord?.customDomain || {});
@@ -178,22 +209,16 @@ export async function runPendingCustomDomainVerificationBatch({
   hubSlug = "",
   limit = 25,
 } = {}) {
-  const db = getFirebaseAdminDb();
-  const snapshot = hubSlug
-    ? await db.collection("hubs").where("slug", "==", normalizeString(hubSlug)).limit(1).get()
-    : await db.collection("hubs").limit(limit).get();
-
-  const candidates = snapshot.docs
-    .map((doc) => ({ id: doc.id, ...doc.data() }))
-    .filter((hub) => {
-      const status = normalizeString(hub?.customDomain?.status);
-      return (
-        status === "pending_verification" ||
-        status === "verifying" ||
-        status === "verification_failed" ||
-        status === "activation_ready"
-      );
-    });
+  const candidates = await listCustomDomainLifecycleCandidates({
+    hubSlug,
+    limit,
+    statuses: [
+      "pending_verification",
+      "verifying",
+      "verification_failed",
+      "activation_ready",
+    ],
+  });
 
   const results = [];
 
@@ -357,17 +382,11 @@ export async function runReadyCustomDomainActivationBatch({
   hubSlug = "",
   limit = 25,
 } = {}) {
-  const db = getFirebaseAdminDb();
-  const snapshot = hubSlug
-    ? await db.collection("hubs").where("slug", "==", normalizeString(hubSlug)).limit(1).get()
-    : await db.collection("hubs").limit(limit).get();
-
-  const candidates = snapshot.docs
-    .map((doc) => ({ id: doc.id, ...doc.data() }))
-    .filter((hub) => {
-      const status = normalizeString(hub?.customDomain?.status);
-      return status === "verifying" || status === "activation_ready";
-    });
+  const candidates = await listCustomDomainLifecycleCandidates({
+    hubSlug,
+    limit,
+    statuses: ["verifying", "activation_ready"],
+  });
 
   const results = [];
 
@@ -515,14 +534,11 @@ export async function runScheduledCustomDomainDisconnectBatch({
   hubSlug = "",
   limit = 25,
 } = {}) {
-  const db = getFirebaseAdminDb();
-  const snapshot = hubSlug
-    ? await db.collection("hubs").where("slug", "==", normalizeString(hubSlug)).limit(1).get()
-    : await db.collection("hubs").limit(limit).get();
-
-  const candidates = snapshot.docs
-    .map((doc) => ({ id: doc.id, ...doc.data() }))
-    .filter((hub) => normalizeString(hub?.customDomain?.status) === "disconnect_scheduled");
+  const candidates = await listCustomDomainLifecycleCandidates({
+    hubSlug,
+    limit,
+    statuses: ["disconnect_scheduled"],
+  });
 
   const results = [];
 

@@ -2703,3 +2703,145 @@ Not included in this slice:
 - Scheduled job configuration in Vercel/cron.
 - Runtime middleware cache/KV optimization.
 - Admin-facing custom-domain UI redesign.
+
+### Phase 6B: Scheduled Custom-Domain Lifecycle Runner
+
+Status: implemented locally, pending runtime test execution in an environment with Node available and production cron verification after deployment.
+
+Implemented:
+
+- Added a Vercel Cron entry in `apps/hub-platform/vercel.json`:
+  - path: `/api/cron/custom-domains`
+  - schedule: `*/5 * * * *`
+- Added a cron-only route:
+  - `apps/hub-platform/src/app/api/cron/custom-domains/route.js`
+- The route is `GET` because Vercel Cron invokes configured paths with GET.
+- The route is protected by `CRON_SECRET`, using the standard Vercel Cron authorization pattern:
+  - `Authorization: Bearer $CRON_SECRET`
+- The route fails closed:
+  - `503` if `CRON_SECRET` is missing/weak
+  - `401` if the authorization header is wrong
+- The route is feature-flagged:
+  - `HUB_PLATFORM_CUSTOM_DOMAIN_SCHEDULED_MAINTENANCE_ENABLED`
+  - `HUB_PLATFORM_CUSTOM_DOMAIN_RECONCILIATION_ENABLED`
+- The scheduled route can be deployed while disabled.
+- When enabled, the route runs:
+  1. custom-domain lifecycle maintenance
+  2. optional custom-domain reconciliation repair
+
+Lifecycle targeting improvement:
+
+- Existing lifecycle batches no longer scan an arbitrary first page of hubs and filter in memory.
+- They now query by `customDomain.status` directly:
+  - verification candidates:
+    - `pending_verification`
+    - `verifying`
+    - `verification_failed`
+    - `activation_ready`
+  - activation candidates:
+    - `verifying`
+    - `activation_ready`
+  - disconnect candidates:
+    - `disconnect_scheduled`
+- This avoids missing pending custom-domain work as the number of hubs grows.
+
+Scheduled reconciliation behavior:
+
+- Added a custom-domain-specific reconciliation batch.
+- It targets hubs with custom-domain lifecycle statuses rather than arbitrary hub pages:
+  - `pending_verification`
+  - `verification_failed`
+  - `verifying`
+  - `activation_ready`
+  - `connected`
+  - `disconnect_scheduled`
+- It runs the same conservative repair logic implemented in Phase 6A.
+- It does not perform broad Vercel project-domain orphan scans.
+- It does not force provider mutations except through existing lifecycle/disconnect processors.
+
+Required production environment variables:
+
+- `CRON_SECRET`
+  - required for the cron endpoint
+  - should be strong, random, and separate from client-visible values
+  - Vercel sends this as `Authorization: Bearer $CRON_SECRET` for cron invocations
+- `HUB_PLATFORM_CUSTOM_DOMAIN_SCHEDULED_MAINTENANCE_ENABLED=true`
+  - enables the route to perform work
+- `HUB_PLATFORM_CUSTOM_DOMAIN_RECONCILIATION_ENABLED=true`
+  - enables claim/mapping reconciliation after lifecycle maintenance
+- `HUB_PLATFORM_CUSTOM_DOMAIN_SCHEDULED_MAINTENANCE_LIMIT=25`
+  - default batch limit
+  - can be lowered temporarily if provider/API pressure is observed
+
+Rollout sequence:
+
+1. Deploy the route and cron schedule with:
+   - `HUB_PLATFORM_CUSTOM_DOMAIN_SCHEDULED_MAINTENANCE_ENABLED=false`
+   - `HUB_PLATFORM_CUSTOM_DOMAIN_RECONCILIATION_ENABLED=false`
+2. Confirm the cron route returns a skipped response when called with the correct `CRON_SECRET`.
+3. Enable:
+   - `HUB_PLATFORM_CUSTOM_DOMAIN_SCHEDULED_MAINTENANCE_ENABLED=true`
+4. Manually call the cron route once.
+5. Confirm lifecycle output is `ok: true`.
+6. Enable:
+   - `HUB_PLATFORM_CUSTOM_DOMAIN_RECONCILIATION_ENABLED=true`
+7. Manually call the cron route again.
+8. Confirm reconciliation output is `ok: true`.
+9. Confirm Vercel Cron appears in the Vercel project Cron Jobs UI after production deploy.
+10. Monitor production logs for the next scheduled run.
+
+Manual verification command:
+
+```powershell
+$headers = @{
+  Authorization = "Bearer <CRON_SECRET>"
+}
+
+Invoke-RestMethod `
+  -Uri "https://maplegrovecommunityhub.hubforj.com/api/cron/custom-domains" `
+  -Method GET `
+  -Headers $headers
+```
+
+Expected disabled response:
+
+```json
+{
+  "ok": true,
+  "skipped": true,
+  "reason": "custom_domain_scheduled_maintenance_disabled"
+}
+```
+
+Expected enabled response:
+
+```json
+{
+  "ok": true,
+  "skipped": false,
+  "limit": 25,
+  "lifecycle": {
+    "ok": true
+  },
+  "reconciliation": {
+    "ok": true
+  }
+}
+```
+
+Operational notes:
+
+- Vercel Cron runs on production deployments.
+- Cron schedules are UTC.
+- Cron routes should not redirect.
+- The route returns compact summaries so logs stay useful without exposing customer secrets.
+- Full diagnostic detail remains available through `/api/internal/projections/reconcile`.
+- If Vercel plan limits become a concern, reduce cadence or split lifecycle/reconciliation later.
+
+Not included in this slice:
+
+- Persisted scheduler cursor/checkpoint across invocations.
+- Broad Vercel orphan-domain inventory scan.
+- Separate low-frequency connected-domain reconciliation cron.
+- Alerting integration for failed cron runs.
+- Admin-facing UI notification that background verification is running.

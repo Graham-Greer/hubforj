@@ -417,3 +417,54 @@ export async function reconcileHubCustomDomainState(hub, actorId = "system") {
     repairs,
   };
 }
+
+export async function runCustomDomainReconciliationBatch({
+  actorId = "system",
+  limit = 25,
+} = {}) {
+  const boundedLimit = Math.min(Math.max(Number.parseInt(String(limit || ""), 10) || 25, 1), 100);
+  const snapshot = await getFirebaseAdminDb()
+    .collection("hubs")
+    .where("customDomain.status", "in", [
+      "pending_verification",
+      "verification_failed",
+      "verifying",
+      "activation_ready",
+      "connected",
+      "disconnect_scheduled",
+    ])
+    .limit(boundedLimit)
+    .get();
+  const results = [];
+
+  for (const doc of snapshot.docs) {
+    const hub = { id: doc.id, ...doc.data() };
+
+    try {
+      results.push({
+        hubId: hub.id,
+        hubSlug: normalizeString(hub.slug),
+        ok: true,
+        error: "",
+        ...(await reconcileHubCustomDomainState(hub, actorId)),
+      });
+    } catch (error) {
+      results.push({
+        hubId: hub.id,
+        hubSlug: normalizeString(hub.slug),
+        ok: false,
+        status: "failed",
+        error: String(error?.message || "Unable to reconcile custom-domain state."),
+      });
+    }
+  }
+
+  const failed = results.filter((result) => result.ok === false).length;
+
+  return {
+    ok: failed === 0,
+    processed: results.length,
+    failed,
+    results,
+  };
+}
