@@ -273,6 +273,9 @@ export function buildCommercialPackageChangeModel({ account, currentHub, targetT
   const hasScheduledCancellation =
     !hasPendingPackageIntent &&
     (account?.stripeCancelAtPeriodEnd === true || Boolean(normalizeString(account?.stripeCancelAt)));
+  const hasScheduledPackageChange =
+    pendingStatus === "scheduled_downgrade" ||
+    hasScheduledCancellation;
   const scheduledDateLabel = formatDateLabel(
     normalizeString(account?.pendingPackageEffectiveAt) ||
       normalizeString(account?.stripeCancelAt) ||
@@ -281,14 +284,29 @@ export function buildCommercialPackageChangeModel({ account, currentHub, targetT
   );
 
   if (normalizedTargetTier === currentTier) {
+    if (hasScheduledPackageChange && isPaidPackageTier(currentTier)) {
+      const scheduledTargetLabel = pendingPackage?.title || "Free";
+
       return {
         targetTier: normalizedTargetTier,
         currentTier,
-        actionKind: "current",
-        actionLabel: "Current package",
-        title: "This package is already active",
-        description: "You are already on this package.",
+        actionKind: "scheduled",
+        actionLabel: `Keep ${formatLabel(currentTier, "current package")}`,
+        title: `Keep ${formatLabel(currentTier, "your current package")} active`,
+        description: scheduledDateLabel
+          ? `${scheduledTargetLabel} is scheduled to replace ${formatLabel(currentTier, "your current package")} on ${scheduledDateLabel}. Cancel the scheduled change to keep ${formatLabel(currentTier, "your current package")} active.`
+          : `${scheduledTargetLabel} is scheduled to replace ${formatLabel(currentTier, "your current package")} at renewal. Cancel the scheduled change to keep ${formatLabel(currentTier, "your current package")} active.`,
       };
+    }
+
+    return {
+      targetTier: normalizedTargetTier,
+      currentTier,
+      actionKind: "current",
+      actionLabel: "Current package",
+      title: "This package is already active",
+      description: "You are already on this package.",
+    };
   }
 
   if (normalizedTargetTier === "free") {
