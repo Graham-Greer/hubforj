@@ -50,6 +50,10 @@ export async function POST(request) {
       packageSource: hub.packageSource,
       packageAssignedAt: hub.packageAssignedAt,
       packageUpdatedAt: hub.packageUpdatedAt,
+      customDomainEntitlementChanged: hub.customDomainEntitlementChanged === true,
+      customDomainDisconnectTriggered: hub.customDomainDisconnectTriggered === true,
+      customDomainDisconnectStatus: hub.customDomainDisconnectStatus,
+      customDomainDisconnectError: hub.customDomainDisconnectError,
     });
   } catch (error) {
     return NextResponse.json(
