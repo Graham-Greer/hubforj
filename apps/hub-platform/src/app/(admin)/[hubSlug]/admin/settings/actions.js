@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireHubOperatorActionAccess, requireHubOwnerActionAccess } from "@/lib/auth/action-access";
 import { revalidatePublicHubCoreCache, revalidatePublicShellCache } from "@/lib/cache/public-content";
 import {
@@ -12,7 +13,11 @@ import {
   updateTestimonialsPageSettingsByHubSlug,
 } from "@/lib/data/site-settings";
 import { checkHubCustomDomainVerificationBySlug, requestHubCustomDomainBySlug } from "@/lib/data/hub-mutations";
-import { scheduleHubCustomDomainDisconnectRecord } from "@/lib/data/custom-domain-verification";
+import {
+  processHubCustomDomainDisconnectRecord,
+  scheduleHubCustomDomainDisconnectRecord,
+} from "@/lib/data/custom-domain-verification";
+import { buildPlatformSubdomainHost } from "@/lib/domain/hub-domains";
 
 function revalidateSettingsPaths(hubSlug) {
   revalidatePath(`/${hubSlug}`);
@@ -297,6 +302,7 @@ export async function checkCustomDomainVerificationAction(_previousState, formDa
 export async function disconnectCustomDomainAction(_previousState, formData) {
   const hubSlug = String(formData.get("hubSlug") || "").trim();
   const confirmation = String(formData.get("confirmation") || "").trim();
+  let redirectTarget = "";
 
   try {
     const { hub, actorId } = await requireHubOwnerActionAccess(hubSlug, {
@@ -316,20 +322,27 @@ export async function disconnectCustomDomainAction(_previousState, formData) {
       };
     }
 
+    const disconnectAt = new Date().toISOString();
     await scheduleHubCustomDomainDisconnectRecord(hub, {
       actorId,
-      disconnectAt: new Date().toISOString(),
+      disconnectAt,
       reason: "manual_disconnect",
     });
+    await processHubCustomDomainDisconnectRecord(
+      {
+        ...hub,
+        customDomain: {
+          ...(hub.customDomain || {}),
+          status: "disconnect_scheduled",
+          disconnectAt,
+          disconnectReason: "manual_disconnect",
+        },
+      },
+      actorId
+    );
     revalidateSettingsPaths(hubSlug);
     revalidateSettingsHubCaches(hub);
-
-    return {
-      error: "",
-      success:
-        "Custom-domain disconnect has been scheduled immediately. The hub will return to its Hubforj-hosted address once the disconnect processor runs.",
-      confirmation: "",
-    };
+    redirectTarget = `https://${buildPlatformSubdomainHost(hub)}/admin/settings/account?customDomain=disconnected`;
   } catch (error) {
     return {
       error: String(error?.message || "Unable to disconnect custom domain."),
@@ -337,4 +350,6 @@ export async function disconnectCustomDomainAction(_previousState, formData) {
       confirmation,
     };
   }
+
+  redirect(redirectTarget);
 }

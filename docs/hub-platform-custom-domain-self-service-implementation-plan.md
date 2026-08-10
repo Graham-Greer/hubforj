@@ -2366,7 +2366,7 @@ Operational rollout:
 
 ### Phase 4A: Full Readiness Check On "Check Again"
 
-Status: implemented locally, pending runtime test execution in an environment with Node available and controlled production verification.
+Status: implemented and production-verified for custom-domain provisioning, readiness, activation, routing, admin auth, and member auth on a controlled test domain.
 
 Completed:
 
@@ -2422,12 +2422,74 @@ Not included in this slice:
 
 Production verification:
 
-- With `HUB_PLATFORM_CUSTOM_DOMAIN_VERCEL_ENABLED=true`, `CUSTOM_DOMAIN_RUNTIME_ENABLED=false`, and `HUB_PLATFORM_CUSTOM_DOMAIN_AUTO_ACTIVATE_ENABLED=false`, click "Check again" for a domain whose Vercel config reports `misconfigured: false`.
-- Expected hub state:
+- With `HUB_PLATFORM_CUSTOM_DOMAIN_VERCEL_ENABLED=true`, `CUSTOM_DOMAIN_RUNTIME_ENABLED=false`, and `HUB_PLATFORM_CUSTOM_DOMAIN_AUTO_ACTIVATE_ENABLED=false`, clicking "Check again" for `hubforjtestdomain.co.uk` successfully moved the hub into activation-ready state.
+- Verified activation-ready hub state:
   - `customDomain.status = "activation_ready"`
   - `customDomain.dnsRoutingStatus = "ready"`
   - `customDomain.vercelVerificationStatus = "verified"`
   - `customDomain.certificateStatus = "ready"`
   - `customDomain.activationBlockedReason` explains that runtime/auto activation is not enabled.
-- Expected route behavior:
-  - the custom domain should still not serve the hub until runtime activation is deliberately enabled.
+- With `CUSTOM_DOMAIN_RUNTIME_ENABLED=true` and `HUB_PLATFORM_CUSTOM_DOMAIN_AUTO_ACTIVATE_ENABLED=false`, clicking "Check again" preserved the activation-ready state and did not write live mappings.
+- With both `CUSTOM_DOMAIN_RUNTIME_ENABLED=true` and `HUB_PLATFORM_CUSTOM_DOMAIN_AUTO_ACTIVATE_ENABLED=true`, clicking "Check again" connected the domain.
+- Verified connected-domain behavior for `https://hubforjtestdomain.co.uk`:
+  - custom domain resolves to the correct hub
+  - public routes resolve
+  - admin login works
+  - member login works
+  - admin/member sessions work on the custom-domain host
+
+Remaining production verification:
+
+- Stripe checkout/payment return URLs for membership flows on the custom-domain host, if those flows are enabled.
+- Webhook reconciliation remains hub/id based and does not depend on the request host.
+- Disconnect lifecycle removes or disables connected custom-domain routing safely.
+
+Additional production verification completed:
+
+- Paid course/event booking checkout from `hubforjtestdomain.co.uk` opened Stripe checkout successfully.
+- Completed Stripe payment returned to the custom-domain host.
+- Admin payment record was created.
+- Admin booking/registration record was created.
+- Admin dashboard counters updated.
+- Member booking appeared.
+- Member billing record appeared.
+- Stripe delivered the relevant `checkout.session.completed` webhook with `200 OK`.
+
+### Phase 4B: Immediate Manual Disconnect And Provider Cleanup
+
+Status: implemented locally, pending runtime test execution in an environment with Node available and controlled production verification.
+
+Completed:
+
+- Manual disconnect now schedules and immediately processes the disconnect in the same admin action.
+- After a successful manual disconnect, the admin is redirected to the HubForJ-hosted admin settings URL:
+  - `https://{platformSubdomain}.hubforj.com/admin/settings/account?customDomain=disconnected`
+- Internal safety remains the first priority:
+  - release `customDomainClaims/{hostname}`
+  - clear `customDomains`
+  - mark the hub custom-domain state as `disconnected`
+  - delete canonical and companion `customDomainMappings`
+- Vercel project-domain cleanup runs after internal routing has been removed.
+- Vercel cleanup is idempotent:
+  - a provider `not_found` response is treated as already removed
+  - other provider failures are stored in `customDomain.lastLifecycleError`
+  - failed provider cleanup does not leave the hub mapped to the old custom domain
+- Added source guards for immediate manual disconnect, hosted-domain redirect, internal routing removal, and Vercel cleanup idempotency.
+
+Not included in this slice:
+
+- Grace-period redirects from disconnected custom domains to the hosted subdomain.
+- Admin-facing cleanup/retry controls for provider removal failures.
+- Full custom-domain Account settings UX redesign.
+
+Production verification:
+
+- Connect a controlled test domain.
+- Click disconnect from the custom-domain host.
+- Expected:
+  - action completes without requiring a separate internal lifecycle endpoint call
+  - admin lands on the HubForJ-hosted admin settings URL
+  - custom-domain mapping documents are removed
+  - custom-domain claim is released
+  - hub falls back to the HubForJ-hosted subdomain
+  - Vercel project-domain entry is removed or marked already removed
