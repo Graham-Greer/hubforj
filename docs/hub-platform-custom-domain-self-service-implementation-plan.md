@@ -2291,3 +2291,75 @@ Expected first-pass result:
 - `diagnostics.vercel.accountScope` is `personal`
 - `diagnostics.vercel.tokenConfigured` is `true`
 - `diagnostics.vercelLive.ok` is `true`
+
+### Phase 3A: Request Flow Provisioning Foundation
+
+Status: implemented locally, pending runtime test execution in an environment with Node available and controlled production verification.
+
+Completed:
+
+- Added a high-level server-only Vercel provisioning service in `apps/hub-platform/src/lib/domain/custom-domain-vercel.js`.
+- Kept Vercel provisioning behind `HUB_PLATFORM_CUSTOM_DOMAIN_VERCEL_ENABLED`.
+- Preserved existing TXT-only setup behavior when Vercel provisioning is disabled.
+- Added idempotent add-or-confirm behavior:
+  - attempt to add the domain to the configured Vercel project
+  - treat same-project conflict as a recoverable convergence path by reading the project domain
+  - classify non-recoverable provider failures into product-safe lifecycle state
+- Added DNS routing status capture from Vercel domain config:
+  - `not_checked`
+  - `pending`
+  - `ready`
+  - `misconfigured`
+- Added Vercel verification status capture:
+  - `not_checked`
+  - `pending`
+  - `verified`
+  - `failed`
+- Added certificate readiness placeholder state based on provider verification:
+  - `pending`
+  - `ready`
+- Added an expiring `customDomain.operationLock` during setup submission.
+- Re-checks entitlement inside the transaction before lock/claim writes.
+- Writes an expiring pending `customDomainClaims/{hostname}` claim for setup requests so failed provisioning cannot permanently trap a domain.
+- Preserves the existing TXT verification token when the same hub retries the same hostname.
+- Writes lifecycle-ready fields onto the hub custom-domain record:
+  - `dnsRoutingStatus`
+  - `dnsRoutingLastCheckedAt`
+  - `dnsRoutingFailureReason`
+  - `vercelProjectId`
+  - `vercelDomainId`
+  - `vercelDomainAddedAt`
+  - `vercelVerificationStatus`
+  - `vercelVerificationLastCheckedAt`
+  - `certificateStatus`
+  - `certificateLastCheckedAt`
+  - `lastLifecycleRunAt`
+  - `lastLifecycleError`
+- Writes best-effort lifecycle events to `hubs/{hubId}/customDomainEvents`.
+- Updated Account settings copy/facts for:
+  - `provisioning`
+  - `provisioning_failed`
+  - DNS routing status
+  - Vercel hosting verification status
+  - certificate status
+  - configured Vercel project id
+- Added source guards for request-flow provisioning, expiring locks/claims, idempotent Vercel convergence, and flag safety.
+
+Not included in this slice:
+
+- Full "Check again" readiness orchestration across TXT, Vercel config, Vercel verification, certificate readiness, and internal activation.
+- Auto-activation.
+- Removing old pending Vercel domains when switching from one pending hostname to another.
+- Removing Vercel project domains during disconnect.
+- Registrar-specific guided setup UI.
+- Middleware runtime cache/projection changes.
+
+Operational rollout:
+
+- Deploy with `HUB_PLATFORM_CUSTOM_DOMAIN_VERCEL_ENABLED=false` first to preserve existing behavior.
+- Re-run `/api/internal/custom-domains/status?includeVercel=true`.
+- Enable `HUB_PLATFORM_CUSTOM_DOMAIN_VERCEL_ENABLED=true` only for controlled testing.
+- Submit a test Growth custom domain from Account settings.
+- Confirm the domain appears in the Vercel project.
+- Confirm the hub document records `status: "pending_verification"` with Vercel/DNS readiness fields.
+- Keep `CUSTOM_DOMAIN_RUNTIME_ENABLED=false` and `HUB_PLATFORM_CUSTOM_DOMAIN_AUTO_ACTIVATE_ENABLED=false` until Phase 4 is implemented and verified.

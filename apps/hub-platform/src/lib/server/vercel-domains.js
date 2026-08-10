@@ -137,6 +137,7 @@ export function normalizeVercelDomainStatus(payload = {}) {
   const domain = payload.domain || payload.name || payload;
 
   return {
+    id: normalizeString(domain?.id || payload?.id),
     name: normalizeHostname(domain?.name || payload?.name || payload?.domain),
     verified: domain?.verified === true || payload?.verified === true,
     verification: Array.isArray(domain?.verification)

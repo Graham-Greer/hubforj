@@ -77,6 +77,14 @@ function buildDomainStatusDescription({ canManageCustomDomain, domainStatus, dom
       : "Your DNS record has been found. Final connection is the next step.";
   }
 
+  if (domainStatus === "provisioning") {
+    return "HubForJ is preparing this domain for DNS verification.";
+  }
+
+  if (domainStatus === "provisioning_failed") {
+    return domainState?.failureReason || "HubForJ could not prepare this domain just now. Try again in a moment.";
+  }
+
   if (domainStatus === "pending_verification") {
     return "Your custom domain has been added and is waiting for DNS verification.";
   }
@@ -90,6 +98,54 @@ function buildDomainStatusDescription({ canManageCustomDomain, domainStatus, dom
   }
 
   return "This hub has Growth entitlement and is ready for a custom domain.";
+}
+
+function buildDomainSetupTitle(domainStatus) {
+  if (domainStatus === "disconnected") {
+    return "Reconnect custom domain";
+  }
+
+  if (domainStatus === "provisioning") {
+    return "Preparing custom domain";
+  }
+
+  if (domainStatus === "provisioning_failed") {
+    return "Retry custom-domain setup";
+  }
+
+  if (domainStatus === "pending_verification") {
+    return "Verification is pending";
+  }
+
+  if (domainStatus === "verification_failed") {
+    return "Update custom-domain setup";
+  }
+
+  return "Connect custom domain";
+}
+
+function buildDomainSetupDescription(domainStatus) {
+  if (domainStatus === "disconnected") {
+    return "The last custom domain has been removed. Enter the hostname you want to connect next.";
+  }
+
+  if (domainStatus === "provisioning") {
+    return "We are attaching the domain to the HubForJ hosting project before DNS verification can continue.";
+  }
+
+  if (domainStatus === "provisioning_failed") {
+    return "The previous setup attempt could not complete. Check the hostname and try again.";
+  }
+
+  if (domainStatus === "pending_verification") {
+    return "The hostname is stored and waiting for DNS verification.";
+  }
+
+  if (domainStatus === "verification_failed") {
+    return "Update the hostname if needed, then continue the DNS verification flow.";
+  }
+
+  return "Enter the primary hostname the hub should use publicly.";
 }
 
 async function AccountSettingsContent({ hubSlug }) {
@@ -122,26 +178,11 @@ async function AccountSettingsContent({ hubSlug }) {
     (isPendingVerification || isVerifying || isVerificationFailed);
   const showSetupForm = canManageCustomDomain && !isConnected && !isDisconnectScheduled;
   const showDisconnectForm = canManageCustomDomain && isConnected;
-  const visibleCustomDomainValue =
-    isConnected || isDisconnectScheduled || isPendingVerification || isVerifying || isVerificationFailed
-      ? domainState?.hostname || "Not connected"
-      : domainState?.hostname || "Not connected";
+  const visibleCustomDomainValue = domainState?.hostname || "Not connected";
   const customDomainLabel =
     isConnected || isDisconnectScheduled ? "Custom domain" : isDisconnected ? "Previously connected domain" : "Custom domain";
-  const setupTitle = isDisconnected
-    ? "Reconnect custom domain"
-    : isPendingVerification
-      ? "Verification is pending"
-      : isVerificationFailed
-        ? "Update custom-domain setup"
-        : "Connect custom domain";
-  const setupDescription = isDisconnected
-    ? "The last custom domain has been removed. Enter the hostname you want to connect next."
-    : isPendingVerification
-      ? "The hostname is stored and waiting for DNS verification."
-      : isVerificationFailed
-        ? "Update the hostname if needed, then continue the DNS verification flow."
-        : "Enter the primary hostname the hub should use publicly.";
+  const setupTitle = buildDomainSetupTitle(domainStatus);
+  const setupDescription = buildDomainSetupDescription(domainStatus);
   const setupInitialHostname = isDisconnected ? "" : domainState?.hostname || "";
   const domainStatusDescription = buildDomainStatusDescription({ canManageCustomDomain, domainStatus, domainState });
   const domainCardClassName = styles.card;
@@ -298,6 +339,30 @@ async function AccountSettingsContent({ hubSlug }) {
                     <div className={styles.domainFact}>
                       <span className={styles.domainLabel}>Scheduled disconnect</span>
                       <strong className={styles.domainValue}>{domainState.disconnectAt}</strong>
+                    </div>
+                  ) : null}
+                  {domainState?.vercelProjectId ? (
+                    <div className={styles.domainFact}>
+                      <span className={styles.domainLabel}>Hosting project</span>
+                      <strong className={styles.domainValue}>{domainState.vercelProjectId}</strong>
+                    </div>
+                  ) : null}
+                  {domainState?.dnsRoutingStatus ? (
+                    <div className={styles.domainFact}>
+                      <span className={styles.domainLabel}>DNS routing</span>
+                      <strong className={styles.domainValue}>{domainState.dnsRoutingStatus}</strong>
+                    </div>
+                  ) : null}
+                  {domainState?.vercelVerificationStatus ? (
+                    <div className={styles.domainFact}>
+                      <span className={styles.domainLabel}>Hosting verification</span>
+                      <strong className={styles.domainValue}>{domainState.vercelVerificationStatus}</strong>
+                    </div>
+                  ) : null}
+                  {domainState?.certificateStatus ? (
+                    <div className={styles.domainFact}>
+                      <span className={styles.domainLabel}>Secure connection</span>
+                      <strong className={styles.domainValue}>{domainState.certificateStatus}</strong>
                     </div>
                   ) : null}
                 </div>
