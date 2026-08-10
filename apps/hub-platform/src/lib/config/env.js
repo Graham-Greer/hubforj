@@ -60,6 +60,14 @@ const serverEnv = {
   sessionHmacSecret: process.env.SESSION_HMAC_SECRET || "",
   stripeSecretKey: process.env.STRIPE_SECRET_KEY || "",
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || "",
+  vercelApiToken: process.env.VERCEL_API_TOKEN || "",
+  vercelTeamId: process.env.VERCEL_TEAM_ID || "",
+  vercelHubPlatformProjectId: process.env.VERCEL_HUB_PLATFORM_PROJECT_ID || "",
+  hubPlatformCustomDomainVercelEnabled:
+    String(process.env.HUB_PLATFORM_CUSTOM_DOMAIN_VERCEL_ENABLED || "").trim().toLowerCase() === "true",
+  hubPlatformCustomDomainAutoActivateEnabled:
+    String(process.env.HUB_PLATFORM_CUSTOM_DOMAIN_AUTO_ACTIVATE_ENABLED || "").trim().toLowerCase() === "true",
+  hubPlatformCustomDomainVercelTimeoutMs: process.env.HUB_PLATFORM_CUSTOM_DOMAIN_VERCEL_TIMEOUT_MS || "",
 };
 
 export function getPublicEnv() {
@@ -94,6 +102,8 @@ export function getServerEnv() {
     hubforjPlatformFeeBps: Number.parseInt(String(serverEnv.hubforjPlatformFeeBps || ""), 10) || 0,
     internalAutomationProcessorBatchSize:
       Number.parseInt(String(serverEnv.internalAutomationProcessorBatchSize || ""), 10) || 50,
+    hubPlatformCustomDomainVercelTimeoutMs:
+      Number.parseInt(String(serverEnv.hubPlatformCustomDomainVercelTimeoutMs || ""), 10) || 5000,
     platformReservedHosts: serverEnv.platformReservedHosts
       .split(",")
       .map((value) => value.trim())
