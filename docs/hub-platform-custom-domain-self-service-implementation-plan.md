@@ -2712,7 +2712,13 @@ Implemented:
 
 - Added a Vercel Cron entry in `apps/hub-platform/vercel.json`:
   - path: `/api/cron/custom-domains`
-  - schedule: `*/5 * * * *`
+  - schedule: `0 3 * * *`
+  - cadence: daily at 03:00 UTC
+- The daily cadence is intentional for the current Vercel Hobby deployment constraint.
+- Future Vercel Pro cadence can move this back toward:
+  - every 5 minutes for pending domains
+  - every 5-15 minutes for disconnect processing
+  - every 30-60 minutes for connected-domain reconciliation
 - Added a cron-only route:
   - `apps/hub-platform/src/app/api/cron/custom-domains/route.js`
 - The route is `GET` because Vercel Cron invokes configured paths with GET.
