@@ -16,6 +16,7 @@ import { requireHubBySlug } from "@/lib/data/hubs";
 import { buildDefaultMembershipPlanWriteModel } from "@/lib/data/membership-plans";
 import { getPlatformRootDomain, isReservedHubSlug } from "@/lib/domain/custom-domain-runtime-config";
 import { buildCustomDomainVerificationHostname } from "@/lib/domain/custom-domain-verification";
+import { provisionCustomDomainWithVercel } from "@/lib/domain/custom-domain-vercel";
 import { processHubCustomDomainVerificationRecord } from "@/lib/data/custom-domain-verification";
 import { normalizeUpdateHubPackageAuthorityPayload } from "@/lib/domain/hub-package-contracts";
 import { assertValidCustomDomainHostname, normalizePlatformSubdomainLabel } from "@/lib/domain/hub-domains";
@@ -24,6 +25,46 @@ import { normalizeCreateHubPayload, normalizeHubDomain } from "@/lib/domain/hubs
 
 function normalizeString(value) {
   return String(value || "").trim();
+}
+
+function addMinutes(value, minutes) {
+  return new Date(new Date(value).getTime() + minutes * 60 * 1000).toISOString();
+}
+
+function addHours(value, hours) {
+  return new Date(new Date(value).getTime() + hours * 60 * 60 * 1000).toISOString();
+}
+
+function buildCustomDomainOperationLock({ operation, hostname, actorId, now }) {
+  return {
+    operation,
+    hostname,
+    lockedAt: now,
+    lockedByUserId: actorId,
+    expiresAt: addMinutes(now, 5),
+  };
+}
+
+function isActiveCustomDomainOperationLock(lock, now) {
+  return Boolean(normalizeString(lock?.operation) && normalizeString(lock?.expiresAt) > now);
+}
+
+async function writeCustomDomainLifecycleEvent(db, hubId, event) {
+  const normalizedHubId = normalizeString(hubId);
+
+  if (!normalizedHubId) {
+    return;
+  }
+
+  try {
+    await db.collection("hubs").doc(normalizedHubId).collection("customDomainEvents").add(event);
+  } catch (error) {
+    console.warn("Custom-domain lifecycle event write failed", {
+      hubId: normalizedHubId,
+      type: normalizeString(event?.type),
+      error: String(error?.message || error),
+    });
+  }
 }
 
 async function assertUniqueSlug(db, slug) {
@@ -255,41 +296,42 @@ export async function requestHubCustomDomainBySlug(hubSlug, hostname, actorId = 
   await assertUniqueDomain(db, normalizedHostname, hub.id);
 
   const now = new Date().toISOString();
-  const verificationTarget = `verify-${crypto.randomUUID().replace(/-/g, "")}`;
-  const nextCustomDomain = {
+  const existingCustomDomain = hub?.customDomain || {};
+  const sameHostname = normalizeString(existingCustomDomain.hostname) === normalizedHostname;
+  const verificationTarget =
+    sameHostname && normalizeString(existingCustomDomain.verificationTarget)
+      ? normalizeString(existingCustomDomain.verificationTarget)
+      : `verify-${crypto.randomUUID().replace(/-/g, "")}`;
+  const verificationHost =
+    sameHostname && normalizeString(existingCustomDomain.verificationHost)
+      ? normalizeString(existingCustomDomain.verificationHost)
+      : buildCustomDomainVerificationHostname(normalizedHostname);
+  const operationLock = buildCustomDomainOperationLock({
+    operation: "request_custom_domain",
     hostname: normalizedHostname,
-    status: "pending_verification",
-    isPrimary: true,
-    verificationMethod: "dns_txt",
-    verificationHost: buildCustomDomainVerificationHostname(normalizedHostname),
-    verificationTarget,
-    requestedAt: now,
-    verifiedAt: "",
-    connectedAt: "",
-    lastCheckedAt: "",
-    disconnectAt: "",
-    disconnectReason: "",
-    disconnectedAt: "",
-    failureReason: "",
-    activationBlockedReason: "",
-    dnsRoutingStatus: "",
-    dnsRoutingLastCheckedAt: "",
-    dnsRoutingFailureReason: "",
-    vercelProjectId: "",
-    vercelDomainId: "",
-    vercelDomainAddedAt: "",
-    vercelVerificationStatus: "",
-    vercelVerificationLastCheckedAt: "",
-    certificateStatus: "",
-    certificateLastCheckedAt: "",
-    lastLifecycleRunAt: "",
-    lastLifecycleError: "",
-    schemaVersion: 2,
-    connectedByUserId: "",
-    updatedByUserId: actorId,
-  };
+    actorId,
+    now,
+  });
 
   await db.runTransaction(async (transaction) => {
+    const hubRef = db.collection("hubs").doc(hub.id);
+    const hubDoc = await transaction.get(hubRef);
+
+    if (!hubDoc.exists) {
+      throw new Error(`Unknown hub id: ${hub.id}`);
+    }
+
+    const currentHub = { id: hubDoc.id, ...hubDoc.data() };
+    const currentEntitlements = resolveHubPackageEntitlements(currentHub);
+
+    if (!currentEntitlements.capabilities.customDomainEnabled) {
+      throw new Error("Custom domains are only available on the Growth package.");
+    }
+
+    if (isActiveCustomDomainOperationLock(currentHub?.customDomain?.operationLock, now)) {
+      throw new Error("A custom-domain operation is already in progress. Please wait a moment and try again.");
+    }
+
     await upsertCustomDomainClaimForHub({
       db,
       transaction,
@@ -298,15 +340,109 @@ export async function requestHubCustomDomainBySlug(hubSlug, hostname, actorId = 
       hubSlug: hub.slug,
       actorId,
       status: "pending",
+      expiresAt: addHours(now, 24),
       now,
     });
 
-    transaction.update(db.collection("hubs").doc(hub.id), {
+    transaction.update(hubRef, {
+      customDomain: {
+        ...(sameHostname ? existingCustomDomain : {}),
+        hostname: normalizedHostname,
+        status: "provisioning",
+        isPrimary: true,
+        verificationMethod: "dns_txt",
+        verificationHost,
+        verificationTarget,
+        requestedAt: normalizeString(existingCustomDomain.requestedAt) || now,
+        lastLifecycleRunAt: now,
+        lastLifecycleError: "",
+        operationLock,
+        schemaVersion: 2,
+        updatedByUserId: actorId,
+      },
+      customDomains: [normalizedHostname],
+      updatedAt: now,
+      updatedBy: actorId,
+    });
+  });
+
+  const provisioning = await provisionCustomDomainWithVercel(normalizedHostname, { now });
+  const nextCustomDomain = {
+    hostname: normalizedHostname,
+    status: provisioning.status,
+    isPrimary: true,
+    verificationMethod: "dns_txt",
+    verificationHost,
+    verificationTarget,
+    requestedAt: normalizeString(existingCustomDomain.requestedAt) || now,
+    verifiedAt: sameHostname ? normalizeString(existingCustomDomain.verifiedAt) : "",
+    connectedAt: "",
+    lastCheckedAt: "",
+    disconnectAt: "",
+    disconnectReason: "",
+    disconnectedAt: "",
+    failureReason: normalizeString(provisioning.failureReason),
+    activationBlockedReason: "",
+    dnsRoutingStatus: normalizeString(provisioning.dnsRoutingStatus),
+    dnsRoutingLastCheckedAt: normalizeString(provisioning.dnsRoutingLastCheckedAt),
+    dnsRoutingFailureReason: normalizeString(provisioning.dnsRoutingFailureReason),
+    vercelProjectId: normalizeString(provisioning.vercelProjectId),
+    vercelDomainId: normalizeString(provisioning.vercelDomainId),
+    vercelDomainAddedAt: normalizeString(provisioning.vercelDomainAddedAt),
+    vercelVerificationStatus: normalizeString(provisioning.vercelVerificationStatus),
+    vercelVerificationLastCheckedAt: normalizeString(provisioning.vercelVerificationLastCheckedAt),
+    certificateStatus: normalizeString(provisioning.certificateStatus),
+    certificateLastCheckedAt: normalizeString(provisioning.certificateLastCheckedAt),
+    lastLifecycleRunAt: normalizeString(provisioning.lastLifecycleRunAt) || now,
+    lastLifecycleError: normalizeString(provisioning.lastLifecycleError),
+    schemaVersion: 2,
+    connectedByUserId: "",
+    updatedByUserId: actorId,
+  };
+
+  await db.runTransaction(async (transaction) => {
+    const hubRef = db.collection("hubs").doc(hub.id);
+    const hubDoc = await transaction.get(hubRef);
+
+    if (!hubDoc.exists) {
+      throw new Error(`Unknown hub id: ${hub.id}`);
+    }
+
+    const currentHub = { id: hubDoc.id, ...hubDoc.data() };
+    const currentLock = currentHub?.customDomain?.operationLock;
+
+    if (
+      normalizeString(currentLock?.operation) &&
+      (normalizeString(currentLock?.hostname) !== normalizedHostname ||
+        normalizeString(currentLock?.lockedByUserId) !== actorId)
+    ) {
+      throw new Error("Custom-domain setup changed while this request was running. Please refresh and try again.");
+    }
+
+    transaction.update(hubRef, {
       customDomain: nextCustomDomain,
       customDomains: [normalizedHostname],
       updatedAt: now,
       updatedBy: actorId,
     });
+  });
+
+  await writeCustomDomainLifecycleEvent(db, hub.id, {
+    type: provisioning.ok ? "custom_domain_requested" : "custom_domain_provisioning_failed",
+    hostname: normalizedHostname,
+    actorUserId: actorId,
+    actorType: actorId === "system" ? "system" : "user",
+    createdAt: now,
+    beforeStatus: normalizeString(existingCustomDomain.status),
+    afterStatus: nextCustomDomain.status,
+    details: {
+      vercelEnabled: provisioning.vercelEnabled === true,
+      vercelProjectId: normalizeString(provisioning.vercelProjectId),
+      dnsRoutingStatus: normalizeString(provisioning.dnsRoutingStatus),
+      vercelVerificationStatus: normalizeString(provisioning.vercelVerificationStatus),
+      skipped: provisioning.skipped === true,
+    },
+    error: normalizeString(provisioning.lastLifecycleError || provisioning.failureReason),
   });
 
   return {
