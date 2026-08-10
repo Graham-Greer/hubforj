@@ -21,6 +21,10 @@ import {
   getHubAdminOnboardingSummaryReconciliationReport,
   rebuildHubAdminOnboardingSummary,
 } from "@/lib/data/admin-onboarding-summary";
+import {
+  getHubCustomDomainReconciliationReport,
+  reconcileHubCustomDomainState,
+} from "@/lib/data/custom-domain-reconciliation";
 
 function normalizeString(value) {
   return value === null || value === undefined ? "" : String(value).trim();
@@ -86,6 +90,7 @@ export function normalizeProjectionMaintenanceRequest(input = {}) {
     includeMedia: normalizeBoolean(input.includeMedia, true),
     includeEventAttendance: normalizeBoolean(input.includeEventAttendance, true),
     includeAdminOnboarding: normalizeBoolean(input.includeAdminOnboarding, true),
+    includeCustomDomains: normalizeBoolean(input.includeCustomDomains, true),
   };
 }
 
@@ -124,6 +129,7 @@ export async function runProjectionMaintenance(input = {}) {
           mediaReport,
           eventAttendanceReport,
           adminOnboardingReport,
+          customDomainReport,
         ] = await Promise.all([
           options.includePayments ? getHubPaymentReconciliationReport(hub.id, { issueLimit: 25 }) : Promise.resolve(null),
           options.includeMembers ? getHubMemberDirectoryReconciliationReport(hub.id, { issueLimit: 25 }) : Promise.resolve(null),
@@ -131,6 +137,7 @@ export async function runProjectionMaintenance(input = {}) {
           options.includeMedia ? getHubMediaUsageReconciliationReport(hub.id) : Promise.resolve(null),
           options.includeEventAttendance ? getHubEventAttendanceReconciliationReport(hub.id, { issueLimit: 25 }) : Promise.resolve(null),
           options.includeAdminOnboarding ? getHubAdminOnboardingSummaryReconciliationReport(hub.id, { issueLimit: 25 }) : Promise.resolve(null),
+          options.includeCustomDomains ? getHubCustomDomainReconciliationReport(hub, { issueLimit: 25 }) : Promise.resolve(null),
         ]);
 
         if (paymentReport) hubResult.reports.payments = summarizeReport(paymentReport);
@@ -139,6 +146,7 @@ export async function runProjectionMaintenance(input = {}) {
         if (mediaReport) hubResult.reports.mediaUsage = summarizeReport(mediaReport);
         if (eventAttendanceReport) hubResult.reports.eventAttendance = summarizeReport(eventAttendanceReport);
         if (adminOnboardingReport) hubResult.reports.adminOnboarding = summarizeReport(adminOnboardingReport);
+        if (customDomainReport) hubResult.reports.customDomains = summarizeReport(customDomainReport);
       } else {
         if (options.includePayments || options.includeMembers || options.includeDashboard) {
           hubResult.repairs.paymentLedger = summarizeLedgerSync(
@@ -158,6 +166,10 @@ export async function runProjectionMaintenance(input = {}) {
           hubResult.repairs.adminOnboarding = await rebuildHubAdminOnboardingSummary(hub.id, actorId);
         }
 
+        if (options.includeCustomDomains) {
+          hubResult.repairs.customDomains = await reconcileHubCustomDomainState(hub, actorId);
+        }
+
         const [
           paymentReport,
           memberDirectoryReport,
@@ -165,6 +177,7 @@ export async function runProjectionMaintenance(input = {}) {
           mediaReport,
           eventAttendanceReport,
           adminOnboardingReport,
+          customDomainReport,
         ] = await Promise.all([
           options.includePayments ? getHubPaymentReconciliationReport(hub.id, { issueLimit: 25 }) : Promise.resolve(null),
           options.includeMembers ? getHubMemberDirectoryReconciliationReport(hub.id, { issueLimit: 25 }) : Promise.resolve(null),
@@ -172,6 +185,7 @@ export async function runProjectionMaintenance(input = {}) {
           options.includeMedia ? getHubMediaUsageReconciliationReport(hub.id) : Promise.resolve(null),
           options.includeEventAttendance ? getHubEventAttendanceReconciliationReport(hub.id, { issueLimit: 25 }) : Promise.resolve(null),
           options.includeAdminOnboarding ? getHubAdminOnboardingSummaryReconciliationReport(hub.id, { issueLimit: 25 }) : Promise.resolve(null),
+          options.includeCustomDomains ? getHubCustomDomainReconciliationReport(hub, { issueLimit: 25 }) : Promise.resolve(null),
         ]);
 
         if (paymentReport) hubResult.reports.payments = summarizeReport(paymentReport);
@@ -180,6 +194,7 @@ export async function runProjectionMaintenance(input = {}) {
         if (mediaReport) hubResult.reports.mediaUsage = summarizeReport(mediaReport);
         if (eventAttendanceReport) hubResult.reports.eventAttendance = summarizeReport(eventAttendanceReport);
         if (adminOnboardingReport) hubResult.reports.adminOnboarding = summarizeReport(adminOnboardingReport);
+        if (customDomainReport) hubResult.reports.customDomains = summarizeReport(customDomainReport);
       }
     } catch (error) {
       hubResult.status = "failed";
