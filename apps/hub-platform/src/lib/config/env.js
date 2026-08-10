@@ -57,6 +57,7 @@ const serverEnv = {
   hubforjPlatformFeeBps: process.env.HUBFORJ_PLATFORM_FEE_BPS || "",
   internalAutomationSecret: process.env.INTERNAL_AUTOMATION_SECRET || "",
   internalAutomationProcessorBatchSize: process.env.INTERNAL_AUTOMATION_PROCESSOR_BATCH_SIZE || "",
+  cronSecret: process.env.CRON_SECRET || "",
   sessionHmacSecret: process.env.SESSION_HMAC_SECRET || "",
   stripeSecretKey: process.env.STRIPE_SECRET_KEY || "",
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || "",
@@ -67,6 +68,12 @@ const serverEnv = {
     String(process.env.HUB_PLATFORM_CUSTOM_DOMAIN_VERCEL_ENABLED || "").trim().toLowerCase() === "true",
   hubPlatformCustomDomainAutoActivateEnabled:
     String(process.env.HUB_PLATFORM_CUSTOM_DOMAIN_AUTO_ACTIVATE_ENABLED || "").trim().toLowerCase() === "true",
+  hubPlatformCustomDomainReconciliationEnabled:
+    String(process.env.HUB_PLATFORM_CUSTOM_DOMAIN_RECONCILIATION_ENABLED || "").trim().toLowerCase() === "true",
+  hubPlatformCustomDomainScheduledMaintenanceEnabled:
+    String(process.env.HUB_PLATFORM_CUSTOM_DOMAIN_SCHEDULED_MAINTENANCE_ENABLED || "").trim().toLowerCase() === "true",
+  hubPlatformCustomDomainScheduledMaintenanceLimit:
+    process.env.HUB_PLATFORM_CUSTOM_DOMAIN_SCHEDULED_MAINTENANCE_LIMIT || "",
   hubPlatformCustomDomainVercelTimeoutMs: process.env.HUB_PLATFORM_CUSTOM_DOMAIN_VERCEL_TIMEOUT_MS || "",
 };
 
@@ -102,6 +109,8 @@ export function getServerEnv() {
     hubforjPlatformFeeBps: Number.parseInt(String(serverEnv.hubforjPlatformFeeBps || ""), 10) || 0,
     internalAutomationProcessorBatchSize:
       Number.parseInt(String(serverEnv.internalAutomationProcessorBatchSize || ""), 10) || 50,
+    hubPlatformCustomDomainScheduledMaintenanceLimit:
+      Number.parseInt(String(serverEnv.hubPlatformCustomDomainScheduledMaintenanceLimit || ""), 10) || 25,
     hubPlatformCustomDomainVercelTimeoutMs:
       Number.parseInt(String(serverEnv.hubPlatformCustomDomainVercelTimeoutMs || ""), 10) || 5000,
     platformReservedHosts: serverEnv.platformReservedHosts
