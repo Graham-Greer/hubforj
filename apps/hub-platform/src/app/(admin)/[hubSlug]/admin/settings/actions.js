@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireHubOperatorActionAccess } from "@/lib/auth/action-access";
+import { requireHubOperatorActionAccess, requireHubOwnerActionAccess } from "@/lib/auth/action-access";
 import { revalidatePublicHubCoreCache, revalidatePublicShellCache } from "@/lib/cache/public-content";
 import {
   updateBrandingSettingsByHubSlug,
@@ -244,7 +244,9 @@ export async function requestCustomDomainAction(_previousState, formData) {
   };
 
   try {
-    const { hub, actorId } = await requireHubOperatorActionAccess(hubSlug);
+    const { hub, actorId } = await requireHubOwnerActionAccess(hubSlug, {
+      forbiddenMessage: "Only the owner can manage custom domains.",
+    });
     await requestHubCustomDomainBySlug(hubSlug, values.hostname, actorId);
     revalidateSettingsPaths(hubSlug);
     revalidateSettingsHubCaches(hub);
@@ -267,7 +269,9 @@ export async function checkCustomDomainVerificationAction(_previousState, formDa
   const hubSlug = String(formData.get("hubSlug") || "").trim();
 
   try {
-    const { hub, actorId } = await requireHubOperatorActionAccess(hubSlug);
+    const { hub, actorId } = await requireHubOwnerActionAccess(hubSlug, {
+      forbiddenMessage: "Only the owner can manage custom domains.",
+    });
     const result = await checkHubCustomDomainVerificationBySlug(hubSlug, actorId);
     revalidateSettingsPaths(hubSlug);
     revalidateSettingsHubCaches(hub);
@@ -291,7 +295,9 @@ export async function disconnectCustomDomainAction(_previousState, formData) {
   const confirmation = String(formData.get("confirmation") || "").trim();
 
   try {
-    const { hub, actorId } = await requireHubOperatorActionAccess(hubSlug);
+    const { hub, actorId } = await requireHubOwnerActionAccess(hubSlug, {
+      forbiddenMessage: "Only the owner can manage custom domains.",
+    });
     const hostname = String(hub?.customDomain?.hostname || "").trim();
 
     if (!hostname) {

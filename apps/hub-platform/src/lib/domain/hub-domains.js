@@ -21,24 +21,108 @@ function normalizeHostname(value) {
     .replace(/\.+$/, "");
 }
 
+function isIpv4Hostname(value) {
+  const parts = normalizeString(value).split(".");
+
+  if (parts.length !== 4) {
+    return false;
+  }
+
+  return parts.every((part) => {
+    if (!/^\d+$/.test(part)) {
+      return false;
+    }
+
+    const number = Number(part);
+    return Number.isInteger(number) && number >= 0 && number <= 255;
+  });
+}
+
+function isBlockedInternalHostname(value) {
+  const hostname = normalizeHostname(value);
+  const labels = hostname.split(".").filter(Boolean);
+  const tld = labels[labels.length - 1] || "";
+
+  return (
+    hostname === "localhost" ||
+    hostname.endsWith(".localhost") ||
+    hostname.endsWith(".local") ||
+    hostname.endsWith(".internal") ||
+    hostname.endsWith(".lan") ||
+    tld === "localhost" ||
+    tld === "local" ||
+    tld === "internal" ||
+    tld === "lan"
+  );
+}
+
+function assertValidHostnameLabels(hostname) {
+  const labels = normalizeString(hostname).split(".").filter(Boolean);
+
+  if (labels.length < 2) {
+    throw new Error("Custom domain must be a valid hostname.");
+  }
+
+  if (hostname.length > 253) {
+    throw new Error("Custom domain must be a valid hostname.");
+  }
+
+  labels.forEach((label) => {
+    if (label.length > 63 || label.startsWith("-") || label.endsWith("-")) {
+      throw new Error("Custom domain must be a valid hostname.");
+    }
+  });
+}
+
 const customDomainStatusLabels = {
   not_configured: "Not configured",
   pending_verification: "Pending verification",
+  verified: "Verified",
   verifying: "Verifying",
+  provisioning: "Provisioning",
+  provisioning_failed: "Provisioning failed",
+  certificate_pending: "Certificate pending",
+  activation_ready: "Ready to connect",
   connected: "Connected",
   verification_failed: "Verification failed",
   disconnect_scheduled: "Disconnect scheduled",
+  disconnecting: "Disconnecting",
+  disconnect_failed: "Disconnect failed",
   disconnected: "Disconnected",
 };
 
 const customDomainStatusTones = {
   not_configured: "neutral",
   pending_verification: "warning",
+  verified: "warning",
   verifying: "warning",
+  provisioning: "warning",
+  provisioning_failed: "danger",
+  certificate_pending: "warning",
+  activation_ready: "warning",
   connected: "success",
   verification_failed: "danger",
   disconnect_scheduled: "warning",
+  disconnecting: "warning",
+  disconnect_failed: "danger",
   disconnected: "warning",
+};
+
+const lifecyclePhaseByStatus = {
+  not_configured: "not_configured",
+  pending_verification: "ownership_pending",
+  verification_failed: "ownership_failed",
+  verified: "ownership_verified",
+  verifying: "ownership_verified",
+  provisioning: "provisioning",
+  provisioning_failed: "provisioning_failed",
+  certificate_pending: "certificate_pending",
+  activation_ready: "activation_ready",
+  connected: "connected",
+  disconnect_scheduled: "disconnect_pending",
+  disconnecting: "disconnect_pending",
+  disconnect_failed: "disconnect_failed",
+  disconnected: "disconnected",
 };
 
 function normalizeCustomDomainStatus(value, fallback = "not_configured") {
@@ -51,6 +135,11 @@ function normalizeCustomDomainStatus(value, fallback = "not_configured") {
   return fallback;
 }
 
+export function resolveCustomDomainLifecyclePhase(status) {
+  const normalizedStatus = normalizeCustomDomainStatus(status);
+  return lifecyclePhaseByStatus[normalizedStatus] || lifecyclePhaseByStatus.not_configured;
+}
+
 export function sanitizeStoredCustomDomainRecord(record = {}) {
   const hostname = normalizeHostname(record.hostname);
   const fallbackStatus = hostname ? "connected" : "not_configured";
@@ -58,6 +147,7 @@ export function sanitizeStoredCustomDomainRecord(record = {}) {
   return {
     hostname,
     status: normalizeCustomDomainStatus(record.status, fallbackStatus),
+    lifecyclePhase: resolveCustomDomainLifecyclePhase(record.status || fallbackStatus),
     isPrimary: record.isPrimary !== false && Boolean(hostname),
     verificationMethod: normalizeString(record.verificationMethod),
     verificationHost: normalizeString(record.verificationHost),
@@ -72,6 +162,19 @@ export function sanitizeStoredCustomDomainRecord(record = {}) {
     disconnectedAt: normalizeString(record.disconnectedAt),
     failureReason: normalizeString(record.failureReason),
     activationBlockedReason: normalizeString(record.activationBlockedReason),
+    dnsRoutingStatus: normalizeString(record.dnsRoutingStatus),
+    dnsRoutingLastCheckedAt: normalizeString(record.dnsRoutingLastCheckedAt),
+    dnsRoutingFailureReason: normalizeString(record.dnsRoutingFailureReason),
+    vercelProjectId: normalizeString(record.vercelProjectId),
+    vercelDomainId: normalizeString(record.vercelDomainId),
+    vercelDomainAddedAt: normalizeString(record.vercelDomainAddedAt),
+    vercelVerificationStatus: normalizeString(record.vercelVerificationStatus),
+    vercelVerificationLastCheckedAt: normalizeString(record.vercelVerificationLastCheckedAt),
+    certificateStatus: normalizeString(record.certificateStatus),
+    certificateLastCheckedAt: normalizeString(record.certificateLastCheckedAt),
+    lastLifecycleRunAt: normalizeString(record.lastLifecycleRunAt),
+    lastLifecycleError: normalizeString(record.lastLifecycleError),
+    schemaVersion: Number.isFinite(Number(record.schemaVersion)) ? Number(record.schemaVersion) : 1,
     connectedByUserId: normalizeString(record.connectedByUserId),
     updatedByUserId: normalizeString(record.updatedByUserId),
   };
@@ -96,12 +199,22 @@ export function assertValidCustomDomainHostname(hostname) {
     throw new Error("Custom domain is required.");
   }
 
+  if (normalizedHostname.startsWith("*.")) {
+    throw new Error("Wildcard custom domains are not supported.");
+  }
+
   if (!/^[a-z0-9.-]+$/.test(normalizedHostname) || !normalizedHostname.includes(".")) {
     throw new Error("Custom domain must be a valid hostname.");
   }
 
   if (normalizedHostname.startsWith(".") || normalizedHostname.endsWith(".") || normalizedHostname.includes("..")) {
     throw new Error("Custom domain must be a valid hostname.");
+  }
+
+  assertValidHostnameLabels(normalizedHostname);
+
+  if (isIpv4Hostname(normalizedHostname) || isBlockedInternalHostname(normalizedHostname)) {
+    throw new Error("Custom domain must be a public client-owned hostname.");
   }
 
   if (isPlatformManagedHostname(normalizedHostname)) {
@@ -160,6 +273,7 @@ export function normalizeHubCustomDomain(hub = {}) {
   return {
     hostname,
     status,
+    lifecyclePhase: resolveCustomDomainLifecyclePhase(status),
     statusLabel: customDomainStatusLabels[status] || customDomainStatusLabels.not_configured,
     statusTone: customDomainStatusTones[status] || customDomainStatusTones.not_configured,
     isPrimary: storedDomain.isPrimary !== false && Boolean(hostname),
@@ -176,6 +290,19 @@ export function normalizeHubCustomDomain(hub = {}) {
     disconnectedAt: normalizeString(storedDomain.disconnectedAt),
     failureReason: normalizeString(storedDomain.failureReason),
     activationBlockedReason: normalizeString(storedDomain.activationBlockedReason),
+    dnsRoutingStatus: normalizeString(storedDomain.dnsRoutingStatus),
+    dnsRoutingLastCheckedAt: normalizeString(storedDomain.dnsRoutingLastCheckedAt),
+    dnsRoutingFailureReason: normalizeString(storedDomain.dnsRoutingFailureReason),
+    vercelProjectId: normalizeString(storedDomain.vercelProjectId),
+    vercelDomainId: normalizeString(storedDomain.vercelDomainId),
+    vercelDomainAddedAt: normalizeString(storedDomain.vercelDomainAddedAt),
+    vercelVerificationStatus: normalizeString(storedDomain.vercelVerificationStatus),
+    vercelVerificationLastCheckedAt: normalizeString(storedDomain.vercelVerificationLastCheckedAt),
+    certificateStatus: normalizeString(storedDomain.certificateStatus),
+    certificateLastCheckedAt: normalizeString(storedDomain.certificateLastCheckedAt),
+    lastLifecycleRunAt: normalizeString(storedDomain.lastLifecycleRunAt),
+    lastLifecycleError: normalizeString(storedDomain.lastLifecycleError),
+    schemaVersion: storedDomain.schemaVersion,
     connectedByUserId: normalizeString(storedDomain.connectedByUserId),
     updatedByUserId: normalizeString(storedDomain.updatedByUserId),
     isConfigured: Boolean(hostname),

@@ -6,6 +6,11 @@ try {
 
 import crypto from "node:crypto";
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
+import {
+  assertNoConflictingCustomDomainClaim,
+  buildCustomDomainClaimId,
+  upsertCustomDomainClaimForHub,
+} from "@/lib/data/custom-domain-claims";
 import { getCustomDomainMappingByHostname, writeCustomDomainMappingForHub } from "@/lib/data/custom-domain-mappings";
 import { requireHubBySlug } from "@/lib/data/hubs";
 import { buildDefaultMembershipPlanWriteModel } from "@/lib/data/membership-plans";
@@ -71,6 +76,7 @@ async function assertUniqueDomain(db, domain, excludedHubId = "") {
     db.collection("hubs").where("customDomains", "array-contains", domain).limit(1).get(),
     db.collection("hubs").where("customDomain.hostname", "==", domain).limit(1).get(),
     getCustomDomainMappingByHostname(domain, { hydrateFromHub: false }),
+    assertNoConflictingCustomDomainClaim(domain, excludedHubId, { db }),
   ]);
 
   const conflictingDoc = [...legacySnapshot.docs, ...structuredSnapshot.docs].find((doc) => doc.id !== excludedHubId);
@@ -146,6 +152,28 @@ export async function createHub(payload, actorId = "system") {
     defaultMembershipPlanRef,
     buildDefaultMembershipPlanWriteModel(ref.id, actorId, now, writeModel.defaultCurrency || "USD")
   );
+
+  if (writeModel.customDomain?.hostname) {
+    const claimId = buildCustomDomainClaimId(writeModel.customDomain.hostname);
+
+    if (claimId) {
+      batch.set(db.collection("customDomainClaims").doc(claimId), {
+        hostname: claimId,
+        hubId: ref.id,
+        hubSlug: next.slug,
+        status: writeModel.customDomain.status === "connected" ? "connected" : "pending",
+        createdAt: now,
+        updatedAt: now,
+        expiresAt: "",
+        createdByUserId: actorId,
+        updatedByUserId: actorId,
+        releasedAt: "",
+        releasedByUserId: "",
+        releaseReason: "",
+      });
+    }
+  }
+
   await batch.commit();
 
   if (writeModel.customDomain?.hostname && writeModel.customDomain.status === "connected") {
@@ -240,17 +268,45 @@ export async function requestHubCustomDomainBySlug(hubSlug, hostname, actorId = 
     connectedAt: "",
     lastCheckedAt: "",
     disconnectAt: "",
+    disconnectReason: "",
     disconnectedAt: "",
     failureReason: "",
+    activationBlockedReason: "",
+    dnsRoutingStatus: "",
+    dnsRoutingLastCheckedAt: "",
+    dnsRoutingFailureReason: "",
+    vercelProjectId: "",
+    vercelDomainId: "",
+    vercelDomainAddedAt: "",
+    vercelVerificationStatus: "",
+    vercelVerificationLastCheckedAt: "",
+    certificateStatus: "",
+    certificateLastCheckedAt: "",
+    lastLifecycleRunAt: "",
+    lastLifecycleError: "",
+    schemaVersion: 2,
     connectedByUserId: "",
     updatedByUserId: actorId,
   };
 
-  await db.collection("hubs").doc(hub.id).update({
-    customDomain: nextCustomDomain,
-    customDomains: [normalizedHostname],
-    updatedAt: now,
-    updatedBy: actorId,
+  await db.runTransaction(async (transaction) => {
+    await upsertCustomDomainClaimForHub({
+      db,
+      transaction,
+      hostname: normalizedHostname,
+      hubId: hub.id,
+      hubSlug: hub.slug,
+      actorId,
+      status: "pending",
+      now,
+    });
+
+    transaction.update(db.collection("hubs").doc(hub.id), {
+      customDomain: nextCustomDomain,
+      customDomains: [normalizedHostname],
+      updatedAt: now,
+      updatedBy: actorId,
+    });
   });
 
   return {

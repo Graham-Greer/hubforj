@@ -5,6 +5,10 @@ try {
 }
 
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
+import {
+  releaseCustomDomainClaimForHub,
+  upsertCustomDomainClaimForHub,
+} from "@/lib/data/custom-domain-claims";
 import { verifyCustomDomainDnsTxt } from "@/lib/domain/custom-domain-verification";
 import { getCustomDomainRuntimeBlockedReason, isCustomDomainRuntimeEnabled } from "@/lib/domain/custom-domain-activation";
 import { deleteCustomDomainMappingByHostname, writeCustomDomainMappingForHub } from "@/lib/data/custom-domain-mappings";
@@ -145,10 +149,24 @@ export async function processHubCustomDomainActivationRecord(hubRecord, actorId 
     updatedByUserId: actorId,
   };
 
-  await getFirebaseAdminDb().collection("hubs").doc(hubId).update({
-    customDomain: nextCustomDomain,
-    updatedAt: now,
-    updatedBy: actorId,
+  const db = getFirebaseAdminDb();
+  await db.runTransaction(async (transaction) => {
+    await upsertCustomDomainClaimForHub({
+      db,
+      transaction,
+      hostname,
+      hubId,
+      hubSlug: hubRecord.slug,
+      actorId,
+      status: "connected",
+      now,
+    });
+
+    transaction.update(db.collection("hubs").doc(hubId), {
+      customDomain: nextCustomDomain,
+      updatedAt: now,
+      updatedBy: actorId,
+    });
   });
 
   await writeCustomDomainMappingForHub(
@@ -273,11 +291,24 @@ export async function processHubCustomDomainDisconnectRecord(hubRecord, actorId 
     updatedByUserId: actorId,
   };
 
-  await getFirebaseAdminDb().collection("hubs").doc(hubId).update({
-    customDomain: nextCustomDomain,
-    customDomains: [],
-    updatedAt: now,
-    updatedBy: actorId,
+  const db = getFirebaseAdminDb();
+  await db.runTransaction(async (transaction) => {
+    await releaseCustomDomainClaimForHub({
+      db,
+      transaction,
+      hostname,
+      hubId,
+      actorId,
+      reason: normalizeString(customDomain.disconnectReason) || "manual_disconnect",
+      now,
+    });
+
+    transaction.update(db.collection("hubs").doc(hubId), {
+      customDomain: nextCustomDomain,
+      customDomains: [],
+      updatedAt: now,
+      updatedBy: actorId,
+    });
   });
 
   await deleteCustomDomainMappingByHostname(hostname);
