@@ -8,12 +8,68 @@
 .packageIdentity,
 .packageCopy,
 .cardCopy,
-.capabilityList,
-.capabilityItem,
-.domainPanel,
-.domainDetailsItem,
 .noticeCopy,
-.actions {
+.actions,
+.domainPanel,
+.domainContent,
+.domainOverview,
+.domainOverviewHeader,
+.domainFacts,
+.domainFact,
+.domainFactBody,
+.domainMetaStrip,
+.domainMetaItem,
+.domainActionPanel,
+.domainSetupForm,
+.disconnectForm,
+.disconnectConfirmationPanel,
+.disconnectDangerLine,
+.formActions,
+.domainSetupGrid,
+.verificationGrid,
+.verificationPanel,
+.statusDisclosure,
+.lifecycleList,
+.lifecycleItem,
+.lifecycleCopy,
+.lifecycleHeader,
+.domainTools,
+.domainToolsHeader,
+.domainToolPanel,
+.domainStatusSummary,
+.domainStatusCopy,
+.connectionHealth,
+.connectionHealthList,
+.connectionHealthItem,
+.connectionHealthCopy,
+.connectionHealthHeader,
+.setupGuide,
+.setupGuideIntro,
+.setupGuideControls,
+.setupChecklist,
+.setupChecklistItem,
+.setupChecklistCopy,
+.dnsRecordsTable,
+.dnsRecordRow,
+.dnsRecordHeading,
+.dnsRecordTitle,
+.dnsRecordFields,
+.dnsRecordField,
+.dnsRecordValue,
+.dnsRecordList,
+.dnsRecord,
+.dnsRecordType,
+.dnsRecordTypeBody,
+.dnsField,
+.dnsTtl,
+.dnsValueGroup,
+.advancedDomainBody,
+.registrarGuideControls,
+.registrarModalBody,
+.registrarSummary,
+.registrarSteps,
+.registrarRecords,
+.registrarRecord {
   display: grid;
   gap: var(--space-4);
 }
@@ -23,10 +79,31 @@
   align-items: start;
 }
 
-.badgeRow {
+.badgeRow,
+.packageHighlights {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
+}
+
+.packageCopy,
+.domainOverviewHeader,
+.domainToolsHeader {
+  gap: var(--space-3);
+}
+
+.cardCopy,
+.noticeCopy,
+.domainFactBody,
+.dnsRecordTypeBody,
+.dnsField,
+.lifecycleCopy {
+  gap: var(--space-2);
+}
+
+.dnsRecordList,
+.registrarRecords {
+  gap: var(--space-3);
 }
 
 .sectionTitle,
@@ -35,7 +112,20 @@
 .capabilityDetail,
 .domainLabel,
 .domainValue,
-.noticeTitle {
+.noticeTitle,
+.domainHint,
+.domainMetaLabel,
+.lifecycleCopy p,
+.domainStatusCopy p,
+.connectionHealthCopy p,
+.setupChecklistCopy p,
+.dnsRecordTitle span,
+.dnsRecordField > span,
+.dnsRecordTypeText,
+.dnsField span,
+.dnsTtl span,
+.registrarSummary span,
+.registrarRecord span {
   margin: 0;
 }
 
@@ -47,13 +137,96 @@
 .description,
 .meta,
 .capabilityDetail,
-.domainLabel {
+.domainLabel,
+.domainHint,
+.domainMetaLabel,
+.domainStatusCopy p,
+.connectionHealthCopy p,
+.setupChecklistCopy p,
+.setupChecklistKicker,
+.dnsRecordTitle span,
+.dnsRecordField > span,
+.lifecycleCopy p,
+.dnsRecordTypeText,
+.dnsField span,
+.dnsTtl span,
+.registrarSummary span,
+.registrarRecord span {
   color: var(--color-text-secondary);
 }
 
+.description {
+  font: var(--font-body-md);
+}
+
+.meta,
+.capabilityDetail,
+.domainHint,
+.domainStatusCopy p,
+.connectionHealthCopy p,
+.setupChecklistCopy p,
+.setupChecklistKicker,
+.dnsRecordTitle span,
+.lifecycleCopy p,
+.dnsRecordTypeText,
+.registrarProviderHint,
+.registrarSteps,
+.registrarRecord span {
+  font: var(--font-body-sm);
+}
+
+.domainLabel,
+.domainMetaLabel,
+.setupChecklistKicker,
+.dnsRecordField > span,
+.dnsField span,
+.dnsTtl span,
+.registrarSummary span {
+  font: var(--font-label-sm);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .domainValue,
-.noticeTitle {
+.domainMetaItem strong,
+.domainStatusCopy strong,
+.connectionHealthTitleRow strong,
+.connectionHealthCount,
+.connectionHealthStatus,
+.setupChecklistTitleRow strong,
+.dnsRecordTitle strong,
+.dnsRecordHeading strong,
+.dnsRecordField strong,
+.noticeTitle,
+.lifecycleHeader strong,
+.dnsRecordType strong,
+.dnsTtl strong,
+.registrarSummary strong,
+.registrarRecord strong,
+.registrarRecords h3 {
   color: var(--color-text-primary);
+}
+
+.domainValue,
+.domainMetaItem strong,
+.domainStatusCopy strong,
+.connectionHealthTitleRow strong,
+.connectionHealthCount,
+.connectionHealthStatus,
+.setupChecklistTitleRow strong,
+.dnsRecordTitle strong,
+.dnsRecordHeading strong,
+.dnsRecordField strong,
+.dnsRecordType strong,
+.dnsTtl strong,
+.registrarSummary strong,
+.registrarRecord strong {
+  font: var(--font-body-md-strong);
+}
+
+.noticeTitle,
+.registrarRecords h3 {
+  font: var(--font-heading-xs);
 }
 
 .meta {
@@ -62,7 +235,7 @@
 }
 
 .actions {
-  justify-items: start;
+  justify-items: end;
 }
 
 .stats,
@@ -76,26 +249,7 @@
 }
 
 .grid {
-  grid-template-columns: 1fr;
-  align-items: start;
-}
-
-.domainDetailsItem {
-  align-content: start;
-}
-
-.domainSetupForm,
-.disconnectForm,
-.verificationPanel,
-.formActions,
-.domainSetupGrid,
-.verificationGrid {
-  display: grid;
-  gap: var(--space-4);
-}
-
-.verificationGrid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .domainPanel {
@@ -103,24 +257,8 @@
   min-width: 0;
 }
 
-.domainOverview,
-.domainActionPanel,
-.verificationPanel {
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius-lg);
-}
-
-.domainContent,
-.domainOverview,
-.domainOverviewHeader,
-.domainFacts,
-.domainFact {
-  display: grid;
-  gap: var(--space-3);
-}
-
 .domainContent {
-  grid-template-columns: minmax(0, 1fr) minmax(20rem, 0.95fr);
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 0.78fr);
   align-items: start;
 }
 
@@ -128,29 +266,615 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
-.packageHighlights {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
+.domainOverview,
+.domainActionPanel,
+.verificationPanel,
+.advancedDomainPanel,
+.statusDisclosure,
+.domainTools {
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
 }
 
-.domainFacts {
-  grid-template-columns: 1fr;
-  padding-top: var(--space-2);
-  border-top: 1px solid var(--surface-border);
+.domainOverview {
+  gap: var(--space-5);
+}
+
+.domainOverviewHeader {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
 }
 
 .domainOverviewExpanded {
   min-width: 0;
 }
 
+.domainFacts {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .domainFact {
-  align-content: start;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-3);
   min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--admin-surface-muted-border, var(--surface-border));
+  border-radius: var(--radius-md);
+  background: var(--admin-surface-muted-fill, var(--surface-secondary));
+  box-shadow: var(--admin-surface-muted-shadow, none);
+}
+
+.domainMetaStrip {
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--admin-surface-muted-border, var(--surface-border));
+  border-radius: var(--radius-md);
+  background: var(--admin-surface-muted-fill, var(--surface-secondary));
+  box-shadow: var(--admin-surface-muted-shadow, none);
+}
+
+.domainMetaItem {
+  grid-template-columns: 2rem max-content minmax(0, max-content);
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.domainMetaItem + .domainMetaItem {
+  padding-left: var(--space-4);
+}
+
+.domainMetaIcon {
+  display: inline-flex;
+  justify-self: center;
+  color: var(--color-text-secondary);
+}
+
+.domainMetaDot {
+  display: inline-block;
+  justify-self: center;
+  width: 0.5rem;
+  aspect-ratio: 1;
+  border-radius: var(--radius-pill);
+  background: var(--badge-success-text);
+}
+
+.domainFactBody {
+  min-width: 0;
+}
+
+.domainFactIcon,
+.dnsRecordIcon,
+.domainStatusIcon,
+.connectionHealthIcon,
+.setupChecklistIcon {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  color: var(--accent-primary);
+  background: var(--admin-surface-default-fill, var(--surface-primary));
+}
+
+.domainHint {
+  font: var(--font-body-sm);
+}
+
+.domainStatusSummary {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--admin-surface-accent-border, var(--surface-border));
+  border-radius: var(--radius-md);
+  background: var(--admin-surface-accent-fill, var(--surface-secondary));
+  box-shadow: var(--admin-surface-accent-shadow, none);
+}
+
+.domainStatusIcon {
+  color: var(--accent-primary);
+  background: var(--admin-surface-default-fill, var(--surface-primary));
+}
+
+.domainStatusSummary[data-tone="success"] .domainStatusIcon,
+.connectionHealthItem[data-state="complete"] .connectionHealthIcon,
+.setupChecklistItem[data-state="complete"] .setupChecklistIcon {
+  color: var(--badge-success-text);
+  background: var(--badge-success-bg);
+}
+
+.domainStatusSummary[data-tone="danger"] .domainStatusIcon,
+.connectionHealthItem[data-state="needs_attention"] .connectionHealthIcon,
+.setupChecklistItem[data-state="needs_attention"] .setupChecklistIcon {
+  color: var(--badge-danger-text);
+  background: var(--badge-danger-bg);
+}
+
+.domainStatusSummary[data-tone="warning"] .domainStatusIcon,
+.connectionHealthItem[data-state="in_progress"] .connectionHealthIcon,
+.setupChecklistItem[data-state="in_progress"] .setupChecklistIcon {
+  color: var(--badge-warning-text);
+  background: var(--badge-warning-bg);
+}
+
+.domainStatusCopy,
+.connectionHealthCopy,
+.setupChecklistCopy,
+.dnsRecordTitle,
+.dnsRecordField {
+  min-width: 0;
+}
+
+.domainStatusCopy {
+  gap: var(--space-1);
 }
 
 .domainActionPanel {
   gap: var(--space-5);
+}
+
+.disconnectConfirmationPanel {
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--admin-surface-muted-border, var(--surface-border));
+  border-radius: var(--radius-md);
+  background: var(--admin-surface-muted-fill, var(--surface-secondary));
+  box-shadow: var(--admin-surface-muted-shadow, none);
+}
+
+.disconnectWarningNotice {
+  border-color: var(--badge-warning-border);
+  background: transparent;
+}
+
+.disconnectDangerLine {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--accent-danger);
+  font: var(--font-body-sm-strong);
+}
+
+.disconnectDangerLine strong {
+  color: var(--accent-danger);
+}
+
+.connectionHealth {
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--surface-border);
+}
+
+.connectionHealthHeader {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-3);
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.connectionHealthCount {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.75rem;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--badge-neutral-border);
+  border-radius: var(--badge-radius);
+  color: var(--badge-neutral-text);
+  background: var(--badge-neutral-bg);
+  font: var(--font-body-sm-strong);
+  white-space: nowrap;
+}
+
+.connectionHealthCount[data-tone="success"] {
+  border-color: var(--badge-success-border);
+  color: var(--badge-success-text);
+  background: var(--badge-success-bg);
+}
+
+.connectionHealthCount[data-tone="info"] {
+  border-color: var(--badge-info-border);
+  color: var(--badge-info-text);
+  background: var(--badge-info-bg);
+}
+
+.connectionHealthList,
+.setupChecklist {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.connectionHealthList {
+  gap: 0;
+}
+
+.connectionHealthItem,
+.setupChecklistItem {
+  position: relative;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+}
+
+.connectionHealthIcon,
+.setupChecklistIcon {
+  z-index: 1;
+}
+
+.connectionHealthItem + .connectionHealthItem,
+.setupChecklistItem + .setupChecklistItem {
+  border-top: 1px solid var(--surface-border);
+}
+
+.connectionHealthTitleRow,
+.setupChecklistTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.connectionHealthStatus {
+  color: var(--color-text-secondary);
+  font: var(--font-body-sm-strong);
+  white-space: nowrap;
+}
+
+.connectionHealthStatus[data-tone="success"] {
+  color: var(--badge-success-text);
+}
+
+.connectionHealthStatus[data-tone="danger"] {
+  color: var(--badge-danger-text);
+}
+
+.connectionHealthStatus[data-tone="info"] {
+  color: var(--badge-info-text);
+}
+
+.connectionHealthStatus[data-tone="warning"] {
+  color: var(--badge-warning-text);
+}
+
+.connectionHealthCopy,
+.setupChecklistCopy {
+  gap: var(--space-1);
+}
+
+.setupGuide {
+  gap: var(--space-4);
+}
+
+.setupGuideIntro {
+  gap: var(--space-1);
+}
+
+.setupGuideControls {
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: end;
+  gap: var(--space-3);
+}
+
+.setupChecklist {
+  padding-top: var(--space-2);
+}
+
+.dnsRecordsTable {
+  gap: var(--space-3);
+}
+
+.dnsRecordRow {
+  gap: var(--space-4);
+  min-width: 0;
+  padding: 0;
+}
+
+.dnsRecordHeading {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.dnsRecordHeading .dnsRecordIcon {
+  color: var(--badge-success-text);
+  background: var(--admin-surface-default-fill, var(--surface-primary));
+}
+
+.dnsRecordTitle {
+  gap: var(--space-1);
+}
+
+.dnsRecordFields {
+  gap: var(--space-3);
+}
+
+.dnsRecordField {
+  gap: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--admin-surface-muted-border, var(--surface-border));
+  border-radius: var(--radius-md);
+  background: var(--admin-surface-muted-fill, var(--surface-secondary));
+  box-shadow: var(--admin-surface-muted-shadow, none);
+}
+
+.dnsRecordValue {
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.dnsRecordValue code {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: var(--color-text-primary);
+  background: transparent;
+  overflow-wrap: anywhere;
+  font: var(--font-body-md);
+}
+
+.dnsRecordValue strong {
+  color: var(--color-text-primary);
+  font: var(--font-body-md-strong);
+}
+
+.lifecycleList {
+  list-style: none;
+  padding: var(--space-2) var(--space-4) var(--space-4);
+  margin: 0;
+}
+
+.lifecycleItem {
+  padding: var(--space-2) 0;
+}
+
+.lifecycleItem + .lifecycleItem {
+  border-top: 1px solid var(--surface-border);
+}
+
+.lifecycleHeader {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.lifecycleCopy {
+  gap: var(--space-1);
+}
+
+.dnsRecord {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--admin-surface-muted-border, var(--surface-border));
+  border-radius: var(--radius-md);
+  background: var(--admin-surface-muted-fill, var(--surface-secondary));
+  box-shadow: var(--admin-surface-muted-shadow, none);
+}
+
+.dnsRecordType {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.dnsRecordTypeBody,
+.dnsField,
+.dnsTtl {
+  min-width: 0;
+}
+
+.dnsTtl {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dnsValueGroup {
+  grid-template-columns: minmax(0, 1fr) minmax(2rem, max-content);
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.dnsValueGroup code {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  background: var(--admin-surface-default-fill, var(--surface-primary));
+  overflow-wrap: anywhere;
+  font: var(--font-body-sm);
+}
+
+.copyButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 2.25rem;
+  min-width: 4.75rem;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  background: var(--admin-surface-default-fill, var(--surface-primary));
+  font: var(--font-label-sm);
+  cursor: pointer;
+}
+
+.copyButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.copyButton:not(:disabled):hover {
+  border-color: var(--accent-primary);
+}
+
+.copyButtonText {
+  max-width: 3.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.disconnectSubmit {
+  width: 100%;
+  border-color: var(--accent-danger);
+  color: var(--palette-neutral-50);
+  background: var(--accent-danger);
+}
+
+.disconnectSubmit :global(span) {
+  color: var(--palette-neutral-50);
+}
+
+.disconnectSubmit:hover:not(:disabled) {
+  border-color: var(--accent-danger);
+  color: var(--palette-neutral-50);
+  background: color-mix(in srgb, var(--accent-danger) 88%, var(--color-black, #000));
+}
+
+.disconnectSubmit:hover:not(:disabled) :global(span) {
+  color: var(--palette-neutral-50);
+}
+
+.advancedDomainPanel,
+.statusDisclosure,
+.domainTools {
+  overflow: hidden;
+  border-color: var(--admin-surface-default-border, var(--surface-border));
+  background: var(--admin-surface-default-fill, var(--surface-primary));
+  box-shadow: var(--admin-surface-muted-shadow, none);
+}
+
+.advancedDomainPanel summary,
+.statusDisclosure summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  color: var(--color-text-primary);
+  font: var(--font-label-md);
+  cursor: pointer;
+  list-style: none;
+}
+
+.advancedDomainPanel summary::-webkit-details-marker,
+.statusDisclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.advancedDomainPanel summary span,
+.statusDisclosure summary span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.advancedDomainBody {
+  padding: var(--space-4);
+  border-top: 1px solid var(--surface-border);
+}
+
+.domainTools {
+  padding: var(--space-4);
+}
+
+.domainToolsHeader {
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+  align-items: end;
+}
+
+.domainToolSelect {
+  min-width: 0;
+}
+
+.domainToolPanel {
+  gap: var(--space-4);
+  padding-top: var(--space-4);
+}
+
+.registrarGuideControls {
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: end;
+  gap: var(--space-3);
+}
+
+.registrarGuideControls > * {
+  min-width: 0;
+}
+
+.registrarGuideControls > :last-child {
+  align-self: stretch;
+  white-space: nowrap;
+}
+
+.registrarProviderHint {
+  margin: calc(var(--space-2) * -1) 0 0;
+  color: var(--color-text-secondary);
+}
+
+.registrarModalBody {
+  gap: var(--space-5);
+}
+
+.registrarSummary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.registrarSummary > div,
+.registrarRecord {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--admin-surface-muted-border, var(--surface-border));
+  border-radius: var(--radius-md);
+  background: var(--admin-surface-muted-fill, var(--surface-secondary));
+  box-shadow: var(--admin-surface-muted-shadow, none);
+}
+
+.registrarSteps {
+  margin: 0;
+  padding-left: var(--space-5);
+  color: var(--color-text-primary);
+}
+
+.registrarSteps li + li {
+  margin-top: var(--space-2);
+}
+
+.registrarRecords h3 {
+  margin: 0;
+}
+
+.registrarRecord code {
+  color: var(--color-text-primary);
+  font: var(--font-body-sm);
+  overflow-wrap: anywhere;
 }
 
 .hostStat {
@@ -158,8 +882,7 @@
 }
 
 .hostStat strong {
-  font-size: clamp(var(--font-size-xl), 2.2vw, var(--font-size-3xl));
-  line-height: var(--line-height-snug);
+  font: var(--font-body-lg-strong);
 }
 
 .hostStat :global([class*="value"]),
@@ -172,10 +895,30 @@
 @media (max-width: 72rem) {
   .packageIdentity,
   .stats,
-  .grid,
   .domainContent,
   .domainFacts,
-  .verificationGrid {
+  .domainMetaStrip,
+  .verificationGrid,
+  .dnsRecord,
+  .dnsRecordRow,
+  .domainOverviewHeader,
+  .domainToolsHeader,
+  .setupGuideControls,
+  .dnsRecordValue,
+  .registrarGuideControls,
+  .registrarSummary {
     grid-template-columns: 1fr;
+  }
+
+  .actions {
+    justify-items: start;
+  }
+
+  .setupGuideControls > :last-child {
+    justify-self: start;
+  }
+
+  .domainMetaItem + .domainMetaItem {
+    padding-left: 0;
   }
 }

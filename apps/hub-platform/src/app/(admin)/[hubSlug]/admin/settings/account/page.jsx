@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
+import Icon from "@/components/ui/icon/Icon";
 import StatCard from "@/components/ui/stat-card/StatCard";
 import PageHeader from "@/components/patterns/page-header/PageHeader";
 import {
@@ -10,9 +11,17 @@ import {
 import Surface from "@/components/primitives/surface/Surface";
 import { getHubAdminOverviewBySlug } from "@/lib/data/hub-admin";
 import { resolvePackageManagementHandoff } from "@/lib/domain/package-management-handoff";
-import AccountDomainDisconnectForm from "./AccountDomainDisconnectForm";
+import AccountDomainConnectionHealth from "./AccountDomainConnectionHealth";
+import AccountDomainTools from "./AccountDomainTools";
 import AccountDomainSetupForm from "./AccountDomainSetupForm";
-import AccountDomainVerificationCheckForm from "./AccountDomainVerificationCheckForm";
+import {
+  buildConnectionHealthSteps,
+  buildDnsRecords,
+  buildSetupGuideChecks,
+  formatDateTimeLabel,
+  getCustomDomainStatusIcon,
+  getCustomDomainStatusTone,
+} from "./accountDomainViewModel";
 import styles from "./page.module.css";
 
 function buildPackageHighlights(packageInfo) {
@@ -160,6 +169,39 @@ function buildDomainSetupDescription(domainStatus) {
   return "Enter the primary hostname the hub should use publicly.";
 }
 
+function DomainFact({ icon, label, value, hint }) {
+  return (
+    <div className={styles.domainFact}>
+      <span className={styles.domainFactIcon} aria-hidden="true">
+        <Icon name={icon} size="sm" decorative />
+      </span>
+      <div className={styles.domainFactBody}>
+        <span className={styles.domainLabel}>{label}</span>
+        <strong className={styles.domainValue}>{value}</strong>
+        {hint ? <span className={styles.domainHint}>{hint}</span> : null}
+      </div>
+    </div>
+  );
+}
+
+function DomainMetaItem({ icon, label, value }) {
+  if (!value) {
+    return null;
+  }
+
+  return (
+    <div className={styles.domainMetaItem}>
+      {icon === "status_dot" ? (
+        <span className={styles.domainMetaDot} aria-hidden="true" />
+      ) : (
+        <Icon name={icon} size="sm" decorative className={styles.domainMetaIcon} />
+      )}
+      <span className={styles.domainMetaLabel}>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
 async function AccountSettingsContent({ hubSlug }) {
   const overview = await getHubAdminOverviewBySlug(hubSlug);
   const hub = overview?.hub || null;
@@ -189,6 +231,12 @@ async function AccountSettingsContent({ hubSlug }) {
     !isDisconnected &&
     Boolean(domainState?.verificationMethod) &&
     (isPendingVerification || isVerifying || isVerificationFailed || isActivationReady);
+  const showDnsInstructionPanel =
+    canManageCustomDomain &&
+    !isDisconnected &&
+    hasHistoricalHostname &&
+    Boolean(domainState?.verificationMethod) &&
+    (showVerificationPanel || isConnected);
   const showSetupForm = canManageCustomDomain && !isConnected && !isDisconnectScheduled;
   const showDisconnectForm = canManageCustomDomain && isConnected;
   const visibleCustomDomainValue = domainState?.hostname || "Not connected";
@@ -198,6 +246,14 @@ async function AccountSettingsContent({ hubSlug }) {
   const setupDescription = buildDomainSetupDescription(domainStatus);
   const setupInitialHostname = isDisconnected ? "" : domainState?.hostname || "";
   const domainStatusDescription = buildDomainStatusDescription({ canManageCustomDomain, domainStatus, domainState });
+  const dnsRecords = buildDnsRecords(domainState);
+  const connectionHealthSteps = buildConnectionHealthSteps(domainState, domainStatus, { canManageCustomDomain });
+  const setupGuideChecks = buildSetupGuideChecks({ domainState, domainStatus, records: dnsRecords });
+  const domainStatusTone = getCustomDomainStatusTone(domainState, domainStatus);
+  const domainStatusIcon = getCustomDomainStatusIcon(domainState, domainStatus);
+  const connectedAtLabel = formatDateTimeLabel(domainState?.connectedAt);
+  const lastCheckedLabel = formatDateTimeLabel(domainState?.lastCheckedAt || domainState?.dnsRoutingLastCheckedAt || domainState?.vercelVerificationLastCheckedAt);
+  const disconnectAtLabel = formatDateTimeLabel(domainState?.disconnectAt);
   const domainCardClassName = styles.card;
   const showLockedDomainUpgradePanel = !canManageCustomDomain;
   const domainContentClassName = [
@@ -296,7 +352,7 @@ async function AccountSettingsContent({ hubSlug }) {
           detail={
             Number.isFinite(activeMembersLimit)
               ? "Current active-member usage against this package limit."
-              : "Active members available on this package."
+              : "No active-member package limit is enforced."
           }
         />
         <StatCard
@@ -309,14 +365,18 @@ async function AccountSettingsContent({ hubSlug }) {
           detail={
             Number.isFinite(activeUpcomingEventsLimit)
               ? "Published upcoming event usage against this package limit."
-              : "Published upcoming events available on this package."
+              : "No published-upcoming-event package limit is enforced."
           }
         />
         <StatCard
           label="Hubforj-hosted address"
           value={domainState?.platformHostedHref || hub?.domainLabel || "Unknown"}
           className={styles.hostStat}
-          detail="This Hubforj-hosted address remains available even when no custom domain is connected."
+          detail={
+            isConnected
+              ? "This HubForJ-hosted address remains available as a fallback for admin access and support."
+              : "This HubForJ-hosted address remains available until a custom domain is connected."
+          }
         />
       </div>
 
@@ -330,56 +390,77 @@ async function AccountSettingsContent({ hubSlug }) {
             <div className={domainContentClassName}>
               <Surface padding="md" className={domainOverviewClassName}>
                 <div className={styles.domainOverviewHeader}>
-                  <div className={styles.noticeCopy}>
-                    <span className={styles.domainLabel}>Status</span>
-                    <div className={styles.badgeRow}>
-                      <Badge tone={domainState?.statusTone || "neutral"}>{domainState?.statusLabel || "Unknown"}</Badge>
-                    </div>
-                    <p className={styles.capabilityDetail}>{domainStatusDescription}</p>
+                  <h3 className={styles.noticeTitle}>Domain overview</h3>
+                  <div className={styles.badgeRow}>
+                    <Badge tone={domainState?.statusTone || "neutral"}>{domainState?.statusLabel || "Unknown"}</Badge>
+                    {canManageCustomDomain ? <Badge tone="accent">Growth feature</Badge> : null}
+                  </div>
+                </div>
+
+                <div className={styles.domainStatusSummary} data-tone={domainStatusTone}>
+                  <span className={styles.domainStatusIcon} aria-hidden="true">
+                    <Icon name={domainStatusIcon} size="md" decorative />
+                  </span>
+                  <div className={styles.domainStatusCopy}>
+                    <strong>{domainState?.statusLabel || "Unknown"}</strong>
+                    <p>{domainStatusDescription}</p>
                   </div>
                 </div>
 
                 <div className={styles.domainFacts}>
-                  <div className={styles.domainFact}>
-                    <span className={styles.domainLabel}>Hubforj-hosted address</span>
-                    <strong className={styles.domainValue}>{domainState?.platformHostedHref || "Unknown"}</strong>
-                  </div>
-                  <div className={styles.domainFact}>
-                    <span className={styles.domainLabel}>{customDomainLabel}</span>
-                    <strong className={styles.domainValue}>{visibleCustomDomainValue}</strong>
-                  </div>
-                  {domainState?.disconnectAt && isDisconnectScheduled ? (
-                    <div className={styles.domainFact}>
-                      <span className={styles.domainLabel}>Scheduled disconnect</span>
-                      <strong className={styles.domainValue}>{domainState.disconnectAt}</strong>
-                    </div>
-                  ) : null}
-                  {domainState?.vercelProjectId ? (
-                    <div className={styles.domainFact}>
-                      <span className={styles.domainLabel}>Hosting project</span>
-                      <strong className={styles.domainValue}>{domainState.vercelProjectId}</strong>
-                    </div>
-                  ) : null}
-                  {domainState?.dnsRoutingStatus ? (
-                    <div className={styles.domainFact}>
-                      <span className={styles.domainLabel}>DNS routing</span>
-                      <strong className={styles.domainValue}>{domainState.dnsRoutingStatus}</strong>
-                    </div>
-                  ) : null}
-                  {domainState?.vercelVerificationStatus ? (
-                    <div className={styles.domainFact}>
-                      <span className={styles.domainLabel}>Hosting verification</span>
-                      <strong className={styles.domainValue}>{domainState.vercelVerificationStatus}</strong>
-                    </div>
-                  ) : null}
-                  {domainState?.certificateStatus ? (
-                    <div className={styles.domainFact}>
-                      <span className={styles.domainLabel}>Secure connection</span>
-                      <strong className={styles.domainValue}>{domainState.certificateStatus}</strong>
-                    </div>
-                  ) : null}
+                  <DomainFact
+                    icon="home"
+                    label="HubForJ fallback"
+                    value={domainState?.platformHostedHref || "Unknown"}
+                    hint={
+                      isConnected
+                        ? "Fallback address used if the custom domain is unavailable."
+                        : "Default HubForJ-hosted address for this hub."
+                    }
+                  />
+                  <DomainFact
+                    icon="language"
+                    label={customDomainLabel}
+                    value={visibleCustomDomainValue}
+                    hint={
+                      isConnected
+                        ? "Primary domain visitors use to access your hub."
+                        : "Becomes active after DNS checks pass."
+                    }
+                  />
                 </div>
+
+                {connectedAtLabel || lastCheckedLabel || (disconnectAtLabel && isDisconnectScheduled) ? (
+                  <div className={styles.domainMetaStrip}>
+                    {connectedAtLabel && isConnected ? (
+                      <DomainMetaItem icon="status_dot" label="Connected" value={connectedAtLabel} />
+                    ) : null}
+                    {lastCheckedLabel ? (
+                      <DomainMetaItem icon="schedule" label="Last checked" value={lastCheckedLabel} />
+                    ) : null}
+                    {disconnectAtLabel && isDisconnectScheduled ? (
+                      <DomainMetaItem icon="event" label="Scheduled disconnect" value={disconnectAtLabel} />
+                    ) : null}
+                  </div>
+                ) : null}
+
+                {hasHistoricalHostname ? <AccountDomainConnectionHealth steps={connectionHealthSteps} /> : null}
               </Surface>
+
+              {showDnsInstructionPanel ? (
+                <AccountDomainTools
+                  records={dnsRecords}
+                  setupChecks={setupGuideChecks}
+                  hubSlug={hub.slug}
+                  hostname={domainState?.hostname || ""}
+                  isConnected={isConnected}
+                  showDisconnect={showDisconnectForm}
+                  showVerification={showVerificationPanel}
+                  failureReason={domainState?.failureReason || ""}
+                  dnsRoutingFailureReason={domainState?.dnsRoutingFailureReason || ""}
+                  activationBlockedReason={domainState?.activationBlockedReason || ""}
+                />
+              ) : null}
 
               {showLockedDomainUpgradePanel ? (
                 <Surface padding="md" className={styles.domainActionPanel} data-onboarding="account-growth-domain-upgrade-panel">
@@ -402,48 +483,6 @@ async function AccountSettingsContent({ hubSlug }) {
                     <p className={styles.capabilityDetail}>{setupDescription}</p>
                   </div>
                   <AccountDomainSetupForm hubSlug={hub.slug} domainState={domainState} initialHostname={setupInitialHostname} />
-                  {showVerificationPanel ? (
-                    <div className={styles.verificationPanel}>
-                      <div className={styles.verificationGrid}>
-                        <div className={styles.domainDetailsItem}>
-                          <span className={styles.domainLabel}>Verification record type</span>
-                          <strong className={styles.domainValue}>TXT</strong>
-                        </div>
-                        <div className={styles.domainDetailsItem}>
-                          <span className={styles.domainLabel}>Verification host</span>
-                          <strong className={styles.domainValue}>{domainState.verificationHost || "Not generated yet"}</strong>
-                        </div>
-                        <div className={styles.domainDetailsItem}>
-                          <span className={styles.domainLabel}>Verification value</span>
-                          <strong className={styles.domainValue}>{domainState.verificationTarget || "Not generated yet"}</strong>
-                        </div>
-                        <div className={styles.domainDetailsItem}>
-                          <span className={styles.domainLabel}>Last checked</span>
-                          <strong className={styles.domainValue}>{domainState.lastCheckedAt || "Not checked yet"}</strong>
-                        </div>
-                      </div>
-                      <p className={styles.capabilityDetail}>
-                        Add this TXT record with your DNS provider, wait for it to update, then check again.
-                      </p>
-                      {domainState?.failureReason ? <p className={styles.capabilityDetail}>{domainState.failureReason}</p> : null}
-                      {domainState?.activationBlockedReason ? (
-                        <p className={styles.capabilityDetail}>{domainState.activationBlockedReason}</p>
-                      ) : null}
-                      <AccountDomainVerificationCheckForm hubSlug={hub.slug} />
-                    </div>
-                  ) : null}
-                </Surface>
-              ) : null}
-
-              {showDisconnectForm ? (
-                <Surface tone="accent" padding="md" className={styles.domainActionPanel}>
-                  <div className={styles.noticeCopy}>
-                    <h3 className={styles.noticeTitle}>Disconnect custom domain</h3>
-                    <p className={styles.capabilityDetail}>
-                      Use this if you want the hub to stop using the current custom domain and return to its Hubforj-hosted address.
-                    </p>
-                  </div>
-                  <AccountDomainDisconnectForm hubSlug={hub.slug} hostname={domainState.hostname} />
                 </Surface>
               ) : null}
 

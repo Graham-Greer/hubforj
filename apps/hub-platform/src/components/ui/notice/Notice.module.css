@@ -1,0 +1,76 @@
+.root {
+  --notice-accent: var(--badge-neutral-text);
+  --notice-border: var(--badge-neutral-border);
+  --notice-fill: var(--badge-neutral-bg);
+
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: start;
+  min-width: 0;
+  padding: var(--space-3);
+  border: var(--space-px) solid var(--notice-border);
+  border-radius: var(--radius-md);
+  background: var(--notice-fill);
+  color: var(--color-text-primary);
+}
+
+.icon {
+  display: inline-grid;
+  place-items: center;
+  width: 1.75rem;
+  aspect-ratio: 1;
+  color: var(--notice-accent);
+}
+
+.copy {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.title {
+  color: var(--notice-accent);
+  font: var(--font-body-sm-strong);
+}
+
+.body {
+  display: grid;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+  font: var(--font-body-sm);
+}
+
+.body p {
+  margin: 0;
+}
+
+.toneNeutral {
+  --notice-accent: var(--badge-neutral-text);
+  --notice-border: var(--badge-neutral-border);
+  --notice-fill: var(--badge-neutral-bg);
+}
+
+.toneInfo {
+  --notice-accent: var(--badge-info-text);
+  --notice-border: var(--badge-info-border);
+  --notice-fill: var(--badge-info-bg);
+}
+
+.toneSuccess {
+  --notice-accent: var(--badge-success-text);
+  --notice-border: var(--badge-success-border);
+  --notice-fill: var(--badge-success-bg);
+}
+
+.toneWarning {
+  --notice-accent: var(--badge-warning-text);
+  --notice-border: var(--badge-warning-border);
+  --notice-fill: var(--badge-warning-bg);
+}
+
+.toneDanger {
+  --notice-accent: var(--badge-danger-text);
+  --notice-border: var(--badge-danger-border);
+  --notice-fill: var(--badge-danger-bg);
+}

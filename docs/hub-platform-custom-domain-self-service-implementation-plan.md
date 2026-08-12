@@ -2624,6 +2624,121 @@ Testing requirements:
   - confirm Vercel project-domain entry is removed or cleanup error is recorded
   - confirm Account settings shows custom-domain locked on lower package
 
+### Phase 5A: Account Settings Custom-Domain UX Upgrade
+
+Status: implemented locally, pending browser verification and runtime test execution in an environment with Node available.
+
+Implemented:
+
+- Reworked the Account settings custom-domain panel around admin-readable lifecycle state rather than provider internals.
+- Removed Vercel project identifiers and hosting-project terminology from the admin-facing account page.
+- Preserved the HubForJ-hosted fallback address as a clear support/admin access route.
+- Added a lifecycle progress list for:
+  - domain entered
+  - ownership verified
+  - DNS routing
+  - secure connection
+  - connected
+- Added status-specific descriptions for:
+  - not configured
+  - pending verification
+  - verification failed
+  - verifying/activation-ready
+  - connected
+  - disconnect scheduled
+  - disconnected
+  - provisioning/provisioning failed
+- Removed redundant connected-domain actions from the account panel because the admin shell already provides public-site access.
+- Added a copyable DNS records panel for setup and connected-state auditing.
+- DNS records now show:
+  - purpose
+  - type
+  - name/host
+  - value/target
+  - TTL guidance
+  - copy name
+  - copy value
+- Added guided registrar/DNS-provider setup for common providers:
+  - GoDaddy
+  - Cloudflare
+  - Namecheap
+  - Squarespace
+- The registrar guide now uses a provider selector and focused modal instructions rather than passive provider-label cards.
+- Kept exact Vercel/DNS routing values sourced from provider/config responses and persisted hub state rather than hard-coded UI guesses.
+- Added routing-instruction persistence fields to custom-domain provisioning and verification flows:
+  - `dnsRoutingRecordType`
+  - `dnsRoutingRecordName`
+  - `dnsRoutingRecordValue`
+  - `dnsRoutingRecordValues`
+  - `dnsRoutingRecordTtl`
+- Extended hub custom-domain normalization so stored routing instructions render consistently after reload.
+- Added a small clipboard client component for DNS values.
+- Updated manual disconnect copy to explain the HubForJ-hosted fallback and provider-cleanup behavior more clearly.
+- Refined the Account settings custom-domain UI after screenshot review:
+  - replaced the table-like DNS presentation with compact DNS record rows
+  - added icon-led status facts
+  - tightened lifecycle rows and kept the completion chip as the only completion indicator
+  - collapsed lifecycle detail under a Domain status disclosure inside the status panel
+  - replaced constantly visible secondary panels with a single custom Domain tools selector
+  - moved DNS records, registrar guidance, and disconnect into the selector-controlled tool area
+  - replaced provider-label cards with a provider selector and modal checklist
+- Added source guards for:
+  - lifecycle UI copy
+  - DNS records UI
+  - provider guidance
+  - copy buttons
+  - selector-controlled domain tools
+  - hiding Vercel project internals from the admin page
+  - routing-instruction persistence through provisioning and readiness checks
+
+Enterprise UX policy captured by this slice:
+
+- Admins should see what to do next, not Vercel implementation details.
+- DNS setup must be provider-neutral but precise.
+- Registrar guidance should explain field labels and exact record edits in a focused modal without relying on brittle screenshots from third-party dashboards.
+- Connected domains should still show a calm DNS configuration/audit view, because admins may later move registrar or DNS provider.
+- The page should distinguish the domain registrar from the DNS provider and direct the admin to the account where nameservers are managed.
+- Copy buttons should copy real generated values only; placeholder text must not be copied.
+- Destructive actions should sit below the primary workflow and require deliberate expansion.
+
+Not included in this slice:
+
+- Nameserver lookup/provider detection.
+- First-party illustrated DNS setup guides or videos.
+- Support escalation panel for blocked provider state.
+- Grace-period redirect from disconnected custom domain to hosted subdomain.
+- Middleware runtime cache/KV optimization.
+
+Recommended browser verification:
+
+1. Free/Starter hub:
+   - custom domain remains locked.
+   - no setup form is available.
+2. Growth hub without a custom domain:
+   - setup form is available.
+   - no lifecycle list appears until a hostname exists.
+3. Pending verification:
+   - lifecycle list appears.
+   - TXT ownership record appears.
+   - DNS routing record appears when provider/config data is available.
+   - copy buttons copy only generated values.
+   - Check DNS remains available.
+4. Verification failed or DNS misconfigured:
+   - admin sees a needs-attention lifecycle step.
+   - product-safe failure copy is shown.
+   - Check DNS remains available.
+5. Activation ready:
+   - lifecycle shows ownership/routing/secure connection as complete.
+   - connected step remains in progress.
+   - activation-blocked copy remains product-safe.
+6. Connected:
+   - open website/admin actions work in new tabs.
+   - DNS configuration remains visible for audit/migration.
+   - Check DNS is not shown unless the domain is in a verification state.
+7. Disconnect:
+   - copy explains fallback behavior.
+   - successful disconnect redirects to the HubForJ-hosted account settings URL.
+
 ### Phase 6A: Unified Custom-Domain Reconciliation Reporting And Repair
 
 Status: implemented locally, pending runtime test execution in an environment with Node available and controlled production dry-run/repair verification.
