@@ -151,6 +151,15 @@ export async function processHubCustomDomainVerificationRecord(hubRecord, actorI
     dnsRoutingStatus: normalizeString(readiness.dnsRoutingStatus),
     dnsRoutingLastCheckedAt: normalizeString(readiness.dnsRoutingLastCheckedAt) || (result.matched ? now : ""),
     dnsRoutingFailureReason: normalizeString(readiness.dnsRoutingFailureReason),
+    dnsRoutingRecordType: normalizeString(readiness.dnsRoutingRecordType || customDomain.dnsRoutingRecordType),
+    dnsRoutingRecordName: normalizeString(readiness.dnsRoutingRecordName || customDomain.dnsRoutingRecordName),
+    dnsRoutingRecordValue: normalizeString(readiness.dnsRoutingRecordValue || customDomain.dnsRoutingRecordValue),
+    dnsRoutingRecordValues: Array.isArray(readiness.dnsRoutingRecordValues)
+      ? readiness.dnsRoutingRecordValues
+      : Array.isArray(customDomain.dnsRoutingRecordValues)
+        ? customDomain.dnsRoutingRecordValues
+        : [],
+    dnsRoutingRecordTtl: normalizeString(readiness.dnsRoutingRecordTtl || customDomain.dnsRoutingRecordTtl),
     vercelProjectId: normalizeString(readiness.vercelProjectId || customDomain.vercelProjectId),
     vercelDomainId: normalizeString(readiness.vercelDomainId || customDomain.vercelDomainId),
     vercelVerificationStatus: normalizeString(readiness.vercelVerificationStatus),

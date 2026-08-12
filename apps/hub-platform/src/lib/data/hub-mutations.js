@@ -491,6 +491,13 @@ export async function requestHubCustomDomainBySlug(hubSlug, hostname, actorId = 
     dnsRoutingStatus: normalizeString(provisioning.dnsRoutingStatus),
     dnsRoutingLastCheckedAt: normalizeString(provisioning.dnsRoutingLastCheckedAt),
     dnsRoutingFailureReason: normalizeString(provisioning.dnsRoutingFailureReason),
+    dnsRoutingRecordType: normalizeString(provisioning.dnsRoutingRecordType),
+    dnsRoutingRecordName: normalizeString(provisioning.dnsRoutingRecordName),
+    dnsRoutingRecordValue: normalizeString(provisioning.dnsRoutingRecordValue),
+    dnsRoutingRecordValues: Array.isArray(provisioning.dnsRoutingRecordValues)
+      ? provisioning.dnsRoutingRecordValues
+      : [],
+    dnsRoutingRecordTtl: normalizeString(provisioning.dnsRoutingRecordTtl),
     vercelProjectId: normalizeString(provisioning.vercelProjectId),
     vercelDomainId: normalizeString(provisioning.vercelDomainId),
     vercelDomainAddedAt: normalizeString(provisioning.vercelDomainAddedAt),

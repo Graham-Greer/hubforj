@@ -21,6 +21,102 @@ function normalizeBoolean(value) {
   return value === true;
 }
 
+function normalizeList(value) {
+  if (Array.isArray(value)) {
+    return value
+      .flatMap((item) => normalizeList(item))
+      .map((item) => normalizeString(item))
+      .filter(Boolean);
+  }
+
+  if (value && typeof value === "object" && Object.prototype.hasOwnProperty.call(value, "value")) {
+    return normalizeList(value.value);
+  }
+
+  return normalizeString(value) ? [normalizeString(value)] : [];
+}
+
+const knownTwoPartPublicSuffixes = new Set([
+  "co.uk",
+  "org.uk",
+  "ac.uk",
+  "gov.uk",
+  "com.au",
+  "net.au",
+  "org.au",
+  "co.nz",
+  "com.br",
+  "com.mx",
+  "co.za",
+]);
+
+function getRegisteredDomainLabelCount(hostname) {
+  const labels = normalizeString(hostname).toLowerCase().split(".").filter(Boolean);
+  const lastTwo = labels.slice(-2).join(".");
+
+  return knownTwoPartPublicSuffixes.has(lastTwo) ? 3 : 2;
+}
+
+function isLikelyApexHostname(hostname) {
+  const labels = normalizeString(hostname).toLowerCase().split(".").filter(Boolean);
+
+  return labels.length <= getRegisteredDomainLabelCount(hostname);
+}
+
+function getDnsRecordName(hostname) {
+  const labels = normalizeString(hostname).toLowerCase().split(".").filter(Boolean);
+  const registeredLabelCount = getRegisteredDomainLabelCount(hostname);
+
+  if (labels.length <= registeredLabelCount) {
+    return "@";
+  }
+
+  return labels.slice(0, labels.length - registeredLabelCount).join(".");
+}
+
+function getFirstRecommendedValues(entries) {
+  const candidates = Array.isArray(entries) ? entries : [];
+
+  for (const item of candidates) {
+    const values = normalizeList(item?.value || item);
+
+    if (values.length) {
+      return values;
+    }
+  }
+
+  return [];
+}
+
+function resolveRoutingInstruction(hostname, domainConfig) {
+  const configuredBy = normalizeString(domainConfig?.configuredBy).toUpperCase();
+  const aValues = normalizeList(domainConfig?.aValues);
+  const cnameValues = normalizeList(domainConfig?.cnames);
+  const recommendedAValues = getFirstRecommendedValues(domainConfig?.recommendedIPv4);
+  const recommendedCnameValues = getFirstRecommendedValues(domainConfig?.recommendedCNAME);
+  const recordName = getDnsRecordName(hostname);
+  const useARecord =
+    configuredBy === "A" ||
+    (!configuredBy && isLikelyApexHostname(hostname)) ||
+    (!configuredBy && !recommendedCnameValues.length && Boolean(recommendedAValues.length || aValues.length));
+  const type = useARecord ? "A" : "CNAME";
+  const values = useARecord
+    ? aValues.length
+      ? aValues
+      : recommendedAValues
+    : cnameValues.length
+      ? cnameValues
+      : recommendedCnameValues;
+
+  return {
+    dnsRoutingRecordType: type,
+    dnsRoutingRecordName: recordName,
+    dnsRoutingRecordValue: values[0] || "",
+    dnsRoutingRecordValues: values,
+    dnsRoutingRecordTtl: "Auto/default",
+  };
+}
+
 function resolveDnsRoutingStatus(domainConfig) {
   if (!domainConfig) {
     return "not_checked";
@@ -121,6 +217,7 @@ export async function checkCustomDomainVercelReadiness(hostname, { now = new Dat
     const dnsRoutingStatus = resolveDnsRoutingStatus(domainConfig);
     const vercelVerificationStatus = resolveVercelVerificationStatus(domainStatus);
     const certificateStatus = domainStatus.verified && dnsRoutingStatus === "ready" ? "ready" : "pending";
+    const routingInstruction = resolveRoutingInstruction(normalizedHostname, domainConfig);
 
     return {
       ok: true,
@@ -136,6 +233,7 @@ export async function checkCustomDomainVercelReadiness(hostname, { now = new Dat
       dnsRoutingFailureReason: normalizeBoolean(domainConfig?.misconfigured)
         ? "DNS records are not pointing to Vercel yet."
         : "",
+      ...routingInstruction,
       certificateStatus,
     };
   } catch (error) {
@@ -237,6 +335,7 @@ export async function provisionCustomDomainWithVercel(hostname, { now = new Date
   try {
     const domainStatus = await addOrConfirmProjectDomain(normalizedHostname);
     const domainConfig = await getVercelDomainConfig(normalizedHostname);
+    const routingInstruction = resolveRoutingInstruction(normalizedHostname, domainConfig);
 
     return {
       ok: true,
@@ -252,6 +351,7 @@ export async function provisionCustomDomainWithVercel(hostname, { now = new Date
       dnsRoutingFailureReason: normalizeBoolean(domainConfig?.misconfigured)
         ? "DNS records are not pointing to Vercel yet."
         : "",
+      ...routingInstruction,
       certificateStatus: domainStatus.verified ? "ready" : "pending",
       certificateLastCheckedAt: now,
     };

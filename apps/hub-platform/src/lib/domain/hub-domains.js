@@ -165,6 +165,13 @@ export function sanitizeStoredCustomDomainRecord(record = {}) {
     dnsRoutingStatus: normalizeString(record.dnsRoutingStatus),
     dnsRoutingLastCheckedAt: normalizeString(record.dnsRoutingLastCheckedAt),
     dnsRoutingFailureReason: normalizeString(record.dnsRoutingFailureReason),
+    dnsRoutingRecordType: normalizeString(record.dnsRoutingRecordType),
+    dnsRoutingRecordName: normalizeString(record.dnsRoutingRecordName),
+    dnsRoutingRecordValue: normalizeString(record.dnsRoutingRecordValue),
+    dnsRoutingRecordValues: Array.isArray(record.dnsRoutingRecordValues)
+      ? record.dnsRoutingRecordValues.map((value) => normalizeString(value)).filter(Boolean)
+      : [],
+    dnsRoutingRecordTtl: normalizeString(record.dnsRoutingRecordTtl),
     vercelProjectId: normalizeString(record.vercelProjectId),
     vercelDomainId: normalizeString(record.vercelDomainId),
     vercelDomainAddedAt: normalizeString(record.vercelDomainAddedAt),
@@ -293,6 +300,13 @@ export function normalizeHubCustomDomain(hub = {}) {
     dnsRoutingStatus: normalizeString(storedDomain.dnsRoutingStatus),
     dnsRoutingLastCheckedAt: normalizeString(storedDomain.dnsRoutingLastCheckedAt),
     dnsRoutingFailureReason: normalizeString(storedDomain.dnsRoutingFailureReason),
+    dnsRoutingRecordType: normalizeString(storedDomain.dnsRoutingRecordType),
+    dnsRoutingRecordName: normalizeString(storedDomain.dnsRoutingRecordName),
+    dnsRoutingRecordValue: normalizeString(storedDomain.dnsRoutingRecordValue),
+    dnsRoutingRecordValues: Array.isArray(storedDomain.dnsRoutingRecordValues)
+      ? storedDomain.dnsRoutingRecordValues.map((value) => normalizeString(value)).filter(Boolean)
+      : [],
+    dnsRoutingRecordTtl: normalizeString(storedDomain.dnsRoutingRecordTtl),
     vercelProjectId: normalizeString(storedDomain.vercelProjectId),
     vercelDomainId: normalizeString(storedDomain.vercelDomainId),
     vercelDomainAddedAt: normalizeString(storedDomain.vercelDomainAddedAt),
