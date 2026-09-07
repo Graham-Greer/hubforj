@@ -24,7 +24,7 @@ export default function ForgotPasswordForm({ defaultEmail = "" }) {
   return (
     <form action={formAction} className="signup-form-shell">
       {state?.status === "error" ? <div className="form-message" data-tone="danger">{state.message}</div> : null}
-      {state?.status === "success" || state?.status === "logged" ? (
+      {state?.status === "success" ? (
         <div className="form-message" data-tone="success">{state.message}</div>
       ) : null}
       <div className="signup-form-grid">

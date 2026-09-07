@@ -291,13 +291,21 @@ export async function updateCommercialAccountAuthUid(accountId, authUid) {
   const ref = getAccountRef(normalizedAccountId);
   const now = new Date().toISOString();
 
-  await ref.set(
-    {
-      authUid: normalizedAuthUid,
-      updatedAt: now,
-    },
-    { merge: true }
-  );
+  await getFirebaseAdminDb().runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists) {
+      throw new Error("Commercial account not found.");
+    }
+
+    const currentUid = normalizeString(snapshot.data()?.authUid);
+    if (currentUid && currentUid !== normalizedAuthUid) {
+      throw new Error("These sign-in details do not match this commercial account.");
+    }
+
+    if (currentUid !== normalizedAuthUid) {
+      transaction.update(ref, { authUid: normalizedAuthUid, updatedAt: now });
+    }
+  });
 
   return getCommercialAccountById(normalizedAccountId);
 }

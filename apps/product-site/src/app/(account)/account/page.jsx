@@ -99,14 +99,12 @@ async function AccountOverviewPanels({ searchParams }) {
         ),
         messages: (
           <>
-            {verification === "sent" || verification === "logged" ? (
+            {verification === "sent" ? (
               <div className="form-message" data-tone="success">
-                {verification === "logged"
-                  ? "A verification link was created in this test environment instead of being emailed."
-                  : "A fresh verification email has been sent."}
+                A fresh verification email has been sent.
               </div>
             ) : null}
-            {verification === "retry" ? <div className="form-message" data-tone="danger">We could not send the verification email just now. Please try again.</div> : null}
+            {(verification === "retry" || verification === "unavailable") ? <div className="form-message" data-tone="danger">We could not send the verification email just now. Please try again.</div> : null}
           </>
         ),
       }

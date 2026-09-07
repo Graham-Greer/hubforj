@@ -31,7 +31,7 @@ test("phase 6 protects product signup before provisioning or checkout side effec
 
   const limiterIndex = source.indexOf("await assertProductSignupAllowed");
   const accountLookupIndex = source.indexOf("const existingAccount = await getCommercialAccountByEmail");
-  const provisionHubIndex = source.indexOf("hub = await provisionHubFromProductSite");
+  const provisionHubIndex = source.indexOf("hub = await resumeCommercialSignup");
   const checkoutIndex = source.indexOf("const checkoutSession = await createStripeCheckoutForPackageChange");
 
   assert.ok(limiterIndex > -1, "signup limiter should be called");

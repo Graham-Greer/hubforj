@@ -14,6 +14,14 @@ const rateLimitScopes = {
     ],
     message: "Too many signup attempts. Please wait a little while and try again.",
   },
+  productSignupRecovery: {
+    label: "product signup recovery",
+    limits: [
+      { key: "ip", maxAttempts: 10, windowSeconds: 15 * 60 },
+      { key: "email", maxAttempts: 5, windowSeconds: 15 * 60 },
+    ],
+    message: "Too many setup recovery attempts. Please wait 15 minutes before trying again.",
+  },
   productPasswordReset: {
     label: "product password reset",
     limits: [

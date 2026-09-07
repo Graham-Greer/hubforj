@@ -44,10 +44,10 @@ export async function requestPasswordResetAction(_previousState, formData) {
     const result = await sendCommercialAccountPasswordResetEmail({ email });
 
     return {
-      status: result?.status === "logged" ? "logged" : "success",
+      status: result?.status === "unavailable" ? "error" : "success",
       message:
-        result?.status === "logged"
-          ? "In this environment, the reset link was logged instead of being emailed."
+        result?.status === "unavailable"
+          ? "Password reset emails are temporarily unavailable. Please try again later."
           : "If that account exists, a password reset email has been sent.",
       values: { email },
     };

@@ -4,6 +4,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getServerEnv } from "@/lib/config/env";
+import { resolveCommercialSessionAuthority } from "@/lib/server/commercial-session-authority";
 
 const ACCOUNT_SESSION_COOKIE = "product_site_account_session";
 const ACCOUNT_SESSION_MAX_AGE = 60 * 60 * 24 * 30;
@@ -55,7 +56,9 @@ function buildToken(payload) {
 }
 
 function verifyToken(token) {
-  const [encodedPayload = "", signature = ""] = String(token || "").split(".");
+  const parts = String(token || "").split(".");
+  if (parts.length !== 2) return null;
+  const [encodedPayload = "", signature = ""] = parts;
 
   if (!encodedPayload || !signature) {
     return null;
@@ -73,7 +76,9 @@ function verifyToken(token) {
     const payload = decodePayload(encodedPayload);
     const expiresAt = Number(payload?.expiresAt || 0);
 
-    if (!expiresAt || Date.now() > expiresAt) {
+    if (payload?.version !== 2 || !payload.accountId || !payload.authUid ||
+        !Number.isFinite(payload.authTime) || payload.authTime <= 0 || payload.authTime > Date.now() ||
+        !Number.isFinite(expiresAt) || Date.now() >= expiresAt) {
       return null;
     }
 
@@ -87,7 +92,10 @@ function normalizeSessionPayload(values = {}) {
   const now = Date.now();
 
   return {
+    version: 2,
     accountId: normalizeString(values.accountId),
+    authUid: normalizeString(values.authUid),
+    authTime: Number(values.authTime ?? now),
     ownerFullName: normalizeString(values.ownerFullName),
     ownerEmail: normalizeEmail(values.ownerEmail),
     communityName: normalizeString(values.communityName),
@@ -101,6 +109,7 @@ function normalizeSessionPayload(values = {}) {
 
 export async function writeCommercialAccountSession(values = {}) {
   const payload = normalizeSessionPayload(values);
+  if (!(await resolveCommercialSessionAuthority(payload))) throw new Error("Sign in again to the active account.");
   const token = buildToken(payload);
   const cookieStore = await cookies();
 
@@ -118,6 +127,8 @@ export async function writeCommercialAccountSession(values = {}) {
 export async function writeCommercialAccountSessionFromAccount({ account, currentHub } = {}) {
   return writeCommercialAccountSession({
     accountId: account?.id,
+    authUid: account?.authUid,
+    authTime: account?.sessionAuthTime,
     ownerFullName: account?.ownerFullName,
     ownerEmail: account?.ownerEmail,
     communityName: currentHub?.name,
@@ -128,6 +139,10 @@ export async function writeCommercialAccountSessionFromAccount({ account, curren
 }
 
 export async function readCommercialAccountSession() {
+  return (await readCommercialAccountSessionContext())?.session || null;
+}
+
+export async function readCommercialAccountSessionContext() {
   const cookieStore = await cookies();
   const token = cookieStore.get(ACCOUNT_SESSION_COOKIE)?.value;
 
@@ -135,7 +150,16 @@ export async function readCommercialAccountSession() {
     return null;
   }
 
-  return verifyToken(token);
+  const session = verifyToken(token);
+  if (!session) return null;
+  const authority = await resolveCommercialSessionAuthority(session);
+  return authority ? { session, ...authority } : null;
+}
+
+export async function requireCommercialAccountSessionContext() {
+  const context = await readCommercialAccountSessionContext();
+  if (!context) redirect("/sign-in");
+  return context;
 }
 
 export async function clearCommercialAccountSession() {
@@ -147,7 +171,7 @@ export async function requireCommercialAccountSession() {
   const session = await readCommercialAccountSession();
 
   if (!session) {
-    redirect("/signup");
+    redirect("/sign-in");
   }
 
   return session;

@@ -14,7 +14,7 @@ export default async function SignupSuccessPage({ searchParams }) {
     hubPlatformBaseUrl,
     hubSlug,
   });
-  const verificationSent = verification === "sent" || verification === "logged";
+  const verificationSent = verification === "sent";
 
   return (
     <MarketingShell>

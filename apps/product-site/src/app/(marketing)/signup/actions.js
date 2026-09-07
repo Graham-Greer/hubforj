@@ -1,20 +1,21 @@
 "use server";
 
+import { getServerEnv } from "@/lib/config/env";
 import { redirect, unstable_rethrow } from "next/navigation";
-import { ensureCommercialAccountAuthUser } from "@/lib/auth/commercial-auth";
+import { assertCommercialSignupEmailAvailable, ensureCommercialAccountAuthUser } from "@/lib/auth/commercial-auth";
 import { normalizeProductSignupPayload, resolveInitialProvisioningPayloadForSignup } from "@/lib/domain/signup";
 import {
   createOrResolveCommercialAccount,
   getCommercialAccountByEmail,
   listCommercialAccountHubs,
-  provisionCommercialAccountForSignup,
   updateCommercialAccountPackageIntent,
 } from "@/lib/data/commercial-accounts";
 import { writeCommercialAccountSessionFromAccount } from "@/lib/server/account-session";
 import { sendCommercialAccountVerificationEmail } from "@/lib/server/commercial-account-email";
 import { createStripeCheckoutForPackageChange } from "@/lib/server/commercial-billing";
 import { assertProductSignupAllowed, isPublicAbuseRateLimitError } from "@/lib/server/public-abuse-controls";
-import { provisionHubFromProductSite } from "@/lib/server/provision-hub";
+import { createCommercialSignupOperation } from "@/lib/data/commercial-signup-operations";
+import { resumeCommercialSignup } from "@/lib/server/commercial-signup-recovery";
 import { assertStripePriceMatchesSelection, resolveStripePriceSelection } from "@/lib/server/stripe";
 
 export async function createProductSiteSignupAction(_previousState, formData) {
@@ -36,8 +37,12 @@ export async function createProductSiteSignupAction(_previousState, formData) {
   } catch (error) {
     return {
       error: String(error?.message || "Unable to prepare signup."),
-      values: rawValues,
+      values: { ...rawValues, password: "", passwordConfirm: "" },
     };
+  }
+
+  if (!getServerEnv().productSiteSignupProvisioningEnabled) {
+    return { error: "New workspace setup is temporarily unavailable. You can still sign in to an existing account.", values: normalized.values };
   }
 
   try {
@@ -84,6 +89,17 @@ export async function createProductSiteSignupAction(_previousState, formData) {
 
   const selectedPackageTier = String(normalized.values.packageTier || "free").toLowerCase();
 
+  // Reject existing identities before provisioning; creation repeats this check
+  // and Firebase uniqueness handles an identity created concurrently.
+  try {
+    await assertCommercialSignupEmailAvailable(normalized.values.ownerEmail);
+  } catch (error) {
+    return {
+      error: String(error?.message || "Unable to check sign-in details. Please try again."),
+      values: normalized.values,
+    };
+  }
+
   if (selectedPackageTier === "starter" || selectedPackageTier === "growth") {
     const priceSelection = resolveStripePriceSelection({
       tier: selectedPackageTier,
@@ -126,48 +142,20 @@ export async function createProductSiteSignupAction(_previousState, formData) {
     };
   }
 
-  let hub;
-
-  try {
-    hub = await provisionHubFromProductSite(resolveInitialProvisioningPayloadForSignup(normalized.payload));
-  } catch (error) {
-    return {
-      error: String(error?.message || "Unable to provision the community."),
-      values: normalized.values,
-    };
-  }
-
-  let ownership;
-
-  try {
-    ownership = await provisionCommercialAccountForSignup({
-      ownerFullName: normalized.values.ownerFullName,
-      ownerEmail: normalized.values.ownerEmail,
-      hubId: String(hub.id || ""),
-      hubSlug: String(hub.slug || normalized.values.hubSlug),
-      communityName: normalized.values.communityName,
-      packageTier: String(hub.packageTier || "free"),
-      packageStatus: String(hub.packageStatus || "active"),
-    });
-  } catch (error) {
-    return {
-      error: String(error?.message || "Your community was created, but we could not finish the commercial account link."),
-      values: normalized.values,
-    };
-  }
-
   let accountWithAuth;
-
   try {
-    accountWithAuth = await ensureCommercialAccountAuthUser({
-      account: ownership.account || account,
-      password: rawValues.password,
+    accountWithAuth = await ensureCommercialAccountAuthUser({ account, password: rawValues.password });
+  } catch {
+    return { error: "We could not finish sign-in setup. Try signing in or resetting your password before starting again.", values: normalized.values };
+  }
+  try {
+    await createCommercialSignupOperation({
+      accountId: accountWithAuth.id, authUid: accountWithAuth.authUid,
+      payload: resolveInitialProvisioningPayloadForSignup(normalized.payload),
+      tier: selectedPackageTier, currency: normalized.values.packageCurrency,
     });
-  } catch (error) {
-    return {
-      error: String(error?.message || "Your community was created, but we could not finish account sign-in setup."),
-      values: normalized.values,
-    };
+  } catch {
+    return { error: "Your sign-in details were created, but we could not save your workspace setup. Sign in to your account for help before starting again.", values: normalized.values };
   }
 
   let verificationStatus = "retry";
@@ -180,6 +168,13 @@ export async function createProductSiteSignupAction(_previousState, formData) {
     verificationStatus = String(delivery?.status || "sent");
   } catch {
     verificationStatus = "retry";
+  }
+
+  let hub;
+  try {
+    hub = await resumeCommercialSignup(accountWithAuth);
+  } catch {
+    return { error: "Your setup is saved, but your workspace is not ready yet. Use Recover setup to sign in and try again.", recoverable: true, values: normalized.values };
   }
 
   await writeCommercialAccountSessionFromAccount({
