@@ -99,7 +99,7 @@ export function normalizeCommercialAccountHubRecord(record) {
     hubId: normalizeString(record.hubId || record.id),
     hubSlug: normalizeSlug(record.hubSlug),
     communityName: normalizeString(record.communityName),
-    relationship: normalizeString(record.relationship) || "owner",
+    relationship: normalizeString(record.relationship),
     isPrimary: Boolean(record.isPrimary),
     packageTier: normalizeString(record.packageTier).toLowerCase() || "free",
     packageStatus: normalizeString(record.packageStatus).toLowerCase() || "active",

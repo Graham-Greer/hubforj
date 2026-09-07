@@ -40,6 +40,7 @@ const publicEnv = {
 };
 
 const serverEnv = {
+  productSiteSignupProvisioningEnabled: process.env.PRODUCT_SITE_SIGNUP_PROVISIONING_ENABLED === "true",
   productSiteBaseUrl: normalizeBaseUrl(process.env.PRODUCT_SITE_BASE_URL || ""),
   hubPlatformBaseUrl: normalizeBaseUrl(process.env.HUB_PLATFORM_BASE_URL || ""),
   internalAutomationSecret: String(

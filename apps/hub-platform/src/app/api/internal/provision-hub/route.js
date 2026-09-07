@@ -23,9 +23,11 @@ export async function POST(request) {
   const payload = normalizeProvisionHubAutomationRequestBody(body);
 
   try {
-    const hub = await createHub(payload, "internal-product-site");
+    const idempotencyKey = request.headers.get("idempotency-key") ?? undefined;
+    const hub = await createHub(payload, "internal-product-site", { idempotencyKey });
 
     return NextResponse.json({
+      ...(idempotencyKey !== undefined ? { provisioningProtocol: "idempotency-v1" } : {}),
       id: hub.id,
       slug: hub.slug,
       packageTier: hub.packageTier,
@@ -37,7 +39,7 @@ export async function POST(request) {
       {
         error: String(error?.message || "Unable to provision hub."),
       },
-      { status: 500 }
+      { status: [400, 409, 410, 503].includes(error?.provisioningStatus) ? error.provisioningStatus : 500 }
     );
   }
 }

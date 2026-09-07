@@ -5,6 +5,7 @@ try {
 }
 
 import crypto from "node:crypto";
+import { buildHubProvisioningOperation, readHubProvisioningReplay, commitHubProvisioningOperation } from "@/lib/data/hub-provisioning-operations";
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
 import {
   assertNoConflictingCustomDomainClaim,
@@ -14,7 +15,6 @@ import {
 import { getCustomDomainMappingByHostname, writeCustomDomainMappingForHub } from "@/lib/data/custom-domain-mappings";
 import { requireHubBySlug } from "@/lib/data/hubs";
 import { buildDefaultMembershipPlanWriteModel } from "@/lib/data/membership-plans";
-import { getPlatformRootDomain, isReservedHubSlug } from "@/lib/domain/custom-domain-runtime-config";
 import { buildCustomDomainVerificationHostname } from "@/lib/domain/custom-domain-verification";
 import { provisionCustomDomainWithVercel } from "@/lib/domain/custom-domain-vercel";
 import {
@@ -71,47 +71,6 @@ async function writeCustomDomainLifecycleEvent(db, hubId, event) {
   }
 }
 
-async function assertUniqueSlug(db, slug) {
-  if (isReservedHubSlug(slug)) {
-    throw new Error(
-      `This hub slug is reserved for the platform domain and cannot be used. Choose a different subdomain name instead of "${slug}.${getPlatformRootDomain()}".`
-    );
-  }
-
-  const snapshot = await db.collection("hubs").where("slug", "==", slug).limit(1).get();
-
-  if (!snapshot.empty) {
-    throw new Error("A hub with this slug already exists.");
-  }
-}
-
-async function assertUniquePlatformSubdomainLabel(db, label) {
-  if (!label) {
-    throw new Error("Platform subdomain label is required.");
-  }
-
-  if (isReservedHubSlug(label)) {
-    throw new Error(
-      `This hosted subdomain is reserved for the platform domain and cannot be used. Choose a different subdomain name instead of "${label}.${getPlatformRootDomain()}".`
-    );
-  }
-
-  const snapshot = await db.collection("hubs").where("platformSubdomainLabel", "==", label).limit(1).get();
-
-  if (!snapshot.empty) {
-    throw new Error("A hub with this hosted subdomain already exists.");
-  }
-
-  const legacySnapshot = await db.collection("hubs").get();
-  const conflictingLegacyHub = legacySnapshot.docs
-    .map((doc) => doc.data())
-    .find((hub) => normalizePlatformSubdomainLabel(hub?.platformSubdomainLabel || hub?.slug) === label);
-
-  if (conflictingLegacyHub) {
-    throw new Error("A hub with this hosted subdomain already exists.");
-  }
-}
-
 async function assertUniqueDomain(db, domain, excludedHubId = "") {
   if (!domain) {
     return;
@@ -131,13 +90,14 @@ async function assertUniqueDomain(db, domain, excludedHubId = "") {
   }
 }
 
-export async function createHub(payload, actorId = "system") {
+export async function createHub(payload, actorId = "system", { idempotencyKey } = {}) {
   const db = getFirebaseAdminDb();
   const next = normalizeCreateHubPayload(payload);
   const platformSubdomainLabel = normalizePlatformSubdomainLabel(next.slug);
+  const operation = buildHubProvisioningOperation(db, idempotencyKey, next, actorId);
+  const replay = await readHubProvisioningReplay(db, operation);
+  if (replay) return replay;
 
-  await assertUniqueSlug(db, next.slug);
-  await assertUniquePlatformSubdomainLabel(db, platformSubdomainLabel);
   await assertUniqueDomain(db, next.customDomains[0] || "");
 
   const now = new Date().toISOString();
@@ -191,18 +151,17 @@ export async function createHub(payload, actorId = "system") {
     updatedBy: actorId,
   };
 
-  const batch = db.batch();
-  batch.set(ref, writeModel);
-  batch.set(
-    defaultMembershipPlanRef,
-    buildDefaultMembershipPlanWriteModel(ref.id, actorId, now, writeModel.defaultCurrency || "USD")
-  );
+  const writes = [
+    [ref, writeModel],
+    [defaultMembershipPlanRef,
+      buildDefaultMembershipPlanWriteModel(ref.id, actorId, now, writeModel.defaultCurrency || "USD")],
+  ];
 
   if (writeModel.customDomain?.hostname) {
     const claimId = buildCustomDomainClaimId(writeModel.customDomain.hostname);
 
     if (claimId) {
-      batch.set(db.collection("customDomainClaims").doc(claimId), {
+      writes.push([db.collection("customDomainClaims").doc(claimId), {
         hostname: claimId,
         hubId: ref.id,
         hubSlug: next.slug,
@@ -215,11 +174,11 @@ export async function createHub(payload, actorId = "system") {
         releasedAt: "",
         releasedByUserId: "",
         releaseReason: "",
-      });
+      }, "set"]);
     }
   }
 
-  await batch.commit();
+  const committedHub = await commitHubProvisioningOperation(db, operation, writes, { id: ref.id, ...writeModel });
 
   if (writeModel.customDomain?.hostname && writeModel.customDomain.status === "connected") {
     await writeCustomDomainMappingForHub(
@@ -232,10 +191,7 @@ export async function createHub(payload, actorId = "system") {
     );
   }
 
-  return {
-    id: ref.id,
-    ...writeModel,
-  };
+  return committedHub;
 }
 
 function buildHubPackageAuthorityWriteModel(currentHub, normalizedPayload, actorId, now) {

@@ -1,10 +1,9 @@
 import "server-only";
 
-import { redirect } from "next/navigation";
 import { syncCommercialAccountVerificationState } from "@/lib/auth/commercial-auth";
-import { getCommercialAccountByEmail, getCommercialAccountById, listCommercialAccountHubs } from "@/lib/data/commercial-accounts";
+import { listCommercialAccountHubs } from "@/lib/data/commercial-accounts";
 import { getProductHubSummaryById } from "@/lib/data/hubs";
-import { requireCommercialAccountSession } from "@/lib/server/account-session";
+import { requireCommercialAccountSessionContext } from "@/lib/server/account-session";
 import { refreshCommercialAccountSubscriptionState } from "@/lib/server/commercial-billing";
 
 function normalizeString(value) {
@@ -26,23 +25,12 @@ function formatPackageSourceLabel(source) {
 }
 
 export async function requireCommercialAccountContext({ refreshSubscription = false } = {}) {
-  const session = await requireCommercialAccountSession();
-  const account =
-    (session.accountId ? await getCommercialAccountById(session.accountId) : null) ||
-    (session.ownerEmail ? await getCommercialAccountByEmail(session.ownerEmail) : null);
-
-  if (!account) {
-    redirect("/signup");
-  }
-
-  const shouldSyncVerificationState = Boolean(account.authUid && !account.emailVerified);
-  const verifiedAccount = shouldSyncVerificationState
-    ? await syncCommercialAccountVerificationState({ account })
-    : account;
+  const { session, account, authUser } = await requireCommercialAccountSessionContext();
+  const verifiedAccount = await syncCommercialAccountVerificationState({ account, authUser });
   const syncedAccount = refreshSubscription
     ? await refreshCommercialAccountSubscriptionState(verifiedAccount)
     : verifiedAccount;
-  const ownedHubs = await listCommercialAccountHubs(syncedAccount.id);
+  const ownedHubs = (await listCommercialAccountHubs(syncedAccount.id)).filter(hub => hub.relationship === "owner");
   const currentOwnedHub =
     ownedHubs.find((hub) => hub.hubId === session.hubId) ||
     ownedHubs.find((hub) => hub.hubId === syncedAccount.lastHubId) ||
@@ -51,11 +39,11 @@ export async function requireCommercialAccountContext({ refreshSubscription = fa
     null;
   const productHub = currentOwnedHub ? await getProductHubSummaryById(currentOwnedHub.hubId) : null;
   const currentHub = {
-    id: productHub?.id || currentOwnedHub?.hubId || "",
-    name: productHub?.name || currentOwnedHub?.communityName || session.communityName || "",
-    slug: productHub?.slug || currentOwnedHub?.hubSlug || session.hubSlug || "",
-    packageTier: productHub?.packageTier || currentOwnedHub?.packageTier || session.packageTier || "starter",
-    packageStatus: productHub?.packageStatus || currentOwnedHub?.packageStatus || "active",
+    id: productHub?.id || "",
+    name: productHub?.name || "",
+    slug: productHub?.slug || "",
+    packageTier: productHub?.packageTier || "free",
+    packageStatus: productHub?.packageStatus || "",
     packageSource: formatPackageSourceLabel(productHub?.packageSource || "product_site"),
   };
 

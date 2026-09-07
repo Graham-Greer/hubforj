@@ -148,26 +148,13 @@ export async function sendCommercialAccountVerificationEmail({ account, communit
     throw new Error("Commercial account email delivery requires an account with an owner email.");
   }
 
+  const { resendApiKey, resendFromEmail } = getServerEnv();
+  if (!resendApiKey || !resendFromEmail) return { status: "unavailable" };
   const verificationLink = await buildVerificationLink(ownerEmail);
   const sentAt = new Date().toISOString();
-  const { resendApiKey, resendFromEmail } = getServerEnv();
-
-  if (!resendApiKey || !resendFromEmail) {
-    console.warn(
-      `[product-site] verification email not sent because Resend is not configured yet. Verification link for ${ownerEmail}: ${verificationLink}`
-    );
-
-    await markCommercialAccountVerificationEmailSent(account.id, sentAt);
-
-    return {
-      status: "logged",
-      verificationLink,
-      sentAt,
-    };
-  }
 
   const resend = new Resend(resendApiKey);
-  const { error } = await resend.emails.send({
+  const { data, error } = await resend.emails.send({
     from: resendFromEmail,
     to: [ownerEmail],
     subject: `Verify your email for ${normalizeString(communityName) || "Hubforj"}`,
@@ -187,10 +174,12 @@ export async function sendCommercialAccountVerificationEmail({ account, communit
     throw new Error(String(error.message || "Unable to send verification email."));
   }
 
+  if (!data?.id) throw new Error("Email provider did not confirm acceptance.");
   await markCommercialAccountVerificationEmailSent(account.id, sentAt);
 
   return {
     status: "sent",
+    emailId: data.id,
     sentAt,
   };
 }
@@ -203,6 +192,8 @@ export async function sendCommercialAccountPasswordResetEmail({ email } = {}) {
   }
 
   const { resendApiKey, resendFromEmail } = getServerEnv();
+
+  if (!resendApiKey || !resendFromEmail) return { status: "unavailable" };
 
   let resetLink = "";
 
@@ -220,19 +211,8 @@ export async function sendCommercialAccountPasswordResetEmail({ email } = {}) {
     throw error;
   }
 
-  if (!resendApiKey || !resendFromEmail) {
-    console.warn(
-      `[product-site] password reset email not sent because Resend is not configured yet. Reset link for ${ownerEmail}: ${resetLink}`
-    );
-
-    return {
-      status: "logged",
-      resetLink,
-    };
-  }
-
   const resend = new Resend(resendApiKey);
-  const { error } = await resend.emails.send({
+  const { data, error } = await resend.emails.send({
     from: resendFromEmail,
     to: [ownerEmail],
     subject: "Reset your Hubforj password",
@@ -250,7 +230,9 @@ export async function sendCommercialAccountPasswordResetEmail({ email } = {}) {
     throw new Error(String(error.message || "Unable to send password reset email."));
   }
 
+  if (!data?.id) throw new Error("Email provider did not confirm acceptance.");
   return {
     status: "sent",
+    emailId: data.id,
   };
 }

@@ -43,6 +43,7 @@ export default async function SignInPage({ searchParams }) {
             {verified ? <div className="form-message" data-tone="success">Your email has been verified. Sign in to continue.</div> : null}
             {passwordReset ? <div className="form-message" data-tone="success">Your password has been updated. Sign in with your new password.</div> : null}
             <SignInForm nextPath={nextPath} />
+            <Link href="/signup/recover" prefetch={false} className="button-link" data-variant="secondary">Recover interrupted workspace setup</Link>
           </article>
         </div>
       </section>

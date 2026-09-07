@@ -7,7 +7,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --experimental-vm-modules --test tests/auth/*.test.js tests/server/*.test.js",
+    "test:auth": "node --experimental-vm-modules --test tests/auth/*.test.js",
+    "test:integration": "node tests/integration/run.mjs"
   },
   "dependencies": {
     "firebase": "^12.12.1",

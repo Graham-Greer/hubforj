@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
 import MarketingSelect from "@/components/patterns/marketing-select/MarketingSelect";
 import { createProductSiteSignupAction } from "./actions";
@@ -158,7 +159,8 @@ function SignupProvisionFormInner({ formAction, state, values }) {
 
   return (
     <form action={formAction} className="signup-form-shell">
-      {state?.error ? <div className="form-message" data-tone="danger">{state.error}</div> : null}
+      {state?.error ? <div role="alert" className="form-message" data-tone="danger">{state.error}</div> : null}
+      {state?.recoverable ? <Link href="/signup/recover" prefetch={false} className="button-link" data-variant="secondary">Recover setup</Link> : null}
       <SignupProvisionFields
         key={formStateKey}
         values={values}

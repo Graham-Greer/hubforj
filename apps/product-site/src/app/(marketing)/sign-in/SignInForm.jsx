@@ -20,7 +20,7 @@ function mapFirebaseAuthError(error) {
   return "Unable to sign in right now.";
 }
 
-export default function SignInForm({ nextPath = "/account" }) {
+export default function SignInForm({ nextPath = "/account", recoverSignup = false }) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [email, setEmail] = useState("");
@@ -46,6 +46,7 @@ export default function SignInForm({ nextPath = "/account" }) {
           body: JSON.stringify({
             idToken,
             nextPath,
+            recoverSignup,
           }),
         });
         const result = await response.json();
@@ -66,7 +67,7 @@ export default function SignInForm({ nextPath = "/account" }) {
 
   return (
     <form onSubmit={handleSubmit} className="signup-form-shell">
-      {error ? <div className="form-message" data-tone="danger">{error}</div> : null}
+      {error ? <div role="alert" className="form-message" data-tone="danger">{error}</div> : null}
       <div className="signup-form-grid">
         <label className="form-field">
           <span className="form-label">Email</span>
@@ -90,7 +91,7 @@ export default function SignInForm({ nextPath = "/account" }) {
       </div>
       <div className="form-actions">
         <button type="submit" className="button-link" data-variant="primary" disabled={isPending}>
-          {isPending ? "Signing in..." : "Sign in"}
+          {isPending ? "Please wait…" : recoverSignup ? "Sign in and recover setup" : "Sign in"}
         </button>
         <Link
           href={`/forgot-password${email ? `?email=${encodeURIComponent(email)}` : ""}`}

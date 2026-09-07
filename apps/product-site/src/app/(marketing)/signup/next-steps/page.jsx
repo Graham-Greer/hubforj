@@ -21,7 +21,7 @@ export default async function SignupNextStepsPage({ searchParams }) {
   const packageTier = String(params?.packageTier || "");
   const verification = String(params?.verification || "retry");
   const hubSlug = String(params?.hubSlug || "");
-  const verificationSent = verification === "sent" || verification === "logged";
+  const verificationSent = verification === "sent";
   const tierLabel = normalizeTierLabel(packageTier);
   const steps = [
     {

@@ -10,7 +10,7 @@ test("hub creation source seeds the default membership plan", () => {
 
   assert.match(source, /buildDefaultMembershipPlanWriteModel/);
   assert.match(source, /buildDefaultMembershipPlanWriteModel\(ref\.id, actorId, now, writeModel\.defaultCurrency \|\| "USD"\)/);
-  assert.match(source, /await batch\.commit\(\)/);
+  assert.match(source, /await commitHubProvisioningOperation\(db, operation, writes,/);
 });
 
 test("member join route assigns the default membership and defaults back to the public site", () => {
