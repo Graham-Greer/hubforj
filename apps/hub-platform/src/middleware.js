@@ -32,19 +32,38 @@ async function resolveCustomDomainMapping(request, host) {
   const url = new URL("/api/internal/custom-domains/resolve", request.url);
   url.searchParams.set("host", host);
 
-  const response = await fetch(url, {
-    headers: {
-      authorization: `Bearer ${token}`,
-    },
-    cache: "no-store",
-  });
+  try {
+    const response = await fetch(url, {
+      headers: {
+        authorization: `Bearer ${token}`,
+      },
+      cache: "no-store",
+      // Deployment protection can redirect this request to an HTML login page.
+      // Only the resolver itself may supply a mapping.
+      redirect: "manual",
+      signal: AbortSignal.timeout(5000),
+    });
 
-  if (!response.ok) {
+    if (!response.ok) {
+      return null;
+    }
+
+    const contentType = response.headers.get("content-type")?.split(";")[0].trim().toLowerCase();
+    if (contentType !== "application/json") {
+      console.warn("Custom-domain resolver returned an unexpected content type.");
+      return null;
+    }
+
+    const payload = await response.json();
+    return payload?.found === true && typeof payload.hubSlug === "string" && payload.hubSlug.trim()
+      ? payload
+      : null;
+  } catch {
+    // Preserve unresolved-host behavior without disclosing response bodies or
+    // credentials. An unavailable resolver must never invent a tenant mapping.
+    console.warn("Custom-domain resolver request failed.");
     return null;
   }
-
-  const payload = await response.json();
-  return payload?.found ? payload : null;
 }
 
 function buildRedirectUrl(request, targetHost, pathname) {

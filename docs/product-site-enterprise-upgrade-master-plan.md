@@ -3,7 +3,11 @@
 ## 1. Purpose and authority
 
 **Created:** 2026-09-07  
-**Status:** Planning baseline; implementation has not started under this plan.  
+**Status:** Bounded account-access implementation locally verified and committed as `615000d`; production rollout checks pending. Wider enterprise programme paused at the agreed stopping point.
+
+Rollout update: founder reports push and Vercel deployment, but live `/signup/recover` returns 404 on both public domain variants. Verify deployed revision/environment/domain assignment before enabling signup; details are in the [release record](product-site-enterprise-release-and-operations-record.md).
+
+Hub rollout correction: founder-supplied runtime log exposed HTML being parsed as JSON in custom-domain middleware. Local response validation, redirect blocking and bounded error handling implemented; 15 focused regression checks pass. Commit/redeployment and hosted verification remain pending; the wider programme remains paused.
 **Scope:** `apps/product-site`, dependent controls in `apps/hub-platform`, production operations, commercial policy, legal documentation, customer experience and go-to-market execution.  
 **Objective:** Upgrade Hubforj's public product site and the complete client lifecycle to an evidenced enterprise standard.
 
