@@ -156,7 +156,7 @@ export default function AccountUpgradePage({ searchParams }) {
 }
 
 async function AccountUpgradePanels({ searchParams }) {
-  const accountContext = await requireCommercialAccountContext();
+  const accountContext = await requireCommercialAccountContext({ refreshSubscription: true });
   const params = await searchParams;
   const { account, currentHub } = accountContext;
   const locale = productSiteBillingLocale;
