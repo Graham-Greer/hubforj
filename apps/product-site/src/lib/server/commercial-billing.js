@@ -2,9 +2,9 @@ import "server-only";
 
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
 import {
-  mapStripeSubscriptionStatusToPackageStatus,
   isPaidPackageTier,
   normalizeStripeSubscriptionStatus,
+  resolveStripeSubscriptionPackageAuthority,
 } from "@/lib/domain/commercial-billing";
 import { getCommercialPackageIntent } from "@/lib/domain/package-catalog";
 import {
@@ -764,6 +764,10 @@ export async function refreshCommercialAccountSubscriptionState(account) {
 
     const priceId = getPrimarySubscriptionPriceId(subscription);
     const priceSelection = getPackageTierAndCurrencyForStripePriceId(priceId);
+    const packageAuthority = resolveStripeSubscriptionPackageAuthority({
+      status: subscription?.status,
+      formerPaidTier: resolveSubscriptionTier({ account, subscription, priceSelection }),
+    });
     let scheduledPackageEffectiveAt = getScheduledPackageEffectiveAt({
       account,
       currentTier: priceSelection.tier || "",
@@ -810,6 +814,28 @@ export async function refreshCommercialAccountSubscriptionState(account) {
       stripeLastEventType: normalizeString(account?.stripeLastEventType),
       stripeLastSyncedAt: new Date().toISOString(),
     });
+
+    if (packageAuthority.isEnded) {
+      await updateCommercialAccountPackageIntent(account.id, {
+        pendingPackageTier: "",
+        pendingPackageCurrency: "",
+        pendingPackageStatus: "",
+        pendingPackageEffectiveAt: "",
+        pendingPackageUpdatedAt: "",
+      });
+    }
+
+    const hubId = normalizeString(account?.lastHubId || account?.primaryHubId || getAccountStripeLookupMetadata(subscription).hubId);
+
+    if (hubId) {
+      await updateHubPackageAuthorityFromProductSite({
+        hubId,
+        packageTier: packageAuthority.packageTier,
+        packageStatus: packageAuthority.packageStatus,
+        packageSource: "product_site",
+        packageAssignedAt: account?.stripeSubscriptionId ? "" : new Date().toISOString(),
+      });
+    }
 
     if (
       normalizeString(account?.pendingPackageStatus).toLowerCase() === "scheduled_downgrade" &&
@@ -1567,12 +1593,11 @@ async function syncAccountFromStripeSubscription({ account, subscription, event 
   const stripe = getStripeServerClient();
   const priceId = getPrimarySubscriptionPriceId(subscription);
   const priceSelection = getPackageTierAndCurrencyForStripePriceId(priceId);
-  const packageTier =
-    priceSelection.tier ||
-    normalizeString(subscription?.metadata?.targetTier).toLowerCase() ||
-    normalizeString(account?.stripePriceId && getPackageTierForStripePriceId(account.stripePriceId)).toLowerCase() ||
-    "starter";
-  const packageStatus = mapStripeSubscriptionStatusToPackageStatus(subscription?.status);
+  const packageAuthority = resolveStripeSubscriptionPackageAuthority({
+    status: subscription?.status,
+    formerPaidTier: resolveSubscriptionTier({ account, subscription, priceSelection }),
+  });
+  const { packageTier, packageStatus } = packageAuthority;
   const { pendingPackage, pendingStatus } = getCommercialPackageIntent({
     account,
     currentTier: normalizeString(account?.stripePriceId && getPackageTierForStripePriceId(account.stripePriceId)).toLowerCase() || "free",
@@ -1617,6 +1642,7 @@ async function syncAccountFromStripeSubscription({ account, subscription, event 
   });
 
   const shouldClearPackageIntent =
+    packageAuthority.isEnded ||
     pendingPackage?.tier === packageTier ||
     (!pendingStatus && !pendingPackage?.tier);
 
@@ -1668,6 +1694,15 @@ async function syncAccountFromStripeSubscription({ account, subscription, event 
   });
 
   return updatedAccount;
+}
+
+function resolveSubscriptionTier({ account, subscription, priceSelection = {} } = {}) {
+  return (
+    priceSelection.tier ||
+    normalizeString(subscription?.metadata?.targetTier).toLowerCase() ||
+    normalizeString(account?.stripePriceId && getPackageTierForStripePriceId(account.stripePriceId)).toLowerCase() ||
+    "starter"
+  );
 }
 
 function getScheduledPackageEffectiveAt({ account, currentTier = "" } = {}) {

@@ -76,7 +76,7 @@ export default function AccountBillingPage({ searchParams }) {
 }
 
 async function AccountBillingPanels({ searchParams }) {
-  const accountContext = await requireCommercialAccountContext();
+  const accountContext = await requireCommercialAccountContext({ refreshSubscription: true });
   await searchParams;
   const { account, currentHub } = accountContext;
   const locale = productSiteBillingLocale;

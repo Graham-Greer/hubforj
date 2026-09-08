@@ -103,6 +103,23 @@ export function mapStripeSubscriptionStatusToPackageStatus(status) {
   return "cancelled";
 }
 
+export function resolveStripeSubscriptionPackageAuthority({ status, formerPaidTier = "starter" } = {}) {
+  const stripePackageStatus = mapStripeSubscriptionStatusToPackageStatus(status);
+  const isEnded = stripePackageStatus === "cancelled";
+  const resolvedFormerPaidTier = isPaidPackageTier(formerPaidTier)
+    ? normalizeString(formerPaidTier).toLowerCase()
+    : "starter";
+
+  // A fully ended subscription is retained as billing history, while the
+  // workspace returns to the currently usable Free package.
+  return {
+    formerPaidTier: resolvedFormerPaidTier,
+    packageTier: isEnded ? "free" : resolvedFormerPaidTier,
+    packageStatus: isEnded ? "active" : stripePackageStatus,
+    isEnded,
+  };
+}
+
 export function buildCommercialBillingModel({ account, currentHub, stripeEnvironment, checkoutState = null } = {}) {
   const currentTier = normalizeString(currentHub?.packageTier).toLowerCase() || "free";
   const locale = productSiteBillingLocale;
@@ -240,8 +257,11 @@ export function buildCommercialBillingModel({ account, currentHub, stripeEnviron
     isAwaitingPayment,
     customerExists,
     subscriptionExists,
-    canOpenBillingPortal: stripeReady && customerExists && subscriptionExists,
-    canStartCheckout: stripeReady && !subscriptionExists,
+    // A cancelled Stripe subscription remains on the account as history, but
+    // it cannot be managed or reused. The workspace is free again and must be
+    // allowed to begin a new checkout.
+    canOpenBillingPortal: stripeReady && customerExists && hasManageableStripeSubscription(stripeStatus),
+    canStartCheckout: stripeReady && !hasManageableStripeSubscription(stripeStatus),
     stripeStatus,
     cancelAt,
     cancelAtPeriodEnd,
