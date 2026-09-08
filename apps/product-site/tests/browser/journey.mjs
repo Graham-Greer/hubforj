@@ -127,7 +127,7 @@ try {
   await page.locator('a[href="/signup/recover"]').waitFor();
   await page.goto(`${base}/signup/recover`);
   await page.locator('[name="email"]').fill('recovery@example.test'); await page.locator('[name="password"]').fill(password);
-  await page.getByRole('button', { name: 'Sign in and recover setup' }).click();
+  await page.getByRole('button', { name: 'Sign in and continue setup' }).click();
   await page.waitForURL(`${base}/account`);
   const state = await (await fetch('http://127.0.0.1:18997/test/state')).json();
   assert.equal(state.hubs.length, 2); pass('Browser recovers lost response without a duplicate hub');

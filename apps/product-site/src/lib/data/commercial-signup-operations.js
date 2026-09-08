@@ -56,12 +56,14 @@ export async function createCommercialSignupOperation({ accountId, authUid, payl
   });
 }
 
-export async function readCommercialSignupOperation({ accountId, authUid }) {
+export async function readCommercialSignupOperation({ accountId, authUid, allowMissing = false }) {
   const db = getFirebaseAdminDb();
   const ref = refs(db, accountId);
   return db.runTransaction(async (transaction) => {
     assertAccount(await transaction.get(ref.account), authUid);
-    const operation = assertOperation((await transaction.get(ref.operation)).data(), authUid);
+    const snapshot = await transaction.get(ref.operation);
+    if (allowMissing && !snapshot.exists) return null;
+    const operation = assertOperation(snapshot.data(), authUid);
     if (operation.status === "complete") {
       const owned = await transaction.get(ref.account.collection("ownedHubs").doc(operation.hub.id));
       if (!owned.exists || owned.data().relationship !== "owner") throw new Error("Workspace ownership changed. Please contact support.");
