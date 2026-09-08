@@ -91,7 +91,7 @@ export default function SignInForm({ nextPath = "/account", recoverSignup = fals
       </div>
       <div className="form-actions">
         <button type="submit" className="button-link" data-variant="primary" disabled={isPending}>
-          {isPending ? "Please wait…" : recoverSignup ? "Sign in and recover setup" : "Sign in"}
+          {isPending ? "Please wait…" : recoverSignup ? "Sign in and continue setup" : "Sign in"}
         </button>
         <Link
           href={`/forgot-password${email ? `?email=${encodeURIComponent(email)}` : ""}`}

@@ -8,6 +8,10 @@
 Rollout update: founder reports push and Vercel deployment, but live `/signup/recover` returns 404 on both public domain variants. Verify deployed revision/environment/domain assignment before enabling signup; details are in the [release record](product-site-enterprise-release-and-operations-record.md).
 
 Hub rollout correction: founder-supplied runtime log exposed HTML being parsed as JSON in custom-domain middleware. Local response validation, redirect blocking and bounded error handling implemented; 15 focused regression checks pass. Commit/redeployment and hosted verification remain pending; the wider programme remains paused.
+
+Follow-up: HEAD is now `67d46a9`; founder reports the new hub deployment loads successfully after the correction. Independent access remains Vercel-login protected. Public product-site recovery still returns 404; product-site deployment association is the next unresolved rollout check. Wider programme remains paused.
+
+Latest follow-up: founder identifies the product-site deployment as Preview and confirms its recovery page loads. The production-domain 404 does not demonstrate a preview regression. Next verify Preview cross-app URL configuration and protected receiver access before testing account creation; retain the disabled signup gate.
 **Scope:** `apps/product-site`, dependent controls in `apps/hub-platform`, production operations, commercial policy, legal documentation, customer experience and go-to-market execution.  
 **Objective:** Upgrade Hubforj's public product site and the complete client lifecycle to an evidenced enterprise standard.
 
@@ -847,3 +851,10 @@ Initial audit sources; recheck current guidance and production facts before impl
 - [UK government: subscription regime implementation response](https://www.gov.uk/government/consultations/consultation-on-the-implementation-of-the-new-subscription-contracts-regime/outcome/government-response-to-consultation-on-the-implementation-of-the-new-subscription-contracts-regime-web-accessible-version)
 
 This programme is complete only when the applicable full-scope requirements are implemented, evidenced, audited, corrected and re-audited, with ongoing assurance assigned. A controlled launch is an intermediate milestone, not the enterprise finish line.
+
+
+### Account-led setup continuation — 2026-09-08
+
+Removed the general sign-in page recovery link. After ordinary sign-in, an account with no current workspace checks its own UID-bound saved setup. Pending setup displays “Continue setting up your workspace”; the action uses the existing explicit recovery route and recent-authentication checks. When provisioning is disabled, the account explains that setup is temporarily unavailable and offers no recovery action. Missing saved intent displays a help message rather than promising an available workspace or offering billing/admin actions. Completed workspace accounts retain their existing overview. No automatic provisioning on page load or recovery-email automation was added.
+
+The optional operation lookup permits an absent record only after account/UID validation; malformed records and provider failures still fail closed. No database or environment changes were made. Existing direct recovery URLs remain supported. Validation: 53 account/auth/recovery tests pass, including absent saved intent, UID mismatch and malformed-record rejection. Targeted ESLint completed without errors or warnings; scoped whitespace checks pass. Browser journey selector updated for the renamed continuation button; the full browser journey has not been rerun for this refinement. Production behavior is not yet verified.

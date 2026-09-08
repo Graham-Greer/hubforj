@@ -134,3 +134,15 @@ test("corrupt stored operation keys cannot fall back to unkeyed provisioning", a
   records.set(path, { ...records.get(path), operationId: "" });
   await assert.rejects(subject.readCommercialSignupOperation(identity), /needs review/);
 });
+
+
+test("optional setup lookup distinguishes absent intent without weakening identity checks", async () => {
+  const { subject, records } = await dataFixture();
+  assert.equal(await subject.readCommercialSignupOperation({ ...identity, allowMissing: true }), null);
+  await assert.rejects(subject.readCommercialSignupOperation(identity), /No recoverable setup/);
+  await assert.rejects(subject.readCommercialSignupOperation({ ...identity, authUid: "other", allowMissing: true }), /Sign in/);
+  await subject.createCommercialSignupOperation(intent);
+  assert.equal((await subject.readCommercialSignupOperation({ ...identity, allowMissing: true })).status, "pending");
+  records.get("commercialAccounts/acct_one/signupOperations/initial").version = 99;
+  await assert.rejects(subject.readCommercialSignupOperation({ ...identity, allowMissing: true }), /No recoverable setup/);
+});

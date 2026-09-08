@@ -13,6 +13,9 @@ import { getLatestCommercialCheckoutState } from "@/lib/server/commercial-billin
 import { accountRouteCopy } from "@/lib/navigation/account-route-copy";
 import { resendCommercialAccountVerificationEmailAction } from "./actions";
 
+import { readCommercialSignupOperation } from "@/lib/data/commercial-signup-operations";
+import { getServerEnv } from "@/lib/config/env";
+
 const productSiteBillingLocale = "en-GB";
 
 function normalizeString(value) {
@@ -54,6 +57,32 @@ async function AccountOverviewPanels({ searchParams }) {
   const adminActivation = String(params?.adminActivation || "");
   const { account } = accountContext;
   const { currentHub } = accountContext;
+  if (!currentHub.id) {
+    const operation = await readCommercialSignupOperation({
+      accountId: account.id,
+      authUid: account.authUid,
+      allowMissing: true,
+    });
+    const pending = operation?.status === "pending";
+    const enabled = getServerEnv().productSiteSignupProvisioningEnabled;
+    return (
+      <AccountStatusBanner
+        title={pending ? "Continue setting up your workspace" : "Your workspace needs attention"}
+        description={pending
+          ? "Your account is ready, but your workspace setup is not finished. Your saved details will be used when you continue."
+          : "We could not find a workspace linked to your account. Please contact support for help."}
+        tone="attention"
+        actions={pending && enabled ? (
+          <Link href="/signup/recover" prefetch={false} className="button-link" data-variant="primary">
+            Continue setting up your workspace
+          </Link>
+        ) : null}
+      >
+        {pending && enabled ? <p>For your security, you will be asked to sign in again. Continuing setup does not start a paid subscription.</p> : null}
+        {pending && !enabled ? <p>Workspace setup is temporarily unavailable. Your saved details are still here; please try again later.</p> : null}
+      </AccountStatusBanner>
+    );
+  }
   const locale = productSiteBillingLocale;
   const checkoutState = await getLatestCommercialCheckoutState({ account });
   const { snapshot, upgradeOptions } = buildCommercialAccountModel({
